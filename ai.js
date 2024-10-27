@@ -1,23 +1,23 @@
 // The purpose of this AI is not to be a relistic opponant, but to give an example of a vaild AI player.
 // This is an implementation of the fixed agent
+// The p is player
+square
 function AITest(p) {
 	this.alertList = "";
-
 	// This variable is static, it is not related to each instance.
 	this.constructor.count++;
 
-	p.name = "AI Test " + this.constructor.count;
+	p.name = "AI Test " + this.constructor.count; // this gets your ai a proper 
 
 	// Decide whether to buy a property the AI landed on.
 	// Return: boolean (true to buy).
 	// Arguments:
 	// index: the property's index (0-39).
 
-	// This fixed policy by the property if the price (the agent baught the property for) is smaller 
-	// than the amount it is about to sell the property for. 
+	// This fixed policy by the property if the AI has more than the price of the property + 50 bucks
 	this.buyProperty = function(index) {
 		console.log("buyProperty");
-		var s = square[index];
+		var s = square[index]; // get the value of the square at the given index
 
 		if (p.money > s.price + 50) {
 			return true;

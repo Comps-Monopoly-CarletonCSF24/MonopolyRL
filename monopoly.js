@@ -1106,7 +1106,7 @@ function Game() {
 
 var game;
 
-
+// This is the player signiture. 
 function Player(name, color) {
 	this.name = name;
 	this.color = color;
