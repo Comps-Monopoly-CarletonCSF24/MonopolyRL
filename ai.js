@@ -1,3 +1,6 @@
+// Whether the trade function is allowed
+var ToggleTrade = false;
+
 // The purpose of this AI is not to be a relistic opponant, but to give an example of a vaild AI player.
 function AITest(p) {
 	this.alertList = "";
@@ -144,8 +147,9 @@ function AITest(p) {
 		} else if (square[28].owner === p.index && square[12].owner !== p.index) {
 			offeredUtility = 28;
 		}
-
-		if (utilityForRailroadFlag && game.getDie(1) !== game.getDie(2) && requestedRailroad && offeredUtility) {
+		
+		// Propose trade
+		if (ToggleTrade && utilityForRailroadFlag && game.getDie(1) !== game.getDie(2) && requestedRailroad && offeredUtility) {
 			utilityForRailroadFlag = false;
 			property[requestedRailroad] = -1;
 			property[offeredUtility] = 1;
