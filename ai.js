@@ -49,7 +49,7 @@ function AITest(p) {
 
 		// creates a new property similar to the one offered in trade
 		// creates trade_value by getting the property's price and halving the price if the property is mortgaged. 
-		for (var i = 0; i < 40; i++) {
+		for (var i = 0; i < 40; i++) { // why do you need to go through all the properties?
 			property[i] = tradeObj.getProperty(i);
 			tradeValue += tradeObj.getProperty(i) * square[i].price * (square[i].mortgage ? 0.5 : 1);
 		}
@@ -58,10 +58,10 @@ function AITest(p) {
 
 		var proposedMoney = 25 - tradeValue + money; // trying to make 25 bucks off the trade. Will be useful in request
 
-		// By any property that's offering you more than $25 backs??? Insane
+		// By any property that's offering you more than $25 buck??? Insane
 		if (tradeValue > 25) {
 			return true;
-		// If they are requesting more than $50 and offering you more money than the 25 you wanted to save,
+		// If they are requesting more than $50 or offering you less than the 25 you wanted to save,
 		// offer them a new trade that involves the same property and the 25 bucks
 		} else if (tradeValue >= -50 && initiator.money > proposedMoney) {
 
