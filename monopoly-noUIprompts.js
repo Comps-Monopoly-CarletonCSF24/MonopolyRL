@@ -1,8 +1,4 @@
-var ToggleTraining = true;
-var Max_Num_Rounds = 100;
-
 function Game() {
-
 	var die1;
 	var die2;
 	var areDiceRolled = false;
@@ -48,8 +44,8 @@ function Game() {
 
 	};
 
-	// Auction functions:
 
+	// Auction functions:
 	var finalizeAuction = function() {
 		var p = player[highestbidder];
 		var sq = square[auctionproperty];
@@ -180,14 +176,17 @@ function Game() {
 
 					if (bid === -1 || highestbid >= p.money) {
 						p.bidding = false;
-						addAlert(p.name + " exited the auction.");
+
+						window.alert(p.name + " exited the auction.");
 						continue;
+
 					} else if (bid === 0) {
-						addAlert(p.name + " passed.");
+						window.alert(p.name + " passed.");
 						continue;
+
 					} else if (bid > 0) {
 						this.auctionBid(bid);
-						addAlert(p.name + " bid $" + bid + ".");
+						window.alert(p.name + " bid $" + bid + ".");
 						continue;
 					}
 					return;
@@ -243,10 +242,14 @@ function Game() {
 
 
 	// Trade functions:
+
+
+
 	var currentInitiator;
 	var currentRecipient;
 
 	// Define event handlers:
+
 	var tradeMoneyOnKeyDown = function (e) {
 		var key = 0;
 		var isCtrl = false;
@@ -719,6 +722,7 @@ function Game() {
 		}
 	};
 
+
 	this.cancelTrade = function() {
 		$("#board").show();
 		$("#control").show();
@@ -783,6 +787,7 @@ function Game() {
 
 		if (isAPropertySelected === 0) {
 			popup("<p>One or more properties must be selected in order to trade.</p>");
+
 			return false;
 		}
 
@@ -934,13 +939,20 @@ function Game() {
 		}
 	};
 
+
+
 	// Bankrupcy functions:
+
+
+
+
 	this.eliminatePlayer = function() {
 		var p = player[turn];
 
 		for (var i = p.index; i < pcount; i++) {
 			player[i] = player[i + 1];
 			player[i].index = i;
+
 		}
 
 		for (var i = 0; i < 40; i++) {
@@ -1088,7 +1100,7 @@ function Game() {
 
 var game;
 
-// This is the player signiture. 
+
 function Player(name, color) {
 	this.name = name;
 	this.color = color;
@@ -1158,7 +1170,7 @@ function Trade(initiator, recipient, money, property, communityChestJailCard, ch
 
 var player = [];
 var pcount;
-var turn = 0, doublecount = 0, round = 0;
+var turn = 0, doublecount = 0;
 // Overwrite an array with numbers from one to the array's length in a random order.
 Array.prototype.randomize = function(length) {
 	length = (length || this.length);
@@ -1211,15 +1223,9 @@ function addAlert(alertText) {
 	if (!player[turn].human) {
 		player[turn].AI.alertList += "<div>" + alertText + "</div>";
 	}
-
 }
 
 function popup(HTML, action, option) {
-	if (ToggleTraining && action && action != 'blank') {
-		// addAlert(HTML);	
-		action();
-		return;	
-	}
 	document.getElementById("popuptext").innerHTML = HTML;
 	document.getElementById("popup").style.width = "300px";
 	document.getElementById("popup").style.top = "0px";
@@ -2528,23 +2534,6 @@ function play() {
 	turn++;
 	if (turn > pcount) {
 		turn -= pcount;
-		round++;
-	}
-
-	if (round > Max_Num_Rounds){
-		var winner;
-		winning_amount = -0x7f;
-		for (var i = 0; i < pcount; i++){
-			if(player[i].money > winning_amount){
-				winner = player[i];
-				winning_amount = player[i].money;
-			} 
-		}
-		$("#control").hide();
-		$("#board").hide();
-		$("#refresh").show();
-		popup("<p>Max number of rounds reached. Congratulations, " +  winner.name + ", you have won the game.</p><div>");
-		return
 	}
 
 	var p = player[turn];
@@ -2552,7 +2541,7 @@ function play() {
 
 	document.getElementById("pname").innerHTML = p.name;
 
-	addAlert("Round " + round + ": It is " + p.name + "'s turn.");
+	addAlert("It is " + p.name + "'s turn.");
 
 	// Check for bankruptcy.
 	p.pay(0, p.creditor);

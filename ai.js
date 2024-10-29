@@ -1,8 +1,11 @@
+// Whether the trade function is allowed
+var ToggleTrade = false;
+
 // The purpose of this AI is not to be a relistic opponant, but to give an example of a vaild AI player.
 // This is an implementation of the fixed agent
 // The p is player
 square
-function AITest(p) {
+function AITest(p) {0
 	this.alertList = "";
 	// This variable is static, it is not related to each instance.
 	this.constructor.count++;
@@ -19,7 +22,7 @@ function AITest(p) {
 		console.log("buyProperty");
 		var s = square[index]; // get the value of the square at the given index
 
-		if (p.money > s.price + 50) {
+		if (p.money > s.price+10) {
 			return true;
 		} else {
 			return false;
@@ -56,10 +59,10 @@ function AITest(p) {
 
 		console.log(tradeValue);
 
-		var proposedMoney = 25 - tradeValue + money; // trying to make 25 bucks off the trade. Will be useful in request
+		var proposedMoney = 15 - tradeValue + money; // trying to make 25 bucks off the trade. Will be useful in request
 
 		// By any property that's offering you more than $25 buck??? Insane
-		if (tradeValue > 25) {
+		if (tradeValue > 15) {
 			return true;
 		// If they are requesting more than $50 or offering you less than the 25 you wanted to save,
 		// offer them a new trade that involves the same property and the 25 bucks
@@ -131,8 +134,8 @@ function AITest(p) {
 
 
 	// This function is called every time the AI lands on a square. 
-	// The purpose is to allow the AI to manage property and/or initiate trades. (why? Does every player get the same privileges? )
-	// Return: boolean: Must return true if and only if the AI proposed a trade. (does the ai participate in trades that it did not propose?)
+	// The purpose is to allow the AI to manage property and/or initiate trades.
+	// Return: boolean: Must return true if and only if the AI proposed a trade.
 	this.onLand = function() {
 		console.log("onLand");
 		var proposedTrade;
@@ -143,6 +146,7 @@ function AITest(p) {
 		var s;
 
 		// If AI owns exactly one utility, try to trade it for a railroad. (why is that ideal? why would you want to do that? Are railroads the most pricey things?)
+		// get the railroad index
 		for (var i = 0; i < 4; i++) {
 			s = square[railroadIndexes[i]];
 
@@ -151,17 +155,19 @@ function AITest(p) {
 				break;
 			}
 		}
-
-
-		// what is on square 12 or 18? (why should index own both and sell one he does not own?) => I guess this is where the trading happens no? 
+		
+		// get the utility to trade for the railroad
 		if (square[12].owner === p.index && square[28].owner !== p.index) {
 			offeredUtility = 12;
 		} else if (square[28].owner === p.index && square[12].owner !== p.index) {
 			offeredUtility = 28;
 		}
 
-		// not offered the trade before? getDie???? This is where you make the trade. 
+		// not offered the trade before and the 2 dice values are different and the trade params are available
 		if (utilityForRailroadFlag && game.getDie(1) !== game.getDie(2) && requestedRailroad && offeredUtility) {
+		
+		// Propose trade
+		if (ToggleTrade && utilityForRailroadFlag && game.getDie(1) !== game.getDie(2) && requestedRailroad && offeredUtility) {
 			utilityForRailroadFlag = false;
 			property[requestedRailroad] = -1;
 			property[offeredUtility] = 1;
@@ -182,7 +188,7 @@ function AITest(p) {
 
 		// p.jailroll === 2 on third turn in jail. 
 		// Only try to use your jailcard or pay the out of jail money only if you are in jail for the third roll (you were not able to hit doubles on any of your previous rolls)
-		if ((p.communityChestJailCard || p.chanceJailCard) && p.jailroll === 2) {
+		if ((p.communityChestJailCard || p.chanceJailCard) && p.jailroll === 1) {
 			return true;
 		} else {
 			return false;
@@ -214,14 +220,15 @@ function AITest(p) {
 	this.bid = function(property, currentBid) {
 		console.log("bid");
 		var bid;
-
+		// max bid is 20 + 10 = 30
 		bid = currentBid + Math.round(Math.random() * 20 + 10);	
-		// only accepts bids that are about 0.5 more than the price of the property: this is an insane price to put up during a bid tbh
+		// if the machine cannot afford the bid, i.e it has less than bid + 50 or the bid it came up with is propertyPrice + 1/2 property price, then exit bid. 
 		if (p.money < bid + 50 || bid > square[property].price * 1.5) {
 			return -1;
 		} else {
 			return bid;
 		}
 
+	}
 	}
 }
