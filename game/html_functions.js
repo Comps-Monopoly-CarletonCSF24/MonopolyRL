@@ -1,18 +1,19 @@
-function addAlert(alertText) {
-	$alert = $("#alert");
+import global_variables from "./global_variables.js";
+export function addAlert(alertText) {
+	var $alert = $("#alert");
 
 	$(document.createElement("div")).text(alertText).appendTo($alert);
 
 	// Animate scrolling down alert element.
 	$alert.stop().animate({"scrollTop": $alert.prop("scrollHeight")}, 1000);
 
-	if (!player[turn].human) {
-		player[turn].AI.alertList += "<div>" + alertText + "</div>";
+	if (!global_variables.player[global_variables.turn].human) {
+		global_variables.player[global_variables.turn].AI.alertList += "<div>" + alertText + "</div>";
 	}
 
 }
 
-function updatePosition() {
+export function updatePosition() {
 	// Reset borders
 	document.getElementById("jail").style.border = "1px solid black";
 	document.getElementById("jailpositionholder").innerHTML = "";
@@ -29,11 +30,11 @@ function updatePosition() {
 		left = 0;
 		top = 0;
 
-		for (var y = turn; y <= pcount; y++) {
+		for (var y = global_variables.turn; y <= global_variables.pcount; y++) {
 
-			if (player[y].position == x && !player[y].jail) {
+			if (global_variables.player[y].position == x && !global_variables.player[y].jail) {
 
-				document.getElementById("cell" + x + "positionholder").innerHTML += "<div class='cell-position' title='" + player[y].name + "' style='background-color: " + player[y].color + "; left: " + left + "px; top: " + top + "px;'></div>";
+				document.getElementById("cell" + x + "positionholder").innerHTML += "<div class='cell-position' title='" + global_variables.player[y].name + "' style='background-color: " + global_variables.player[y].color + "; left: " + left + "px; top: " + top + "px;'></div>";
 				if (left == 36) {
 					left = 0;
 					top = 12;
@@ -42,10 +43,10 @@ function updatePosition() {
 			}
 		}
 
-		for (var y = 1; y < turn; y++) {
+		for (var y = 1; y < global_variables.turn; y++) {
 
-			if (player[y].position == x && !player[y].jail) {
-				document.getElementById("cell" + x + "positionholder").innerHTML += "<div class='cell-position' title='" + player[y].name + "' style='background-color: " + player[y].color + "; left: " + left + "px; top: " + top + "px;'></div>";
+			if (global_variables.player[y].position == x && !global_variables.player[y].jail) {
+				document.getElementById("cell" + x + "positionholder").innerHTML += "<div class='cell-position' title='" + global_variables.player[y].name + "' style='background-color: " + global_variables.player[y].color + "; left: " + left + "px; top: " + top + "px;'></div>";
 				if (left == 36) {
 					left = 0;
 					top = 12;
@@ -57,9 +58,9 @@ function updatePosition() {
 
 	left = 0;
 	top = 53;
-	for (var i = turn; i <= pcount; i++) {
-		if (player[i].jail) {
-			document.getElementById("jailpositionholder").innerHTML += "<div class='cell-position' title='" + player[i].name + "' style='background-color: " + player[i].color + "; left: " + left + "px; top: " + top + "px;'></div>";
+	for (var i = global_variables.turn; i <= global_variables.pcount; i++) {
+		if (global_variables.player[i].jail) {
+			document.getElementById("jailpositionholder").innerHTML += "<div class='cell-position' title='" + global_variables.player[i].name + "' style='background-color: " + global_variables.player[i].color + "; left: " + left + "px; top: " + top + "px;'></div>";
 
 			if (left === 36) {
 				left = 0;
@@ -70,9 +71,9 @@ function updatePosition() {
 		}
 	}
 
-	for (var i = 1; i < turn; i++) {
-		if (player[i].jail) {
-			document.getElementById("jailpositionholder").innerHTML += "<div class='cell-position' title='" + player[i].name + "' style='background-color: " + player[i].color + "; left: " + left + "px; top: " + top + "px;'></div>";
+	for (var i = 1; i < global_variables.turn; i++) {
+		if (global_variables.player[i].jail) {
+			document.getElementById("jailpositionholder").innerHTML += "<div class='cell-position' title='" + global_variables.player[i].name + "' style='background-color: " + global_variables.player[i].color + "; left: " + left + "px; top: " + top + "px;'></div>";
 			if (left === 36) {
 				left = 0;
 				top = 41;
@@ -81,7 +82,7 @@ function updatePosition() {
 		}
 	}
 
-	p = player[turn];
+	var p = global_variables.player[global_variables.turn];
 
 	if (p.jail) {
 		document.getElementById("jail").style.border = "1px solid " + p.color;
@@ -89,19 +90,19 @@ function updatePosition() {
 		document.getElementById("cell" + p.position).style.border = "1px solid " + p.color;
 	}
 
-	// for (var i=1; i <= pcount; i++) {
-	// document.getElementById("enlarge"+player[i].position+"token").innerHTML+="<img src='"+tokenArray[i].src+"' height='30' width='30' />";
+	// for (var i=1; i <= global_variables.pcount; i++) {
+	// document.getElementById("enlarge"+global_variables.player[i].position+"token").innerHTML+="<img src='"+tokenArray[i].src+"' height='30' width='30' />";
 	// }
 }
 
-function updateMoney() {
-	var p = player[turn];
+export function updateMoney() {
+	var p = global_variables.player[global_variables.turn];
 
 	document.getElementById("pmoney").innerHTML = "$" + p.money;
 	$(".money-bar-row").hide();
 
-	for (var i = 1; i <= pcount; i++) {
-		var p_i = player[i];
+	for (var i = 1; i <= global_variables.pcount; i++) {
+		var p_i = global_variables.player[i];
 
 		$("#moneybarrow" + i).show();
 		document.getElementById("p" + i + "moneybar").style.border = "2px solid " + p_i.color;
@@ -126,8 +127,8 @@ function updateMoney() {
 	}
 }
 
-function updateOwned() {
-	var p = player[turn];
+export function updateOwned() {
+	var p = global_variables.player[global_variables.turn];
 	var checkedproperty = getCheckedProperty();
 	$("#option").show();
 	$("#owned").show();
@@ -147,14 +148,14 @@ function updateOwned() {
 			var currentCellOwner = document.getElementById("cell" + i + "owner");
 
 			currentCellOwner.style.display = "block";
-			currentCellOwner.style.backgroundColor = player[sq.owner].color;
-			currentCellOwner.title = player[sq.owner].name;
+			currentCellOwner.style.backgroundColor = global_variables.player[sq.owner].color;
+			currentCellOwner.title = global_variables.player[sq.owner].name;
 		}
 	}
 
 	for (var i = 0; i < 40; i++) {
 		sq = square[i];
-		if (sq.owner == turn) {
+		if (sq.owner == global_variables.turn) {
 
 			mortgagetext = "";
 			if (sq.mortgage) {
@@ -262,7 +263,7 @@ function updateOption() {
 		var hotelsum = 12;
 
 		for (var i = 0; i < 40; i++) {
-			s = square[i];
+			let s = square[i];
 			if (s.hotel == 1)
 				hotelsum--;
 			else
@@ -329,7 +330,7 @@ function updateOption() {
 
 			var max = sq.group.length;
 			for (var i = 0; i < max; i++) {
-				s = square[sq.group[i]];
+				let s = square[sq.group[i]];
 
 				if (s.owner !== sq.owner) {
 					buyhousebutton.disabled = true;
@@ -403,7 +404,7 @@ function updateOption() {
 	}
 }
 
-function popup(HTML, action, option) {
+export function popup(HTML, action, option) {
 	if (ToggleTraining && action && action != 'blank') {
 		// addAlert(HTML);	
 		action();
@@ -454,16 +455,16 @@ function popup(HTML, action, option) {
 
 }
 
-function showStats() {
+export function showStats() {
 	var HTML, sq, p;
 	var mortgagetext,
 	housetext;
 	var write;
 	HTML = "<table align='center'><tr>";
 
-	for (var x = 1; x <= pcount; x++) {
+	for (var x = 1; x <= global_variables.pcount; x++) {
 		write = false;
-		p = player[x];
+		p = global_variables.player[x];
 		if (x == 5) {
 			HTML += "</tr><tr>";
 		}
@@ -535,70 +536,22 @@ function showStats() {
 	});
 }
 
-function showdeed(property) {
-	var sq = square[property];
-	$("#deed").show();
-
-	$("#deed-normal").hide();
-	$("#deed-mortgaged").hide();
-	$("#deed-special").hide();
-
-	if (sq.mortgage) {
-		$("#deed-mortgaged").show();
-		document.getElementById("deed-mortgaged-name").textContent = sq.name;
-		document.getElementById("deed-mortgaged-mortgage").textContent = (sq.price / 2);
-
-	} else {
-
-		if (sq.groupNumber >= 3) {
-			$("#deed-normal").show();
-			document.getElementById("deed-header").style.backgroundColor = sq.color;
-			document.getElementById("deed-name").textContent = sq.name;
-			document.getElementById("deed-baserent").textContent = sq.baserent;
-			document.getElementById("deed-rent1").textContent = sq.rent1;
-			document.getElementById("deed-rent2").textContent = sq.rent2;
-			document.getElementById("deed-rent3").textContent = sq.rent3;
-			document.getElementById("deed-rent4").textContent = sq.rent4;
-			document.getElementById("deed-rent5").textContent = sq.rent5;
-			document.getElementById("deed-mortgage").textContent = (sq.price / 2);
-			document.getElementById("deed-houseprice").textContent = sq.houseprice;
-			document.getElementById("deed-hotelprice").textContent = sq.houseprice;
-
-		} else if (sq.groupNumber == 2) {
-			$("#deed-special").show();
-			document.getElementById("deed-special-name").textContent = sq.name;
-			document.getElementById("deed-special-text").innerHTML = utiltext();
-			document.getElementById("deed-special-mortgage").textContent = (sq.price / 2);
-
-		} else if (sq.groupNumber == 1) {
-			$("#deed-special").show();
-			document.getElementById("deed-special-name").textContent = sq.name;
-			document.getElementById("deed-special-text").innerHTML = transtext();
-			document.getElementById("deed-special-mortgage").textContent = (sq.price / 2);
-		}
-	}
-}
-
-function hidedeed() {
-	$("#deed").hide();
-}
-
-function playernumber_onchange() {
-	pcount = parseInt(document.getElementById("playernumber").value, 10);
+export function playernumber_onchange() {
+	global_variables.pcount = parseInt(document.getElementById("playernumber").value, 10);
 
 	$(".player-input").hide();
 
-	for (var i = 1; i <= pcount; i++) {
+	for (var i = 1; i <= global_variables.pcount; i++) {
 		$("#player" + i + "input").show();
 	}
 }
 
-function menuitem_onmouseover(element) {
+export function menuitem_onmouseover(element) {
 	element.className = "menuitem menuitem_hover";
 	return;
 }
 
-function menuitem_onmouseout(element) {
+export function menuitem_onmouseout(element) {
 	element.className = "menuitem";
 	return;
 }

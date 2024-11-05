@@ -2,16 +2,16 @@
  * Operations realated to community chest, chance, and the board
  */
 
+import global_variables from "./global_variables.js";
+
 function addamount(amount, cause) {
-	var p = player[turn];
-
+	var p = global_variables.player[turn];
 	p.money += amount;
-
 	addAlert(p.name + " received $" + amount + " from " + cause + ".");
 }
 
 function subtractamount(amount, cause) {
-	var p = player[turn];
+	var p = global_variables.player[turn];
 
 	p.pay(amount, 0);
 
@@ -19,26 +19,26 @@ function subtractamount(amount, cause) {
 }
 
 function luxurytax() {
-	addAlert(player[turn].name + " paid $100 for landing on Luxury Tax.");
-	player[turn].pay(100, 0);
+	addAlert(global_variables.player[turn].name + " paid $100 for landing on Luxury Tax.");
+	global_variables.player[turn].pay(100, 0);
 
 	$("#landed").show().text("You landed on Luxury Tax. Pay $100.");
 }
 
 function citytax() {
-	addAlert(player[turn].name + " paid $200 for landing on City Tax.");
-	player[turn].pay(200, 0);
+	addAlert(global_variables.player[turn].name + " paid $200 for landing on City Tax.");
+	global_variables.player[turn].pay(200, 0);
 
 	$("#landed").show().text("You landed on City Tax. Pay $200.");
 }
 
 function payeachplayer(amount, cause) {
-	var p = player[turn];
+	var p = global_variables.player[turn];
 	var total = 0;
 
-	for (var i = 1; i <= pcount; i++) {
+	for (var i = 1; i <= global_variables.pcount; i++) {
 		if (i != turn) {
-			player[i].money += amount;
+			global_variables.player[i].money += amount;
 			total += amount;
 			creditor = p.money >= 0 ? i : creditor;
 
@@ -50,18 +50,18 @@ function payeachplayer(amount, cause) {
 }
 
 function collectfromeachplayer(amount, cause) {
-	var p = player[turn];
+	var p = global_variables.player[turn];
 	var total = 0;
 
-	for (var i = 1; i <= pcount; i++) {
+	for (var i = 1; i <= global_variables.pcount; i++) {
 		if (i != turn) {
-			money = player[i].money;
+			money = global_variables.player[i].money;
 			if (money < amount) {
 				p.money += money;
 				total += money;
-				player[i].money = 0;
+				global_variables.player[i].money = 0;
 			} else {
-				player[i].pay(amount, turn);
+				global_variables.player[i].pay(amount, turn);
 				p.money += amount;
 				total += amount;
 			}
@@ -72,7 +72,7 @@ function collectfromeachplayer(amount, cause) {
 }
 
 function advance(destination, pass) {
-	var p = player[turn];
+	var p = global_variables.player[turn];
 
 	if (typeof pass === "number") {
 		if (p.position < pass) {
@@ -95,7 +95,7 @@ function advance(destination, pass) {
 }
 
 function advanceToNearestUtility() {
-	var p = player[turn];
+	var p = global_variables.player[turn];
 
 	if (p.position < 12) {
 		p.position = 12;
@@ -111,7 +111,7 @@ function advanceToNearestUtility() {
 }
 
 function advanceToNearestRailroad() {
-	var p = player[turn];
+	var p = global_variables.player[turn];
 
 	updatePosition();
 
@@ -129,12 +129,12 @@ function advanceToNearestRailroad() {
 }
 
 function gotojail() {
-	var p = player[turn];
+	var p = global_variables.player[global_variables.turn];
 	addAlert(p.name + " was sent directly to jail.");
 	document.getElementById("landed").innerHTML = "You are in jail.";
 
 	p.jail = true;
-	doublecount = 0;
+	global_variables.doublecount = 0;
 
 	document.getElementById("nextbutton").value = "End turn";
 	document.getElementById("nextbutton").title = "End turn and advance to the next player.";
@@ -153,7 +153,7 @@ function gotojail() {
 }
 
 function gobackthreespaces() {
-	var p = player[turn];
+	var p = global_variables.player[turn];
 
 	p.position -= 3;
 

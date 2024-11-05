@@ -1,4 +1,8 @@
+import global_variables from "./global_variables.js";
 import { AITest } from "../ai/fixed_policy.js";
+import { game, play } from "./game.js"
+import { Player } from "./player.js"
+import {playernumber_onchange, showStats} from "./html_functions.js" 
 // Overwrite an array with numbers from one to the array's length in a random order.
 Array.prototype.randomize = function(length) {
 	length = (length || this.length);
@@ -20,8 +24,8 @@ Array.prototype.randomize = function(length) {
 
 function reset_player() {
 	for (var i = 0; i <= 8; i++) {
-		player[i] = new Player("", "");
-		player[i].index = i;
+		global_variables.player[i] = new Player("", "");
+		global_variables.player[i].index = i;
 	}
 }
 
@@ -67,15 +71,15 @@ function init_random_cards(){
 }
 
 export function setup() {
-	pcount = parseInt(document.getElementById("playernumber").value, 10);
+	global_variables.pcount = parseInt(document.getElementById("playernumber").value, 10);
 
-	var playerArray = new Array(pcount);
+	var playerArray = new Array(global_variables.pcount);
 	var p;
 
 	playerArray.randomize();
 
-	for (var i = 1; i <= pcount; i++) {
-		p = player[playerArray[i - 1]];
+	for (var i = 1; i <= global_variables.pcount; i++) {
+		p = global_variables.player[playerArray[i - 1]];
 
 
 		p.color = document.getElementById("player" + i + "color").value.toLowerCase();
@@ -92,9 +96,9 @@ export function setup() {
 	$("#board, #moneybar").show();
 	$("#setup").hide();
 
-	if (pcount === 2) {
+	if (global_variables.pcount === 2) {
 		document.getElementById("stats").style.width = "454px";
-	} else if (pcount === 3) {
+	} else if (global_variables.pcount === 3) {
 		document.getElementById("stats").style.width = "686px";
 	}
 
@@ -105,19 +109,19 @@ export function setup() {
 }
 
 export function window_onload() {
-	game = new Game();
+	global_variables.game = new game();
 
 	reset_player()
 	init_groups()
 	init_random_cards()
 	AITest.count = 0
 
-	player[1].human = true;
-	player[0].name = "the bank";
+	global_variables.player[1].human = true;
+	global_variables.player[0].name = "the bank";
 	playernumber_onchange();
 
 	$("#playernumber").on("change", playernumber_onchange);
-	$("#nextbutton").click(game.next);
+	$("#nextbutton").click(global_variables.game.next);
 	$("#noscript").hide();
 	$("#setup, #noF5").show();
 
@@ -274,34 +278,34 @@ export function window_onload() {
 		var s = square[checkedProperty];
 
 		if (s.mortgage) {
-			if (player[s.owner].money < Math.round(s.price * 0.55)) {
-				popup("<p>You need $" + (Math.round(s.price * 0.55) - player[s.owner].money) + " more to unmortgage " + s.name + ".</p>");
+			if (global_variables.player[s.owner].money < Math.round(s.price * 0.55)) {
+				popup("<p>You need $" + (Math.round(s.price * 0.55) - global_variables.player[s.owner].money) + " more to unmortgage " + s.name + ".</p>");
 
 			} else {
-				popup("<p>" + player[s.owner].name + ", are you sure you want to unmortgage " + s.name + " for $" + Math.round(s.price * 0.55) + "?</p>", function() {
+				popup("<p>" + global_variables.player[s.owner].name + ", are you sure you want to unmortgage " + s.name + " for $" + Math.round(s.price * 0.55) + "?</p>", function() {
 					unmortgage(checkedProperty);
 				}, "Yes/No");
 			}
 		} else {
-			popup("<p>" + player[s.owner].name + ", are you sure you want to mortgage " + s.name + " for $" + Math.round(s.price * 0.5) + "?</p>", function() {
+			popup("<p>" + global_variables.player[s.owner].name + ", are you sure you want to mortgage " + s.name + " for $" + Math.round(s.price * 0.5) + "?</p>", function() {
 				mortgage(checkedProperty);
 			}, "Yes/No");
 		}
 
 	});
-	$("#buyhousebutton").on("click", function() {
+	$("#buyhousebutton").click(function() {
 		var checkedProperty = getCheckedProperty();
 		var s = square[checkedProperty];
-		var p = player[s.owner];
+		var p = global_variables.player[s.owner];
 		var houseSum = 0;
 		var hotelSum = 0;
 
 		if (p.money < s.houseprice) {
 			if (s.house === 4) {
-				popup("<p>You need $" + (s.houseprice - player[s.owner].money) + " more to buy a hotel for " + s.name + ".</p>");
+				popup("<p>You need $" + (s.houseprice - global_variables.player[s.owner].money) + " more to buy a hotel for " + s.name + ".</p>");
 				return;
 			} else {
-				popup("<p>You need $" + (s.houseprice - player[s.owner].money) + " more to buy a house for " + s.name + ".</p>");
+				popup("<p>You need $" + (s.houseprice - global_variables.player[s.owner].money) + " more to buy a house for " + s.name + ".</p>");
 				return;
 			}
 		}
@@ -343,5 +347,5 @@ export function window_onload() {
 		$("#manage").show();
 		$("#buy").hide();
 	});
-	$("#trade-menu-item").click(game.trade);
+	$("#trade-menu-item").click(global_variables.game.trade);
 };

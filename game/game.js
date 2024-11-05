@@ -1,9 +1,11 @@
 /**
  * Global actions related to the game
  */
+import global_variables from "./global_variables.js";
+import { addAlert, updateMoney, updateOwned, updatePosition } from "./html_functions.js";
 
 function roll() {
-	var p = player[turn];
+	var p = global_variables.player[global_variables.turn];
 
 	$("#option").hide();
 	$("#buy").show();
@@ -15,11 +17,11 @@ function roll() {
 	document.getElementById("nextbutton").value = "End turn";
 	document.getElementById("nextbutton").title = "End turn and advance to the next player.";
 
-	game.rollDice();
-	var die1 = game.getDie(1);
-	var die2 = game.getDie(2);
+	global_variables.game.rollDice();
+	var die1 = global_variables.game.getDie(1);
+	var die2 = global_variables.game.getDie(2);
 
-	doublecount++;
+	global_variables.doublecount++;
 
 	if (die1 == die2) {
 		addAlert(p.name + " rolled " + (die1 + die2) + " - doubles.");
@@ -30,14 +32,14 @@ function roll() {
 	if (die1 == die2 && !p.jail) {
 		updateDice(die1, die2);
 
-		if (doublecount < 3) {
+		if (global_variables.doublecount < 3) {
 			document.getElementById("nextbutton").value = "Roll again";
 			document.getElementById("nextbutton").title = "You threw doubles. Roll again.";
 
 		// If player rolls doubles three times in a row, send him to jail
-		} else if (doublecount === 3) {
+		} else if (global_variables.doublecount === 3) {
 			p.jail = true;
-			doublecount = 0;
+			global_variables.doublecount = 0;
 			addAlert(p.name + " rolled doubles three times in a row.");
 			updateMoney();
 
@@ -53,7 +55,7 @@ function roll() {
 	} else {
 		document.getElementById("nextbutton").value = "End turn";
 		document.getElementById("nextbutton").title = "End turn and advance to the next player.";
-		doublecount = 0;
+		global_variables.doublecount = 0;
 	}
 
 	updatePosition();
@@ -72,7 +74,7 @@ function roll() {
 			p.jail = false;
 			p.jailroll = 0;
 			p.position = 10 + die1 + die2;
-			doublecount = 0;
+			global_variables.doublecount = 0;
 
 			addAlert(p.name + " rolled doubles to get out of jail.");
 
@@ -83,7 +85,7 @@ function roll() {
 				if (p.human) {
 					popup("<p>You must pay the $50 fine.</p>", function() {
 						payfifty();
-						player[turn].position=10 + die1 + die2;
+						global_variables.player[global_variables.turn].position=10 + die1 + die2;
 						land();
 					});
 				} else {
@@ -96,7 +98,7 @@ function roll() {
 				document.getElementById("landed").innerHTML = "You are in jail.";
 
 				if (!p.human) {
-					popup(p.AI.alertList, game.next);
+					popup(p.AI.alertList, global_variables.game.next);
 					p.AI.alertList = "";
 				}
 			}
@@ -121,8 +123,8 @@ function roll() {
 }
 
 function updateDice() {
-	var die0 = game.getDie(1);
-	var die1 = game.getDie(2);
+	var die0 = global_variables.game.getDie(1);
+	var die1 = global_variables.game.getDie(2);
 
 	$("#die0").show();
 	$("#die1").show();
@@ -166,11 +168,11 @@ function updateDice() {
 function land(increasedRent) {
 	increasedRent = !!increasedRent; // Cast increasedRent to a boolean value. It is used for the ADVANCE TO THE NEAREST RAILROAD/UTILITY Chance cards.
 
-	var p = player[turn];
+	var p = global_variables.player[global_variables.turn];
 	var s = square[p.position];
 
-	var die1 = game.getDie(1);
-	var die2 = game.getDie(2);
+	var die1 = global_variables.game.getDie(1);
+	var die2 = global_variables.game.getDie(2);
 
 	$("#landed").show();
 	document.getElementById("landed").innerHTML = "You landed on " + s.name + ".";
@@ -190,11 +192,11 @@ function land(increasedRent) {
 		}
 
 
-		game.addPropertyToAuctionQueue(p.position);
+		global_variables.game.addPropertyToAuctionQueue(p.position);
 	}
 
 	// Collect rent
-	if (s.owner !== 0 && s.owner != turn && !s.mortgage) {
+	if (s.owner !== 0 && s.owner != global_variables.turn && !s.mortgage) {
 		var groupowned = true;
 		var rent;
 
@@ -253,12 +255,12 @@ function land(increasedRent) {
 			}
 		}
 
-		addAlert(p.name + " paid $" + rent + " rent to " + player[s.owner].name + ".");
+		addAlert(p.name + " paid $" + rent + " rent to " + global_variables.player[s.owner].name + ".");
 		p.pay(rent, s.owner);
-		player[s.owner].money += rent;
+		global_variables.player[s.owner].money += rent;
 
-		document.getElementById("landed").innerHTML = "You landed on " + s.name + ". " + player[s.owner].name + " collected $" + rent + " rent.";
-	} else if (s.owner > 0 && s.owner != turn && s.mortgage) {
+		document.getElementById("landed").innerHTML = "You landed on " + s.name + ". " + global_variables.player[s.owner].name + " collected $" + rent + " rent.";
+	} else if (s.owner > 0 && s.owner != global_variables.turn && s.mortgage) {
 		document.getElementById("landed").innerHTML = "You landed on " + s.name + ". Property is mortgaged; no rent was collected.";
 	}
 
@@ -299,14 +301,14 @@ function land(increasedRent) {
 }
 
 function buy() {
-	var p = player[turn];
+	var p = global_variables.player[global_variables.turn];
 	var property = square[p.position];
 	var cost = property.price;
 
 	if (p.money >= cost) {
 		p.pay(cost, 0);
 
-		property.owner = turn;
+		property.owner = global_variables.turn;
 		updateMoney();
 		addAlert(p.name + " bought " + property.name + " for " + property.pricetext + ".");
 
@@ -320,7 +322,7 @@ function buy() {
 }
 
 function chanceCommunityChest() {
-	var p = player[turn];
+	var p = global_variables.player[global_variables.turn];
 
 	// Community Chest
 	if (p.position === 2 || p.position === 17 || p.position === 33) {
@@ -364,29 +366,27 @@ function chanceCommunityChest() {
 			p.AI.alertList = "";
 
 			if (!p.AI.onLand()) {
-				game.next();
+				global_variables.game.next();
 			}
 		}
 	}
 }
 
 function communityChestAction(communityChestIndex) {
-	var p = player[turn]; // This is needed for reference in action() method.
+	var p = global_variables.player[global_variables.turn]; // This is needed for reference in action() method.
 
-	// $('#popupbackground').hide();
-	// $('#popupwrap').hide();
 	communityChestCards[communityChestIndex].action(p);
 
 	updateMoney();
 
 	if (communityChestIndex !== 15 && !p.human) {
 		p.AI.alertList = "";
-		game.next();
+		global_variables.game.next();
 	}
 }
 
 function chanceAction(chanceIndex) {
-	var p = player[turn]; // This is needed for reference in action() method.
+	var p = global_variables.player[global_variables.turn]; // This is needed for reference in action() method.
 
 	// $('#popupwrap').hide();
 	chanceCards[chanceIndex].action(p);
@@ -395,43 +395,44 @@ function chanceAction(chanceIndex) {
 
 	if (chanceIndex !== 15 && !p.human) {
 		p.AI.alertList = "";
-		game.next();
+		global_variables.game.next();
 	}
 }
 
-function play() {
-	if (game.auction()) {
+export function play() {
+	var p = global_variables.player[global_variables.turn];
+	if (global_variables.game.auction()) {
 		return;
 	}
 
-	turn++;
-	if (turn > pcount) {
-		turn -= pcount;
-		round++;
+	global_variables.turn++;
+	if (global_variables.turn > global_variables.pcount) {
+		global_variables.turn -= global_variables.pcount;
+		global_variables.round++;
 	}
 
-	if (round > Max_Num_Rounds){
+	if (global_variables.round > global_variables.Max_Num_Rounds){
 		var winner;
 		winning_amount = -0x7f;
-		for (var i = 0; i < pcount; i++){
-			if(player[i].money > winning_amount){
-				winner = player[i];
-				winning_amount = player[i].money;
+		for (var i = 0; i < global_variables.pcount; i++){
+			if(global_variables.player[i].money > winning_amount){
+				winner = global_variables.player[i];
+				winning_amount = global_variables.player[i].money;
 			} 
 		}
 		$("#control").hide();
 		$("#board").hide();
 		$("#refresh").show();
-		popup("<p>Max number of rounds reached. Congratulations, " +  winner.name + ", you have won the game.</p><div>");
-		return
+		popup("<p>Max number of rounds reached. Congratulations, " +  winner.name + ", you have won the global_variables.game.</p><div>");
+		reglobal_variables.turn
 	}
 
-	var p = player[turn];
-	game.resetDice();
+	var p = global_variables.player[global_variables.turn];
+	global_variables.game.resetDice();
 
 	document.getElementById("pname").innerHTML = p.name;
 
-	addAlert("Round " + round + ": It is " + p.name + "'s turn.");
+	addAlert("Round " + global_variables.round + ": It is " + p.name + "'s global_variables.turn.");
 
 	// Check for bankruptcy.
 	p.pay(0, p.creditor);
@@ -439,7 +440,7 @@ function play() {
 	$("#landed, #option, #manage").hide();
 	$("#board, #control, #moneybar, #viewstats, #buy").show();
 
-	doublecount = 0;
+	global_variables.doublecount = 0;
 	if (p.human) {
 		document.getElementById("nextbutton").focus();
 	}
@@ -460,12 +461,12 @@ function play() {
 		document.getElementById("nextbutton").title = "Roll the dice. If you throw doubles, you will get out of jail.";
 
 		if (p.jailroll === 0)
-			addAlert("This is " + p.name + "'s first turn in jail.");
+			addAlert("This is " + p.name + "'s first global_variables.turn in jail.");
 		else if (p.jailroll === 1)
-			addAlert("This is " + p.name + "'s second turn in jail.");
+			addAlert("This is " + p.name + "'s second global_variables.turn in jail.");
 		else if (p.jailroll === 2) {
 			document.getElementById("landed").innerHTML += "<div>NOTE: If you do not throw doubles after this roll, you <i>must</i> pay the $50 fine.</div>";
-			addAlert("This is " + p.name + "'s third turn in jail.");
+			addAlert("This is " + p.name + "'s third global_variables.turn in jail.");
 		}
 
 		if (!p.human && p.AI.postBail()) {
@@ -482,16 +483,16 @@ function play() {
 	updateOwned();
 
 	$(".money-bar-arrow").hide();
-	$("#p" + turn + "arrow").show();
+	$("#p" + global_variables.turn + "arrow").show();
 
 	if (!p.human) {
-		if (!p.AI.beforeTurn()) {
-			game.next();
+		if (!p.AI.beforeglobal_variables.turn()) {
+			global_variables.game.next();
 		}
 	}
 }
 
-function Game() {
+export function game() {
 	var die1;
 	var die2;
 	var areDiceRolled = false;
@@ -513,15 +514,16 @@ function Game() {
 	};
 
 	this.next = function() {
+		var p = global_variables.player[global_variables.turn];
 		if (!p.human && p.money < 0) {
 			p.AI.payDebt();
 
 			if (p.money < 0) {
-				popup("<p>" + p.name + " is bankrupt. All of its assets will be turned over to " + player[p.creditor].name + ".</p>", game.bankruptcy);
+				popup("<p>" + p.name + " is bankrupt. All of its assets will be global_variables.turned over to " + global_variables.player[p.creditor].name + ".</p>", global_variables.game.bankruptcy);
 			} else {
 				roll();
 			}
-		} else if (areDiceRolled && doublecount === 0) {
+		} else if (areDiceRolled && global_variables.doublecount === 0) {
 			play();
 		} else {
 			roll();
@@ -540,7 +542,7 @@ function Game() {
 	// Auction functions:
 
 	var finalizeAuction = function() {
-		var p = player[highestbidder];
+		var p = global_variables.player[highestbidder];
 		var sq = square[auctionproperty];
 
 		if (highestbid > 0) {
@@ -549,14 +551,14 @@ function Game() {
 			addAlert(p.name + " bought " + sq.name + " for $" + highestbid + ".");
 		}
 
-		for (var i = 1; i <= pcount; i++) {
-			player[i].bidding = true;
+		for (var i = 1; i <= global_variables.pcount; i++) {
+			global_variables.player[i].bidding = true;
 		}
 
 		$("#popupbackground").hide();
 		$("#popupwrap").hide();
 
-		if (!game.auction()) {
+		if (!global_variables.game.auction()) {
 			play();
 		}
 	};
@@ -575,24 +577,24 @@ function Game() {
 		var s = square[index];
 
 		if (s.price === 0 || s.owner !== 0) {
-			return game.auction();
+			return global_variables.game.auction();
 		}
 
 		auctionproperty = index;
 		highestbidder = 0;
 		highestbid = 0;
-		currentbidder = turn + 1;
+		currentbidder = global_variables.turn + 1;
 
-		if (currentbidder > pcount) {
-			currentbidder -= pcount;
+		if (currentbidder > global_variables.pcount) {
+			currentbidder -= global_variables.pcount;
 		}
 
-		popup("<div style='font-weight: bold; font-size: 16px; margin-bottom: 10px;'>Auction <span id='propertyname'></span></div><div>Highest Bid = $<span id='highestbid'></span> (<span id='highestbidder'></span>)</div><div><span id='currentbidder'></span>, it is your turn to bid.</div<div><input id='bid' title='Enter an amount to bid on " + s.name + ".' style='width: 291px;' /></div><div><input type='button' value='Bid' onclick='game.auctionBid();' title='Place your bid.' /><input type='button' value='Pass' title='Skip bidding this time.' onclick='game.auctionPass();' /><input type='button' value='Exit Auction' title='Stop bidding on " + s.name + " altogether.' onclick='if (confirm(\"Are you sure you want to stop bidding on this property altogether?\")) game.auctionExit();' /></div>", "blank");
+		popup("<div style='font-weight: bold; font-size: 16px; margin-bottom: 10px;'>Auction <span id='propertyname'></span></div><div>Highest Bid = $<span id='highestbid'></span> (<span id='highestbidder'></span>)</div><div><span id='currentbidder'></span>, it is your turn to bid.</div<div><input id='bid' title='Enter an amount to bid on " + s.name + ".' style='width: 291px;' /></div><div><input type='button' value='Bid' onclick='global_variables.game.auctionBid();' title='Place your bid.' /><input type='button' value='Pass' title='Skip bidding this time.' onclick='global_variables.game.auctionPass();' /><input type='button' value='Exit Auction' title='Stop bidding on " + s.name + " altogether.' onclick='if (confirm(\"Are you sure you want to stop bidding on this property altogether?\")) global_variables.game.auctionExit();' /></div>", "blank");
 
 		document.getElementById("propertyname").innerHTML = "<a href='javascript:void(0);' onmouseover='showdeed(" + auctionproperty + ");' onmouseout='hidedeed();' class='statscellcolor'>" + s.name + "</a>";
 		document.getElementById("highestbid").innerHTML = "0";
 		document.getElementById("highestbidder").innerHTML = "N/A";
-		document.getElementById("currentbidder").innerHTML = player[currentbidder].name;
+		document.getElementById("currentbidder").innerHTML = global_variables.player[currentbidder].name;
 		document.getElementById("bid").onkeydown = function (e) {
 			var key = 0;
 			var isCtrl = false;
@@ -613,7 +615,7 @@ function Game() {
 			}
 
 			if (key === 13) {
-				game.auctionBid();
+				global_variables.game.auctionBid();
 				return false;
 			}
 
@@ -639,8 +641,8 @@ function Game() {
 
 		updateMoney();
 
-		if (!player[currentbidder].human) {
-			currentbidder = turn; // auctionPass advances currentbidder.
+		if (!global_variables.player[currentbidder].human) {
+			currentbidder = global_variables.turn; // auctionPass advances currentbidder.
 			this.auctionPass();
 		}
 		return true;
@@ -654,15 +656,15 @@ function Game() {
 		while (true) {
 			currentbidder++;
 
-			if (currentbidder > pcount) {
-				currentbidder -= pcount;
+			if (currentbidder > global_variables.pcount) {
+				currentbidder -= global_variables.pcount;
 			}
 
 			if (currentbidder == highestbidder) {
 				finalizeAuction();
 				return;
-			} else if (player[currentbidder].bidding) {
-				var p = player[currentbidder];
+			} else if (global_variables.player[currentbidder].bidding) {
+				var p = global_variables.player[currentbidder];
 
 				if (!p.human) {
 					var bid = p.AI.bid(auctionproperty, highestbid);
@@ -687,7 +689,7 @@ function Game() {
 
 		}
 
-		document.getElementById("currentbidder").innerHTML = player[currentbidder].name;
+		document.getElementById("currentbidder").innerHTML = global_variables.player[currentbidder].name;
 		document.getElementById("bid").value = "";
 		document.getElementById("bid").style.color = "black";
 	};
@@ -703,18 +705,18 @@ function Game() {
 			document.getElementById("bid").style.color = "red";
 		} else {
 
-			if (bid > player[currentbidder].money) {
+			if (bid > global_variables.player[currentbidder].money) {
 				document.getElementById("bid").value = "You don't have enough money to bid $" + bid + ".";
 				document.getElementById("bid").style.color = "red";
 			} else if (bid > highestbid) {
 				highestbid = bid;
 				document.getElementById("highestbid").innerHTML = parseInt(bid, 10);
 				highestbidder = currentbidder;
-				document.getElementById("highestbidder").innerHTML = player[highestbidder].name;
+				document.getElementById("highestbidder").innerHTML = global_variables.player[highestbidder].name;
 
 				document.getElementById("bid").focus();
 
-				if (player[currentbidder].human) {
+				if (global_variables.player[currentbidder].human) {
 					this.auctionPass();
 				}
 			} else {
@@ -725,7 +727,7 @@ function Game() {
 	};
 
 	this.auctionExit = function() {
-		player[currentbidder].bidding = false;
+		global_variables.player[currentbidder].bidding = false;
 		this.auctionPass();
 	};
 
@@ -1046,22 +1048,22 @@ function Game() {
 
 		currentName = document.getElementById("trade-rightp-name");
 
-		if (allowRecipientToBeChanged && pcount > 2) {
+		if (allowRecipientToBeChanged && global_variables.pcount > 2) {
 			// Empty element.
 			while (currentName.lastChild) {
 				currentName.removeChild(currentName.lastChild);
 			}
 
 			nameSelect = currentName.appendChild(document.createElement("select"));
-			for (var i = 1; i <= pcount; i++) {
+			for (var i = 1; i <= global_variables.pcount; i++) {
 				if (i === initiator.index) {
 					continue;
 				}
 
 				currentOption = nameSelect.appendChild(document.createElement("option"));
 				currentOption.value = i + "";
-				currentOption.style.color = player[i].color;
-				currentOption.textContent = player[i].name;
+				currentOption.style.color = global_variables.player[i].color;
+				currentOption.textContent = global_variables.player[i].name;
 
 				if (i === recipient.index) {
 					currentOption.selected = "selected";
@@ -1069,7 +1071,7 @@ function Game() {
 			}
 
 			nameSelect.onchange = function() {
-				resetTrade(currentInitiator, player[parseInt(this.value, 10)], true);
+				resetTrade(currentInitiator, global_variables.player[parseInt(this.value, 10)], true);
 			};
 
 			nameSelect.title = "Select a player to trade with.";
@@ -1198,8 +1200,8 @@ function Game() {
 			writeTrade(tradeObj);
 			this.proposeTrade();
 		} else {
-			var initiator = player[turn];
-			var recipient = turn === 1 ? player[2] : player[1];
+			var initiator = global_variables.player[global_variables.turn];
+			var recipient = global_variables.turn === 1 ? global_variables.player[2] : global_variables.player[1];
 
 			currentInitiator = initiator;
 			currentRecipient = recipient;
@@ -1214,9 +1216,9 @@ function Game() {
 		$("#trade").hide();
 
 
-		if (!player[turn].human) {
-			player[turn].AI.alertList = "";
-			game.next();
+		if (!global_variables.player[global_variables.turn].human) {
+			global_variables.player[global_variables.turn].AI.alertList = "";
+			global_variables.game.next();
 		}
 
 	};
@@ -1334,9 +1336,9 @@ function Game() {
 		$("#control").show();
 		$("#trade").hide();
 
-		if (!player[turn].human) {
-			player[turn].AI.alertList = "";
-			game.next();
+		if (!global_variables.player[global_variables.turn].human) {
+			global_variables.player[global_variables.turn].AI.alertList = "";
+			global_variables.game.next();
 		}
 	};
 
@@ -1425,11 +1427,11 @@ function Game() {
 
 	// Bankrupcy functions:
 	this.eliminatePlayer = function() {
-		var p = player[turn];
+		var p = global_variables.player[global_variables.turn];
 
-		for (var i = p.index; i < pcount; i++) {
-			player[i] = player[i + 1];
-			player[i].index = i;
+		for (var i = p.index; i < global_variables.pcount; i++) {
+			global_variables.player[i] = global_variables.player[i + 1];
+			global_variables.player[i].index = i;
 		}
 
 		for (var i = 0; i < 40; i++) {
@@ -1438,16 +1440,16 @@ function Game() {
 			}
 		}
 
-		pcount--;
-		turn--;
+		global_variables.pcount--;
+		global_variables.turn--;
 
-		if (pcount === 2) {
+		if (global_variables.pcount === 2) {
 			document.getElementById("stats").style.width = "454px";
-		} else if (pcount === 3) {
+		} else if (global_variables.pcount === 3) {
 			document.getElementById("stats").style.width = "686px";
 		}
 
-		if (pcount === 1) {
+		if (global_variables.pcount === 1) {
 			updateMoney();
 			$("#control").hide();
 			$("#board").hide();
@@ -1463,7 +1465,7 @@ function Game() {
 			// }
 			// document.getElementById("refresh").innerHTML += "<br><br><div><textarea type='text' style='width: 980px;' onclick='javascript:select();' />" + text + "</textarea></div>";
 
-			popup("<p>Congratulations, " + player[1].name + ", you have won the game.</p><div>");
+			popup("<p>Congratulations, " + global_variables.player[1].name + ", you have won the game.</p><div>");
 
 		} else {
 			play();
@@ -1471,14 +1473,14 @@ function Game() {
 	};
 
 	this.bankruptcyUnmortgage = function() {
-		var p = player[turn];
+		var p = global_variables.player[global_variables.turn];
 
 		if (p.creditor === 0) {
-			game.eliminatePlayer();
+			global_variables.game.eliminatePlayer();
 			return;
 		}
 
-		var HTML = "<p>" + player[p.creditor].name + ", you may unmortgage any of the following properties, interest free, by clicking on them. Click OK when finished.</p><table>";
+		var HTML = "<p>" + global_variables.player[p.creditor].name + ", you may unmortgage any of the following properties, interest free, by clicking on them. Click OK when finished.</p><table>";
 		var price;
 
 		for (var i = 0; i < 40; i++) {
@@ -1495,7 +1497,7 @@ function Game() {
 				}
 
 				// Player already paid interest, so they can unmortgage for the mortgage price.
-				HTML += "' onmouseover='showdeed(" + i + ");' onmouseout='hidedeed();'></td><td class='propertycellname'><a href='javascript:void(0);' title='Unmortgage " + sq.name + " for $" + price + ".' onclick='if (" + price + " <= player[" + p.creditor + "].money) {player[" + p.creditor + "].pay(" + price + ", 0); square[" + i + "].mortgage = false; addAlert(\"" + player[p.creditor].name + " unmortgaged " + sq.name + " for $" + price + ".\");} this.parentElement.parentElement.style.display = \"none\";'>Unmortgage " + sq.name + " ($" + price + ")</a></td></tr>";
+				HTML += "' onmouseover='showdeed(" + i + ");' onmouseout='hidedeed();'></td><td class='propertycellname'><a href='javascript:void(0);' title='Unmortgage " + sq.name + " for $" + price + ".' onclick='if (" + price + " <= global_variables.player[" + p.creditor + "].money) {global_variables.player[" + p.creditor + "].pay(" + price + ", 0); square[" + i + "].mortgage = false; addAlert(\"" + global_variables.player[p.creditor].name + " unmortgaged " + sq.name + " for $" + price + ".\");} this.parentElement.parentElement.style.display = \"none\";'>Unmortgage " + sq.name + " ($" + price + ")</a></td></tr>";
 
 				sq.owner = p.creditor;
 
@@ -1504,16 +1506,16 @@ function Game() {
 
 		HTML += "</table>";
 
-		popup(HTML, game.eliminatePlayer);
+		popup(HTML, global_variables.game.eliminatePlayer);
 	};
 
 	this.resign = function() {
-		popup("<p>Are you sure you want to resign?</p>", game.bankruptcy, "Yes/No");
+		popup("<p>Are you sure you want to resign?</p>", global_variables.game.bankruptcy, "Yes/No");
 	};
 
 	this.bankruptcy = function() {
-		var p = player[turn];
-		var pcredit = player[p.creditor];
+		var p = global_variables.player[global_variables.turn];
+		var pcredit = global_variables.player[p.creditor];
 		var bankruptcyUnmortgageFee = 0;
 
 
@@ -1547,7 +1549,7 @@ function Game() {
 
 				if (p.creditor === 0) {
 					sq.mortgage = false;
-					game.addPropertyToAuctionQueue(i);
+					global_variables.game.addPropertyToAuctionQueue(i);
 					sq.owner = 0;
 				}
 			}
@@ -1565,11 +1567,11 @@ function Game() {
 			pcredit.communityChestJailCard = true;
 		}
 
-		if (pcount === 2 || bankruptcyUnmortgageFee === 0 || p.creditor === 0) {
-			game.eliminatePlayer();
+		if (global_variables.pcount === 2 || bankruptcyUnmortgageFee === 0 || p.creditor === 0) {
+			global_variables.game.eliminatePlayer();
 		} else {
 			addAlert(pcredit.name + " paid $" + bankruptcyUnmortgageFee + " interest on the mortgaged properties received from " + p.name + ".");
-			popup("<p>" + pcredit.name + ", you must pay $" + bankruptcyUnmortgageFee + " interest on the mortgaged properties you received from " + p.name + ".</p>", function() {player[pcredit.index].pay(bankruptcyUnmortgageFee, 0); game.bankruptcyUnmortgage();});
+			popup("<p>" + pcredit.name + ", you must pay $" + bankruptcyUnmortgageFee + " interest on the mortgaged properties you received from " + p.name + ".</p>", function() {global_variables.player[pcredit.index].pay(bankruptcyUnmortgageFee, 0); global_variables.game.bankruptcyUnmortgage();});
 		}
 	};
 

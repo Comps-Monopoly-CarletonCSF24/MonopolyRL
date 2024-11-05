@@ -1,5 +1,8 @@
 // This is the player signiture. 
-function Player(name, color) {
+import global_variables from "./global_variables.js";
+import { updateMoney, updateOwned, updatePosition } from "./html_functions.js";
+
+export function Player(name, color) {
 	this.name = name;
 	this.color = color;
 	this.position = 0;
@@ -43,7 +46,7 @@ function streetrepairs(houseprice, hotelprice) {
 		}
 	}
 
-	var p = player[turn];
+	var p = global_variables.player[global_variables.turn];
 
 	if (cost > 0) {
 		p.pay(cost, 0);
@@ -59,13 +62,13 @@ function streetrepairs(houseprice, hotelprice) {
 }
 
 function payfifty() {
-	var p = player[turn];
+	var p = global_variables.player[turn];
 
 	document.getElementById("jail").style.border = '1px solid black';
 	document.getElementById("cell11").style.border = '2px solid ' + p.color;
 
 	$("#landed").hide();
-	doublecount = 0;
+	global_variables.doublecount = 0;
 
 	p.jail = false;
 	p.jailroll = 0;
@@ -78,7 +81,7 @@ function payfifty() {
 }
 
 function useJailCard() {
-	var p = player[turn];
+	var p = global_variables.player[turn];
 
 	document.getElementById("jail").style.border = '1px solid black';
 	document.getElementById("cell11").style.border = '2px solid ' + p.color;
@@ -89,7 +92,7 @@ function useJailCard() {
 
 	p.position = 10;
 
-	doublecount = 0;
+	global_variables.doublecount = 0;
 
 	if (p.communityChestJailCard) {
 		p.communityChestJailCard = false;
@@ -122,7 +125,7 @@ function useJailCard() {
 
 function buyHouse(index) {
 	var sq = square[index];
-	var p = player[sq.owner];
+	var p = global_variables.player[sq.owner];
 	var houseSum = 0;
 	var hotelSum = 0;
 
@@ -171,7 +174,7 @@ function buyHouse(index) {
 
 function sellHouse(index) {
 	sq = square[index];
-	p = player[sq.owner];
+	p = global_variables.player[sq.owner];
 
 	if (sq.hotel === 1) {
 		sq.hotel = 0;
@@ -189,7 +192,7 @@ function sellHouse(index) {
 
 function mortgage(index) {
 	var sq = square[index];
-	var p = player[sq.owner];
+	var p = global_variables.player[sq.owner];
 
 	if (sq.house > 0 || sq.hotel > 0 || sq.mortgage) {
 		return false;
@@ -213,7 +216,7 @@ function mortgage(index) {
 
 function unmortgage(index) {
 	var sq = square[index];
-	var p = player[sq.owner];
+	var p = global_variables.player[sq.owner];
 	var unmortgagePrice = Math.round(sq.price * 0.55);
 	var mortgagePrice = Math.round(sq.price * 0.5);
 
