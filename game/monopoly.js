@@ -17,7 +17,6 @@ Array.prototype.randomize = function(length) {
 	}
 };
 
-
 function init_player() {
 	for (var i = 0; i <= 8; i++) {
 		player[i] = new Player("", "");
