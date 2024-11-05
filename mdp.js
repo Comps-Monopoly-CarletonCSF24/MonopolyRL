@@ -31,5 +31,4 @@ class MDP{
     get_goal_states(){  //Return all goal states of this MDP
         return;
     }
-
 }

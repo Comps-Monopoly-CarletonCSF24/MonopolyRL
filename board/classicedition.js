@@ -54,19 +54,7 @@ function transtext() {
 	return '<div style="font-size: 14px; line-height: 1.5;">Rent<span style="float: right;">$25.</span><br />If 2 Railroads are owned<span style="float: right;">50.</span><br />If 3 &nbsp; &nbsp; " &nbsp; &nbsp; " &nbsp; &nbsp; "<span style="float: right;">100.</span><br />If 4 &nbsp; &nbsp; " &nbsp; &nbsp; " &nbsp; &nbsp; "<span style="float: right;">200.</span></div>';
 }
 
-function luxurytax() {
-	addAlert(player[turn].name + " paid $100 for landing on Luxury Tax.");
-	player[turn].pay(100, 0);
 
-	$("#landed").show().text("You landed on Luxury Tax. Pay $100.");
-}
-
-function citytax() {
-	addAlert(player[turn].name + " paid $200 for landing on City Tax.");
-	player[turn].pay(200, 0);
-
-	$("#landed").show().text("You landed on City Tax. Pay $200.");
-}
 
 var square = [];
 
