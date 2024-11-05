@@ -1,5 +1,3 @@
-
-
 class QLearningAgent {
     constructor(actions) {
         this.qTable = {};

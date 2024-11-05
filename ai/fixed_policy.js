@@ -4,8 +4,7 @@ var ToggleTrade = false;
 // The purpose of this AI is not to be a relistic opponant, but to give an example of a vaild AI player.
 // This is an implementation of the fixed agent
 // The p is player
-square
-function AITest(p) {0
+export function AITest(p) {
 	this.alertList = "";
 	// This variable is static, it is not related to each instance.
 	this.constructor.count++;

@@ -1,3 +1,4 @@
+import { AITest } from "../ai/fixed_policy.js";
 // Overwrite an array with numbers from one to the array's length in a random order.
 Array.prototype.randomize = function(length) {
 	length = (length || this.length);
@@ -17,7 +18,7 @@ Array.prototype.randomize = function(length) {
 	}
 };
 
-function init_player() {
+function reset_player() {
 	for (var i = 0; i <= 8; i++) {
 		player[i] = new Player("", "");
 		player[i].index = i;
@@ -65,7 +66,7 @@ function init_random_cards(){
 	communityChestCards.deck.sort(function() {return Math.random() - 0.5;});
 }
 
-function setup() {
+export function setup() {
 	pcount = parseInt(document.getElementById("playernumber").value, 10);
 
 	var playerArray = new Array(pcount);
@@ -103,14 +104,13 @@ function setup() {
 	play();
 }
 
-window.onload = function() {
+export function window_onload() {
 	game = new Game();
 
-	init_player()
+	reset_player()
 	init_groups()
 	init_random_cards()
-
-	AITest.count = 0;
+	AITest.count = 0
 
 	player[1].human = true;
 	player[0].name = "the bank";
@@ -171,28 +171,19 @@ window.onload = function() {
 		document.getElementById("enlarge" + i + "price").textContent = s.pricetext;
 	}
 
-
 	// Add images to enlarges.
 	document.getElementById("enlarge0token").innerHTML += '<img src="images/arrow_icon.png" height="40" width="136" alt="" />';
 	document.getElementById("enlarge20price").innerHTML += "<img src='images/free_parking_icon.png' height='80' width='72' alt='' style='position: relative; top: -20px;' />";
 	document.getElementById("enlarge38token").innerHTML += '<img src="images/tax_icon.png" height="60" width="70" alt="" style="position: relative; top: -20px;" />';
-
 	corrections();
-
 	// Jail corrections
 	$("<div>", {id: "jailpositionholder" }).appendTo("#jail");
 	$("<span>").text("Jail").appendTo("#jail");
-
 	document.getElementById("jail").enlargeId = "enlarge40";
-
 	document.getElementById("enlarge-wrap").innerHTML += "<div id='enlarge40' class='enlarge'><div id='enlarge40color' class='enlarge-color'></div><br /><div id='enlarge40name' class='enlarge-name'>Jail</div><br /><div id='enlarge40price' class='enlarge-price'><img src='images/jake_icon.png' height='80' width='80' alt='' style='position: relative; top: -20px;' /></div><br /><div id='enlarge40token' class='enlarge-token'></div></div>";
-
 	document.getElementById("enlarge40name").innerHTML = "Jail";
-
 	// Create event handlers for hovering and draging.
-
 	var drag, dragX, dragY, dragObj, dragTop, dragLeft;
-
 	$(".cell-position-holder, #jail").on("mouseover", function(){
 		$("#" + this.enlargeId).show();
 
@@ -210,8 +201,6 @@ window.onload = function() {
 
 		element.style.left = (e.clientX + 10) + "px";
 	});
-
-
 	$("body").on("mousemove", function(e) {
 		var object;
 
@@ -242,8 +231,6 @@ window.onload = function() {
 			}
 		}
 	});
-
-
 	$("body").on("mouseup", function() {
 
 		drag = false;
@@ -265,7 +252,6 @@ window.onload = function() {
 
 		drag = true;
 	};
-
 	document.getElementById("popupdrag").onmousedown = function(e) {
 		dragObj = document.getElementById("popup");
 		dragObj.style.position = "relative";
@@ -283,7 +269,6 @@ window.onload = function() {
 
 		drag = true;
 	};
-
 	$("#mortgagebutton").click(function() {
 		var checkedProperty = getCheckedProperty();
 		var s = square[checkedProperty];
@@ -304,7 +289,6 @@ window.onload = function() {
 		}
 
 	});
-
 	$("#buyhousebutton").on("click", function() {
 		var checkedProperty = getCheckedProperty();
 		var s = square[checkedProperty];
@@ -341,7 +325,6 @@ window.onload = function() {
 		buyHouse(checkedProperty);
 
 	});
-
 	$("#sellhousebutton").click(function() { sellHouse(getCheckedProperty()); });
 
 	$("#viewstats").on("click", showStats);
@@ -349,7 +332,6 @@ window.onload = function() {
 		$("#statswrap").hide();
 		$("#statsbackground").fadeOut(400);
 	});
-
 	$("#buy-menu-item").click(function() {
 		$("#buy").show();
 		$("#manage").hide();
@@ -357,15 +339,9 @@ window.onload = function() {
 		// Scroll alerts to bottom.
 		$("#alert").scrollTop($("#alert").prop("scrollHeight"));
 	});
-
-
 	$("#manage-menu-item").click(function() {
 		$("#manage").show();
 		$("#buy").hide();
 	});
-
-
 	$("#trade-menu-item").click(game.trade);
-
-
 };

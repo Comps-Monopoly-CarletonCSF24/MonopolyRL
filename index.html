@@ -14,8 +14,15 @@
 	<script type="text/javascript" src="./game/game.js"></script>
 	<script type="text/javascript" src="./game/player.js"></script>
 	<script type="text/javascript" src="./game/trade.js"></script>
-	<script type="text/javascript" src="./ai/fixed_policy.js"></script>
-	<script type="text/javascript" src="./game/monopoly.js"></script>
+	<script type="module" src="./game/monopoly.js"></script>
+	<script type="module">
+		import {window_onload, setup} from"./game/monopoly.js"
+		window.onload = window_onload()	
+		var button = document.getElementById("startbutton");
+		button.addEventListener("click", () => {
+			setup();
+		});
+	</script>
 	<link rel="stylesheet" type="text/css" href="styles.css" />
 </head>
 
@@ -468,8 +475,8 @@
 			</select>
 		</div>
 
-		<div style="margin: 20px 0px;">
-			<input type="button" value="Start Game" onclick="setup();" title="Begin playing." />
+		<div id = startbutton style="margin: 20px 0px;">
+			<input type="button" value="Start Game" title="Begin playing." />
 		</div>
 
 		<div id="noF5">Note: Refreshing this page or navigating away from it may end your game without warning.</div>
