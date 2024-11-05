@@ -2707,17 +2707,16 @@ function menuitem_onmouseout(element) {
 	return;
 }
 
-window.onload = function() {
-	game = new Game();
-
+function init_player() {
 	for (var i = 0; i <= 8; i++) {
 		player[i] = new Player("", "");
 		player[i].index = i;
 	}
+}
 
+function init_groups(){
 	var groupPropertyArray = [];
 	var groupNumber;
-
 	for (var i = 0; i < 40; i++) {
 		groupNumber = square[i].groupNumber;
 
@@ -2729,7 +2728,6 @@ window.onload = function() {
 			groupPropertyArray[groupNumber].push(i);
 		}
 	}
-
 	for (var i = 0; i < 40; i++) {
 		groupNumber = square[i].groupNumber;
 
@@ -2739,12 +2737,9 @@ window.onload = function() {
 
 		square[i].index = i;
 	}
+}
 
-	AITest.count = 0;
-
-	player[1].human = true;
-	player[0].name = "the bank";
-
+function init_random_cards(){
 	communityChestCards.index = 0;
 	chanceCards.index = 0;
 
@@ -2755,14 +2750,24 @@ window.onload = function() {
 		chanceCards.deck[i] = i;
 		communityChestCards.deck[i] = i;
 	}
-
 	// Shuffle Chance and Community Chest decks.
 	chanceCards.deck.sort(function() {return Math.random() - 0.5;});
 	communityChestCards.deck.sort(function() {return Math.random() - 0.5;});
+}
+window.onload = function() {
+	game = new Game();
 
-	$("#playernumber").on("change", playernumber_onchange);
+	init_player()
+	init_groups()
+	init_random_cards()
+
+	AITest.count = 0;
+
+	player[1].human = true;
+	player[0].name = "the bank";
 	playernumber_onchange();
 
+	$("#playernumber").on("change", playernumber_onchange);
 	$("#nextbutton").click(game.next);
 	$("#noscript").hide();
 	$("#setup, #noF5").show();
