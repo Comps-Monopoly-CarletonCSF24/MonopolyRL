@@ -9,8 +9,6 @@ from classes.board import Board
 from classes.dice import Dice
 from classes.log import Log
 
-
-
 def monopoly_game(data_for_simulation):
     ''' Simulation of one game.
     For convenience to set up a multi-thread,

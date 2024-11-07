@@ -86,7 +86,6 @@ class Player:
         log.add(f"=== Player {self.name} (${self.money}, " +
                 f"at {board.cells[self.position].name}) goes: ===")
 
-
         # Things to do before the throwing of the dice:
         # Trade with other players. Keep trading until no trades are possible
         while self.do_a_two_way_trade(players, board, log):
@@ -98,7 +97,6 @@ class Player:
 
         # Improve all properties that can be improved
         self.improve_properties(board, log)
-
 
         # The move itself:
         # Player rolls the dice
@@ -123,7 +121,6 @@ class Player:
         # Get the correct position, if we passed GO
         self.position %= 40
         log.add(f"Player {self.name} goes to: {board.cells[self.position].name}")
-
 
         # Handle various types of cells player may land on
 
@@ -187,7 +184,6 @@ class Player:
         else:
             self.had_doubles = 0
 
-
     def handle_salary(self, board, log):
         ''' Adding Salary to the player's money, according to the game's settings
         '''
@@ -202,7 +198,6 @@ class Player:
         self.in_jail = True
         self.had_doubles = 0
         self.days_in_jail = 0
-
 
     def handle_being_in_jail(self, dice_roll_is_double, board, log):
         ''' Handle player being in Jail
@@ -239,7 +234,6 @@ class Player:
             self.days_in_jail  += 1
             return True
         return False
-
 
     def handle_chance(self, board, players, log):
         ''' Draw and act on a Chance card
@@ -351,7 +345,6 @@ class Player:
 
         return ""
 
-
     def handle_community_chest(self, board, players, log):
         ''' Draw and act on a Community Chest card
         Return True if the move should be over (go to jail)
@@ -440,7 +433,6 @@ class Player:
 
         return ""
 
-
     def handle_income_tax(self, board, log):
         ''' Handle Income tax: choose which option
         (fix or %) is less money and go with it
@@ -457,7 +449,6 @@ class Player:
             log.add(f"{self} pays {GameSettings.income_tax_percentage * 100:.0f}% " +
                     f"Income tax {tax_to_pay}")
         self.pay_money(tax_to_pay, "bank", board, log)
-
 
     def handle_landing_on_property(self, board, players, dice, log):
         ''' Landing on property: either buy it or pay rent
@@ -539,7 +530,6 @@ class Player:
                 self.pay_money(rent_amount, landed_property.owner, board, log)
                 if not self.is_bankrupt:
                     log.add(f"{self} pays {landed_property.owner} rent ${rent_amount}")
-
 
     def improve_properties(self, board, log):
         ''' While there is money to spend and properties to improve,
@@ -876,7 +866,6 @@ class Player:
             if len(owned_by_others) == 1:
                 self.wants_to_buy.add(owned_by_others[0])
 
-
     def do_a_two_way_trade(self, players, board, log):
         ''' Look for and perform a two-way trade
         '''
@@ -933,11 +922,9 @@ class Player:
                         player_receives = remove_by_color(player_receives, questionable_color)
                         player_gives = remove_by_color(player_gives, questionable_color)
 
-
             # Sort, starting from the most expensive
             player_receives.sort(key=lambda x: -x.cost_base)
             player_gives.sort(key=lambda x: -x.cost_base)
-
 
             # Check the difference in value and make sure it is not larger that player's preference
             while player_gives and player_receives:
