@@ -3,7 +3,7 @@ from board import Board
 from log import Log
 import numpy as np
 
-class state:
+class State:
     '''
     To represent Monopoly as a MDP we first represent the full set of
     knowledge a real human player would have, as the (observed) state
@@ -44,45 +44,59 @@ class state:
     '''    
     groups = ['Brown', 'Railroads', 'Lightblue', 'Pink', 'Utilities', 'Orange', 'Red', 'Yellow', 'Green' , 'Indigo']
     players = ['Self', 'Other']
+    
     area = np.zeros((2, 10))
     position = 0
-    finance = np.zeros((2, 10))    
-
+    finance = np.zeros(2)    
+    state = np.zeros(23)
+    
     def __init__ (self, player: Player, board):
-        self.area = get_area(board)
-        self.position = get_position(player.position)
-        self.finance = get_finance(player.properties)
-        self.state = consolidate_state_vectors(self.area, self.position, self.finance)
+        self.get_area(board)
+        self.get_position(player.position)
+        self.get_finance(player.properties)
+        self.consolidate_state_vectors(self.area, self.position, self.finance)
 
-def get_area (board :Board) -> np.ndarray:
-    area_array = []
-    
-    return np.array(area_array)
+    def get_area (self, board :Board, player: Player) -> np.ndarray:
+        """Reads the board for properties belonging to the agent and other players.
 
-def get_position(position_int : int) -> float:
-    """Converts a position in [0,39] to one in [0,1]
-    
-    Args:
-        position_int (int): _description_
-    """
-    position_float = (position_int + 1) / 40
-    return position_float
+        Args:
+            board (Board): _description_
 
-    
-def get_finance(money: float, properties: list) -> np.ndarray:
-    """Gets the finance state vector from the player's money and properties
+        Returns:
+            np.ndarray: _description_
+        """
+        area_array = []
+        
+        self.area = np.array(area_array)
 
-    Args:
-        money (_type_): _description_
-        properties (_type_): _description_
-    """
-    
-def consolidate_state_vectors(area, position, finance) -> np.ndarray:
-    """converts the 3 vectors/lists into a new, 1-dimentional vector.
+    def get_position(self, position_int : int) -> float:
+        """Converts a position in [0,39] to one in [0,1]
+        
+        Args:
+            position_int (int): _description_
+        """
+        position_float = (position_int + 1) / 40
+        self.position = position_float
 
-    Args:
-        area (_type_): _description_
-        position (_type_): _description_
-        finance (_type_): _description_
-    """
-    
+        
+    def get_finance(self, money: float, properties: list) -> np.ndarray:
+        """Gets the finance state vector from the player's money and properties
+
+        Args:
+            money (_type_): _description_
+            properties (_type_): _description_
+        """
+        self.finance = np.zeros(2) 
+        
+    def consolidate_state_vectors(self) -> np.ndarray:
+        """converts the 3 vectors/integers into a new, 1*23 vector.
+
+        Args:
+            area (_type_): _description_
+            position (_type_): _description_
+            finance (_type_): _description_
+        """
+        # Flatten the 2x10 area array to 1x20
+        flattened_area = self.area.flatten()
+        # Combine all into a 1x23 array
+        self.state  = np.concatenate((flattened_area, [self.position], self.finance))
