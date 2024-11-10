@@ -1,62 +1,31 @@
 from player import Player
-from board import Board
+from board import Board, Property, Cell
 from log import Log
 import numpy as np
 
-class State:
-    '''
-    To represent Monopoly as a MDP we first represent the full set of
-    knowledge a real human player would have, as the (observed) state
-    of the agent. We formulate the state st as a 3-dimensional vector of
-    objects containing information about the game’s area, position and
-    finance current status at time t.
-    The area object, contains information about the game’s properties, 
-    meaning the properties possessed from the current player and
-    his opponents at time t. More specifically, it is a 10×2 matrix where
-    the first column represents the agent-player, the second the rest of
-    its opponents and each row corresponds to one of the game’s colourgroups 
-    (8 property groups, the group of all utilities and the group of all rail-roads). 
-    Each element (x,y) specifies the percentage that the 
-    player y owns from group x, where value 0 indicates that the player
-    does not own anything and 1 that at least one hotel has been built.
-    
-    The position variable determines the player’s current position on
-    the board in relation to its colour-group, scaled to [0,1] e.g. If the
-    player is in the fourth colour group this value would be 0.4.
-    
-    The finance vector consists of 2 values, specifying the current
-    player’s number of properties in comparison to those of his opponents’ 
-    as well as a calculation of his current amount of money.
-    Specifically concerning the first value, given players a, b and c and
-    the number of properties they own as pa, pb, pc it will be pa
-    pa+pb+pc. For the second value, since the maximum amount of money owned
-    by a player, x, varies significantly, the corresponding variable is
-    transformed to a bounded one with the use of the sigmoid function
-    f(x) = x_1+|x|.
-    
-    A sample state s at a given time t would be as follows :
-    st = {0.3529, 0, 0, 0.2352, 0, 0, ..., 0, 0.6543, 0.3319, 0.3432}
-    where the first 20 values represent the area vector, the next one the
-    player’s position on board and the last 2 the player’s current financial
-    status. In this specific example, the player has completed 0.3529%
-    of the maximum available development (building) in area 0, and his
-    current financial status is equal to 0.3432.
-    '''    
-    groups = ['Brown', 'Railroads', 'Lightblue', 'Pink', 'Utilities', 'Orange', 'Red', 'Yellow', 'Green' , 'Indigo']
-    players = ['Self', 'Other']
-    
-    area = np.zeros((2, 10))
-    position = 0
-    finance = np.zeros(2)    
-    state = np.zeros(23)
-    
-    def __init__ (self, player: Player, board):
-        self.get_area(board)
-        self.get_position(player.position)
-        self.get_finance(player.properties)
-        self.consolidate_state_vectors(self.area, self.position, self.finance)
+property_by_group_zeros = {'Brown': 0, 'Railroads': 0, 'Lightblue':0, 
+                        'Pink': 0, 'Utilities': 0, 'Orange': 0,
+                        'Red': 0, 'Yellow': 0, 'Green': 0, 'Indigo': 0}
+num_property_per_group = {'Brown': 2, 'Railroads': 4, 'Lightblue': 3, 
+                        'Pink': 3, 'Utilities': 4, 'Orange': 3,
+                        'Red': 3, 'Yellow': 3, 'Green': 3, 'Indigo': 2}
+group_indices = {'Brown': 0, 'Railroads': 1, 'Lightblue': 2, 'Pink': 3, 
+                    'Utilities': 4, 'Orange': 5, 'Red': 6, 'Yellow': 7, 
+                    'Green': 8, 'Indigo': 9}
+Num_Groups = 10
+#least common multiple
+LCM_Property_Per_Group = 12
+Num_Total_Cells = 40
 
-    def get_area (self, board :Board, player: Player) -> np.ndarray:
+class State:
+    state = None
+    def __init__(self, current_player: Player, players: list, board):
+        area = self.get_area(current_player, players)
+        position = self.get_position(current_player.position)
+        finance = self.get_finance(current_player, players)
+        self.state = self.get_state(area, position, finance)
+
+    def get_area(self, current_player: Player, players: Player) -> np.ndarray:
         """Reads the board for properties belonging to the agent and other players.
 
         Args:
@@ -65,36 +34,85 @@ class State:
         Returns:
             np.ndarray: _description_
         """
-        area_array = []
-        
-        self.area = np.array(area_array)
+        self_property_by_group = self.get_property_by_group(current_player)
+        others_property_by_group = np.zeros(Num_Groups)
+        for player in players:
+            if not (player.is_bankrupt or player.name == current_player.name):
+                others_property_by_group += self.get_property_by_group(player)
+        area = np.vstack(self_property_by_group, others_property_by_group)
+        self.area = area
+    
+    def get_property_by_group(player:Player) -> np.ndarray:
+        """Gets the number of property of each group that a player has
 
+        Args:
+            player (Player): _description_
+
+        Returns:
+            property_by_group: _description_
+        """
+        property_by_group = [0] * Num_Groups
+        for property in player.owned:
+            group_index = group_indices[property.group]
+            property_by_group[group_index] += LCM_Property_Per_Group / num_property_per_group[property.group]
+            if property.has_houses:
+                property_by_group[group_index] = LCM_Property_Per_Group + property.has_houses
+            if property.has_hotel:
+                property_by_group[group_index] = LCM_Property_Per_Group + property.has_hotel
+        return np.array(property_by_group)
+    
     def get_position(self, position_int : int) -> float:
-        """Converts a position in [0,39] to one in [0,1]
+        """Converts a position in [0,39] to one in [0,1)
         
         Args:
             position_int (int): _description_
         """
-        position_float = (position_int + 1) / 40
+        position_float = (position_int) / (Num_Total_Cells - 1)
         self.position = position_float
-
         
-    def get_finance(self, money: float, properties: list) -> np.ndarray:
+    def get_finance(self, current_player: Player, players: list) -> np.ndarray:
         """Gets the finance state vector from the player's money and properties
 
         Args:
             money (_type_): _description_
             properties (_type_): _description_
         """
-        self.finance = np.zeros(2) 
-        
-    def consolidate_state_vectors(self) -> np.ndarray:
-        """converts the 3 vectors/integers into a new, 1*23 vector.
+        property_others_accumulated = 0
+        for player in players:
+            if not (player.is_bankrupt or player.name == current_player.name):
+                property_others_accumulated += self.get_num_property(player)
+        property_ratio = self.get_num_property(current_player) / property_others_accumulated
+        money_normalized = self.sigmoid_money(current_player.money)
+        finance = np.array([property_ratio, money_normalized])
+        self.finance = finance
+
+    def get_num_property(player: Player):
+        """returns the number of properties a player has
 
         Args:
-            area (_type_): _description_
-            position (_type_): _description_
-            finance (_type_): _description_
+            player (Player): _description_
+        """
+        total_property = 0
+        for property in player.owned:
+            total_property += 1 + property.has_hotel + property.has_houses
+        return total_property
+
+    def sigmoid_money(money):
+        """normalizes the amount of money a player has with a sigmoid function
+
+        Args:
+            money (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        return money / ( 1 + abs(money))
+       
+    def get_state(self) -> np.ndarray:
+        """converts the 3 vectors/integers into a new, 1*23 vector.
+
+        Returns:
+            np.ndarray: _description_
         """
         # Flatten the 2x10 area array to 1x20
         flattened_area = self.area.flatten()

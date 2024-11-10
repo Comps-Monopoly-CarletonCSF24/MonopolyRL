@@ -79,7 +79,6 @@ class Property(Cell):
         self.has_houses = 0
         self.has_hotel = 0
 
-
     def calculate_rent(self, dice):
         ''' Calculate the rent amount for this property, including monopoly, houses etc.
         dice are used to calculate rent for utilities
