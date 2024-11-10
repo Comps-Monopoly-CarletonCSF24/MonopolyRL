@@ -10,7 +10,7 @@ from settings import SimulationSettings, LogSettings
 
 from classes.analyze import Analyzer
 from classes.log import Log
-from classes.game import monopoly_game
+from classes.game import monopoly_game, get_alive_players
 
 
 def run_simulation(config):
@@ -47,7 +47,6 @@ def run_simulation(config):
     analysis.remaining_players()
     analysis.game_length()
     analysis.winning_rate()
-
-
+    
 if __name__ == "__main__":
     run_simulation(SimulationSettings)

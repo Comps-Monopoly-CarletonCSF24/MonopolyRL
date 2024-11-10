@@ -91,7 +91,7 @@ def monopoly_game(data_for_simulation):
         if alive < 2:
             log.add("Only 1 player remains, game over")
             break
-
+        
         # Players make their moves
         for player in players:
             # result will be "bankrupt" if player goes bankrupt
@@ -111,12 +111,14 @@ def monopoly_game(data_for_simulation):
     return None
 
 def get_alive_players():
+    # creates a list of all the alive players
+    
     alive_players = []
     # Set up players with their behavior settings
     players = [Player(player_name, player_setting)
                for player_name, player_setting in GameSettings.players_list]
-    for player in players:
+    for  player in players:
         if not player.is_bankrupt():
             alive_players.append(player)
-            
+
     return alive_players
