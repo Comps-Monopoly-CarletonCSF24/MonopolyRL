@@ -19,6 +19,5 @@ class Q_learning_agent:
         self.qTable[action+state] = self.getQValue(state, action) +
             self.alpha * (reward + self.gamma * bestNextQ - self.getQValue(state, action))
     
-    
     def chooseAction (self, state):
         return 
