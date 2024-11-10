@@ -1,6 +1,9 @@
 #test functions
 test*.py
 
+# settings
+settings.py
+
 # Output and log files
 *.txt
 
