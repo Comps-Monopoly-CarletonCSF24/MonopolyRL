@@ -548,7 +548,8 @@ class Player:
                 # - not maxed out (no hotel)
                 # - not mortgaged
                 # - a part of monopoly, but not railway or utility (so the monopoly_coef is 2)
-                if cell.has_hotel == 0 and not cell.is_mortgaged and cell.monopoly_coef == 2:
+                if cell.has_hotel == 0 and not cell.is_mortgaged and cell.monopoly_coef == 2 \
+                    and not (cell.group == "Railroads" or cell.group == "Utilities") :
                     # Look at other cells in this group
                     # If they have fewer houses, this cell can not be improved
                     # If any cells in the group is mortgaged, this cell can not be improved
