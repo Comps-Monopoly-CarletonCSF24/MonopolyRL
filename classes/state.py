@@ -17,11 +17,15 @@ Num_Total_Cells = 40
 Total_Property_Points = 17
 class State:
     state = None
+    area = None
+    position = None
+    finance = None
+    
     def __init__(self, current_player: Player, players: list):
-        area = get_area(current_player, players)
-        position = get_position(current_player.position)
-        finance = get_finance(current_player, players)
-        self.state = get_state(area, position, finance)
+        self.area = get_area(current_player, players)
+        self.position = get_position(current_player.position)
+        self.finance = get_finance(current_player, players)
+        self.state = get_state(self.area, self.position, self.finance)
         
 def get_area(current_player: Player, players: Player) -> np.ndarray:
     """ returns the area vector describing property owning percentage for each color
@@ -55,11 +59,13 @@ def get_property_points_by_group(player:Player) -> np.ndarray:
     property_by_group = [0] * Num_Groups
     for property in player.owned:
         group_index = group_indices[property.group]
-        property_by_group[group_index] += LCM_Property_Per_Group / num_property_per_group[property.group]
         if property.has_hotel > 0:
             property_by_group[group_index] = Total_Property_Points
         elif property.has_houses > 0:
-            property_by_group[group_index] = LCM_Property_Per_Group + property.has_houses
+            # get the property with most houses
+            property_by_group[group_index] = max(property_by_group[group_index], LCM_Property_Per_Group + property.has_houses)
+        elif property_by_group[group_index] < LCM_Property_Per_Group:
+            property_by_group[group_index] += LCM_Property_Per_Group / num_property_per_group[property.group]
             
     return np.array(property_by_group)
 
@@ -86,11 +92,12 @@ def get_finance(current_player: Player, players: list) -> np.ndarray:
         np.ndarray: _description_
     """
 
-    property_others_accumulated = 0
+    property_owned_total = 0
     for player in players:
-        if not (player.is_bankrupt or player.name == current_player.name):
-            property_others_accumulated += get_num_property(player)
-    property_ratio = get_num_property(current_player) / property_others_accumulated
+        if not player.is_bankrupt:
+           property_owned_total += get_num_property(player)
+
+    property_ratio = get_num_property(current_player) / property_owned_total
     money_normalized = sigmoid_money(current_player.money)
     finance = np.array([property_ratio, money_normalized])
     return finance

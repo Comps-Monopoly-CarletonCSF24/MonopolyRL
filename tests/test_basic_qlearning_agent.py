@@ -13,7 +13,7 @@ from classes.board import Board
 from classes.dice import Dice
 from classes.log import Log
 from classes.state import State
-
+from classes.state import get_property_points_by_group
 def init_game(game_seed):
     
     # Initialize game log
@@ -54,9 +54,8 @@ def init_game(game_seed):
 
     return board, players, dice, log
 
-def test_game(num_turns_to_play):
+def test_game(num_turns_to_play, game_seed):
     ''' Plays a game for a number of rounds and stop, returns all objects regarding the game'''
-    game_seed = random.random()
     print(f"seed used: {game_seed}")
     board, players, dice, log = init_game(game_seed)
     # Play for the required number of turns
@@ -71,17 +70,19 @@ def test_game(num_turns_to_play):
 class Test_Basic_QLearning(unittest.TestCase):
 
     def test_state_space(self):
-        """Plays a game for 10 rounds, checks if the state space 
+        """Plays a game for a number of rounds, checks if the state space 
         makes sense for a random player"""
-        _, players, _, _ = test_game(40)
-        current_player = players[0]
-        state = State(current_player, players).state
-        # for player in players:
-        #     print(player.name)
-        #     for property in player.owned:
-        #         print(f"    {property.group} {property.has_houses} {property.has_hotel}")
-        self.assertTrue(np.all((state >= 0) & (state <= 1)))
-        self.assertTrue(len(state) == 23)
-        
+        for i in range(50):
+            _, players, _, _ = test_game(30, 0.9333528387472766)
+            current_player = players[0]
+            state = State(current_player, players).state
+            
+            # for player in players:
+            #     print(get_property_points_by_group(player))
+            #     for property in player.owned:
+            #         print(f"    {property.group} {property.has_houses} {property.has_hotel}")
+            self.assertTrue(np.all((state >= 0) & (state <= 1 + 1e-9)))
+            self.assertTrue(len(state) == 23)
+            
 if __name__ == "__main__":
     unittest.main()
