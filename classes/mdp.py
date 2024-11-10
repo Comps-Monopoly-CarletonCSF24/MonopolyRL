@@ -20,3 +20,18 @@ class Q_learning_agent:
         self.qTable[action+state] = self.getQValue(state, action) + self.alpha * (reward + self.gamma * bestNextQ - self.getQValue(state, action))
     
     
+    
+    def choose_action(self, state):
+
+        # we do not need to have this one here necessarily
+        # # Explore (random action) or exploit (best action based on Q-value)
+        # if random.random() < self.epsilon:
+        #     # Explore: choose a random action
+        #     return random.choice(self.actions)
+        # else:
+            # Exploit: choose the action with the highest Q-value
+            best_action = self.actions[0]
+            for action in self.actions[1:]:
+                if self.get_q_value(state, action) > self.get_q_value(state, best_action):
+                    best_action = action
+            return best_action
