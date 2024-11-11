@@ -70,10 +70,10 @@ def test_game(num_turns_to_play, game_seed):
 class Test_Basic_QLearning(unittest.TestCase):
 
     def test_state_space(self):
-        """Plays a game for a number of rounds, checks if the state space 
+        """Plays multiple game for a number of rounds, checks if the state space 
         makes sense for a random player"""
         for i in range(50):
-            _, players, _, _ = test_game(30, 0.9333528387472766)
+            _, players, _, _ = test_game(30, random.random())
             current_player = players[0]
             state = State(current_player, players).state
             
