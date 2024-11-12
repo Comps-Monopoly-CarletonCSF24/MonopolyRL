@@ -46,11 +46,11 @@ class Q_learning_agent:
         #     return random.choice(self.actions)
         # else:
             # Exploit: choose the action with the highest Q-value
-            best_action = self.actions[0]
-            for action in self.actions[1:]:
-                if self.get_q_value(state, action) > self.get_q_value(state, best_action):
-                    best_action = action
-            return best_action
+        best_action = self.actions[0]
+        for action in self.actions[1:]:
+            if self.get_q_value(state, action) > self.get_q_value(state, best_action):
+                best_action = action
+        return best_action
     
     def get_reward (self, player):
 
