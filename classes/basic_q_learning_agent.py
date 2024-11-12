@@ -1,6 +1,6 @@
 import math
 import random
-
+from classes.board import get_alive_players
 class Q_learning_agent:
     '''
     Implements the qlearning algorithm by updating the qvalues from the qtable
