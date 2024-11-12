@@ -1,6 +1,5 @@
 import math
 import random
-from classes.board import get_alive_players
 class Q_learning_agent:
     '''
     Implements the qlearning algorithm by updating the qvalues from the qtable
@@ -56,36 +55,11 @@ class Q_learning_agent:
 
         best_action = self.actions[0]
         for action in self.actions[1:]:
-            if self.get_q_value(state, action) > self.get_q_value(state, best_action):
+            if self.getQValue(state, action) > self.getQValue(state, best_action):
                 best_action = action
         return best_action
 
         # best_action = max(range(len(self.actions)), key=lambda a: self.getQValue(state, a))
         # return best_action
     
-    def get_reward(self, player):
-        # player_newtworth = player.neworth()
-        # alive_players = get_alive_players()
-
-        # all_players_worth = 0
-        # for player in alive_players:
-        #     all_players_worth += player.networth()
-
-        # p = 0 # number of playters
-        # c = 0 # smothing factor 
-        # v = player_newtworth - all_players_worth # players total assets values (add up value of all properties in the possession of the player minus the properties of all his opponents)
-        # m = (player_newtworth/all_players_worth) * 100 # player's finance (percentage of the money the player has to the sum of all the players money)
-        # r = ((v/p)*c)/ (1+ abs((v/p)*c)-(1/p)*m)
-        # return r
-
-        player_networth = player.networth()
-        alive_players = get_alive_players()
-        all_players_worth = sum(p.networth() for p in alive_players)
-        
-        p = len(alive_players)  # Number of players
-        c = 0.1  # Smoothing factor
-        v = player_networth - (all_players_worth - player_networth)
-        m = (player_networth / all_players_worth) * 100
-        r = ((v / p) * c) / (1 + abs((v / p) * c) - (1 / p) * m)
-        return r
 

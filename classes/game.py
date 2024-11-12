@@ -24,10 +24,12 @@ def get_alive_players():
     players = [Player(player_name, player_setting)
                for player_name, player_setting in GameSettings.players_list]
     for  player in players:
-        if not player.is_bankrupt():
+        if player.net_worth() > 0:
             alive_players.append(player)
 
     return alive_players
+
+
 
 def get_reward (player):
 
@@ -35,17 +37,17 @@ def get_reward (player):
     computes the reward accounting for the player's networth in comparison with their opponents money
     '''
 
-    player_newtworth = player.neworth()
+    player_networth = player.net_worth()
     alive_players = get_alive_players()
 
     all_players_worth = 0
     for player in alive_players:
-        all_players_worth += player.networth()
+        all_players_worth += player.net_worth()
 
     p = 4 # number of players
     c = 0.450 # smothing factor 
-    v = player_newtworth - all_players_worth # players total assets values (add up value of all properties in the possession of the player minus the properties of all his opponents)
-    m = (player_newtworth/all_players_worth) * 100 # player's finance (percentage of the money the player has to the sum of all the players money)
+    v = player_networth - all_players_worth # players total assets values (add up value of all properties in the possession of the player minus the properties of all his opponents)
+    m = (player_networth/all_players_worth) * 100 # player's finance (percentage of the money the player has to the sum of all the players money)
     r = ((v/p)*c)/ (1+ abs((v/p)*c)-(1/p)*m)
     return r
 
@@ -109,7 +111,7 @@ def monopoly_game(data_for_simulation):
         get_state_vector = state_object.state
         chosen_action = agent.choose_action(get_state_vector.tobytes())
         property_idx = 0
-        action_vector = action_object.get_action_vector(property_idx, chosen_action)
+        # action_vector = action_object.get_action_vector(property_idx, chosen_action)
         reward = get_reward(players[1])
         next_state_instance = State(current_player, players)  
         next_state_vector = next_state_instance.state
@@ -167,18 +169,6 @@ def monopoly_game(data_for_simulation):
     # Useless return, but it is here to mark the end of the game
     return None
 
-def get_alive_players():
-    # creates a list of all the alive players
-    
-    alive_players = []
-    # Set up players with their behavior settings
-    players = [Player(player_name, player_setting)
-               for player_name, player_setting in GameSettings.players_list]
-    for  player in players:
-        if not player.is_bankrupt():
-            alive_players.append(player)
-
-    return alive_players
 def agent_turn(agent, action_obj, player, board, state):
     # Agent selects an action index (0 to 83) for the 1x84 vector of actions
     action_idx = agent.choose_action(state)
