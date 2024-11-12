@@ -122,3 +122,18 @@ def get_alive_players():
             alive_players.append(player)
 
     return alive_players
+
+def agent_turn(agent, action_obj, player, board, state):
+    # Agent selects an action index (0 to 83) for the 1x84 vector of actions
+    action_idx = agent.choose_action(state)
+
+    # Map the action index to a specific property and action type
+    property_idx, action_type = action_obj.map_action_index(action_idx)
+    
+    # Execute the action on the board
+    action_obj.execute_action(player, board, property_idx, action_type)
+
+    # Calculate reward and update Q-table
+    reward = agent.get_reward(player)
+    next_state = ...  # Get the next state after action (still need to implement state update logic here)
+    agent.updateQValue(state, action_idx, reward, next_state)
