@@ -10,7 +10,7 @@ from settings import SimulationSettings, LogSettings
 
 from classes.analyze import Analyzer
 from classes.log import Log
-from classes.game import monopoly_game, get_alive_players
+from classes.game import monopoly_game
 
 
 def run_simulation(config):

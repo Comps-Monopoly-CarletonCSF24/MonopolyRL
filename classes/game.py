@@ -8,6 +8,9 @@ from classes.player import Player
 from classes.board import Board
 from classes.dice import Dice
 from classes.log import Log
+from classes.basic_q_learning_agent import Q_learning_agent
+from state import State
+from action import Action
 
 def monopoly_game(data_for_simulation):
     ''' Simulation of one game.
@@ -57,6 +60,25 @@ def monopoly_game(data_for_simulation):
     else:
         for player in players:
             player.money = GameSettings.starting_money
+
+
+    actions = ['buy', 'sell', 'do_nothing']
+    agent = Q_learning_agent(actions)
+    current_player = players[1]
+    state_object = State(current_player, players)
+    action_object = Action()
+    get_state_vector = state_object.state
+    chosen_action = agent.choose_action(get_state_vector.tobytes())
+    property_idx = 0
+    action_vector = action_object.get_action_vector(property_idx, chosen_action)
+    reward = agent.get_reward(players[1])
+    next_state_instance = State(current_player, players)  
+    next_state_vector = next_state_instance.state
+
+    agent.updateQValue(get_state_vector.tobytes(), chosen_action, reward, next_state_vector.tobytes())
+
+    print (agent.qTable)
+
 
     # Play for the required number of turns
     for turn_n in range(1, SimulationSettings.n_moves + 1):
@@ -110,7 +132,7 @@ def monopoly_game(data_for_simulation):
     # Useless return, but it is here to mark the end of the game
     return None
 
-def get_alive_players():
+def get_alive_players(nada):
     '''
     creates a list of all the alive players
     '''

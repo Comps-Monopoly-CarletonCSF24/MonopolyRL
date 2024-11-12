@@ -1,6 +1,8 @@
 import math
 import random
 from game import get_alive_players
+from state import State
+from action import Action
 class Q_learning_agent:
     '''
     Implements the qlearning algorithm by updating the qvalues from the qtable
@@ -71,3 +73,5 @@ class Q_learning_agent:
         m = (player_newtworth/all_players_worth) * 100 # player's finance (percentage of the money the player has to the sum of all the players money)
         r = ((v/p)*c)/ (1+ abs((v/p)*c)-(1/p)*m)
         return r
+
+
