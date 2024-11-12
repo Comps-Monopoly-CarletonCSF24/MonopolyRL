@@ -1,6 +1,6 @@
-from player import Player
-from board import Board
-from log import Log
+from classes.player import Player
+from classes.board import Board
+from classes.log import Log
 import numpy as np
 
 class Action:
