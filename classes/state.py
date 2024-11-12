@@ -96,8 +96,11 @@ def get_finance(current_player: Player, players: list) -> np.ndarray:
     for player in players:
         if not player.is_bankrupt:
             property_owned_total += get_num_property(player)
+    if property_owned_total == 0:
+        property_ratio = 0
+    else:
+        property_ratio = get_num_property(current_player) / property_owned_total
     
-    property_ratio = get_num_property(current_player) / property_owned_total
     money_normalized = sigmoid_money(current_player.money)
     finance = np.array([property_ratio, money_normalized])
     return finance
