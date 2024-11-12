@@ -97,26 +97,30 @@ def monopoly_game(data_for_simulation):
         for player in players:
             player.money = GameSettings.starting_money
 
+
+    actions = ['buy', 'sell', 'do_nothing']
+    agent = Q_learning_agent(actions)
+    current_player = players[1]
+    state_object = State(current_player, players)
+    action_object = Action()
+    get_state_vector = tuple(state_object.state)
+    
     # Play for the required number of turns
     for turn_n in range(1, SimulationSettings.n_moves + 1):
+        
 
-        actions = ['buy', 'sell', 'do_nothing']
-        agent = Q_learning_agent(actions)
-        current_player = players[1]
-        state_object = State(current_player, players)
-        action_object = Action()
-        get_state_vector = state_object.state
         chosen_action = agent.choose_action(get_state_vector)
+        
         property_idx = 0
         # action_vector = action_object.get_action_vector(property_idx, chosen_action)
         reward = get_reward(players[1], players)
-        next_state_instance = State(current_player, players)  
+        next_state_instance = State(current_player, players) 
+
         next_state_vector = next_state_instance.state
 
         agent.updateQValue(get_state_vector, chosen_action, reward, next_state_vector)
 
-        print (agent.qTable)
-
+        get_state_vector = tuple(next_state_vector)
         # Start a turn. Log turn's number
         log.add(f"\n== GAME {game_number} Turn {turn_n} ===")
 
@@ -155,6 +159,8 @@ def monopoly_game(data_for_simulation):
             # If player goes bankrupt, log it in the data log file
             if result == "bankrupt":
                 datalog.add(f"{game_number}\t{player}\t{turn_n}")
+
+    print (agent.qTable)
 
     # Last thing to log in the game log: the final state of the board
     board.log_current_map(log)

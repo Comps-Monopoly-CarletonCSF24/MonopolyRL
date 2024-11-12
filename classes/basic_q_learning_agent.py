@@ -20,7 +20,7 @@ class Q_learning_agent:
         # if (self.qTable[state + action]):
         #     return self.qTable[state + action]
         # return 0.0
-        state_action = (state, action)
+        state_action = (tuple(state), action)
         return self.qTable.get(state_action, 0.0)
 
     def updateQValue(self, state, action, reward, nextState):
@@ -33,7 +33,7 @@ class Q_learning_agent:
         for act in self.actions:
             if self.getQValue (nextState, act) > bestNextQ:
                 bestNextQ = self.getQValue (nextState, act)
-        self.qTable[action+state] = self.getQValue(state, action) + self.alpha * (reward + self.gamma * bestNextQ - self.getQValue(state, action))
+        self.qTable[(action, state)] = self.getQValue(state, action) + self.alpha * (reward + self.gamma * bestNextQ - self.getQValue(state, action))
 
         # best_next_q = max(self.getQValue(nextState, a) for a in range(len(self.actions)))
         # current_q = self.getQValue(state, action)
