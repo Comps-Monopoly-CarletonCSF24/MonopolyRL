@@ -111,8 +111,10 @@ def monopoly_game(data_for_simulation):
     return None
 
 def get_alive_players():
-    # creates a list of all the alive players
-    
+    '''
+    creates a list of all the alive players
+    '''
+
     alive_players = []
     # Set up players with their behavior settings
     players = [Player(player_name, player_setting)

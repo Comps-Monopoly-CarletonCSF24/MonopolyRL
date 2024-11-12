@@ -2,7 +2,9 @@ import math
 import random
 from game import get_alive_players
 class Q_learning_agent:
-    # Implements the qlearning algorithm by updating the qvalues from the qtable
+    '''
+    Implements the qlearning algorithm by updating the qvalues from the qtable
+    '''
 
     def __init__(self, actions):
         self.qTable = {}
@@ -11,16 +13,20 @@ class Q_learning_agent:
         self.gamma = 0.95
 
     def getQValue(self, state, action):
-        # gets the qvalues from the qtable
+        '''
+        gets the qvalues from the qtable
+        '''
 
         if (self.qTable[state + action]):
             return self.qTable[state + action]
         return 0.0
 
     def updateQValue(self, state, action, reward, nextState):
-        # updates the qtable by adding better qvalues depending on the most recent move, 
-        # if it had a better reward than the previous one
-
+        '''
+        updates the qtable by adding better qvalues depending on the most recent move, 
+        if it had a better reward than the previous one
+        '''
+        
         bestNextQ = 0
         for act in self.actions:
             if self.getQValue (nextState, act) > bestNextQ:
@@ -29,7 +35,9 @@ class Q_learning_agent:
     
     def choose_action(self, state):
 
-        # choose the best action depending on the values in the qtable at the given state
+        ''' 
+        choose the best action depending on the values in the qtable at the given state
+        '''
 
         # we do not need to have this one here necessarily
         # # Explore (random action) or exploit (best action based on Q-value)
@@ -45,7 +53,10 @@ class Q_learning_agent:
             return best_action
     
     def get_reward (self, player):
-        # computes the reward accounting for the player's networth in comparison with their opponents money
+
+        ''' 
+        computes the reward accounting for the player's networth in comparison with their opponents money
+        '''
 
         player_newtworth = player.neworth()
         alive_players = get_alive_players()
