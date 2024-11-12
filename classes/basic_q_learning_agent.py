@@ -1,8 +1,10 @@
 import math
 import random
-from game import get_alive_players
+
 class Q_learning_agent:
-    # Implements the qlearning algorithm by updating the qvalues from the qtable
+    '''
+    Implements the qlearning algorithm by updating the qvalues from the qtable
+    '''
 
     def __init__(self, actions):
         self.qTable = {}
@@ -12,7 +14,9 @@ class Q_learning_agent:
         self.epsilon = 0.1  # Exploration rate
 
     def getQValue(self, state, action):
-        # gets the qvalues from the qtable
+        '''
+        gets the qvalues from the qtable
+        '''
 
         # if (self.qTable[state + action]):
         #     return self.qTable[state + action]
@@ -21,21 +25,26 @@ class Q_learning_agent:
         return self.qTable.get(state_action, 0.0)
 
     def updateQValue(self, state, action, reward, nextState):
-        # updates the qtable by adding better qvalues depending on the most recent move, 
-        # if it had a better reward than the previous one
+        '''
+        updates the qtable by adding better qvalues depending on the most recent move, 
+        if it had a better reward than the previous one
+        '''
+        
+        bestNextQ = 0
+        for act in self.actions:
+            if self.getQValue (nextState, act) > bestNextQ:
+                bestNextQ = self.getQValue (nextState, act)
+        self.qTable[action+state] = self.getQValue(state, action) + self.alpha * (reward + self.gamma * bestNextQ - self.getQValue(state, action))
 
-        # bestNextQ = 0
-        # for act in self.actions:
-        #     if self.getQValue (nextState, act) > bestNextQ:
-        #         bestNextQ = self.getQValue (nextState, act)
-        # self.qTable[action+state] = self.getQValue(state, action) + self.alpha * (reward + self.gamma * bestNextQ - self.getQValue(state, action))
-        best_next_q = max(self.getQValue(nextState, a) for a in range(len(self.actions)))
-        current_q = self.getQValue(state, action)
-        self.qTable[(state, action)] = current_q + self.alpha * (reward + self.gamma * best_next_q - current_q)
+        # best_next_q = max(self.getQValue(nextState, a) for a in range(len(self.actions)))
+        # current_q = self.getQValue(state, action)
+        # self.qTable[(state, action)] = current_q + self.alpha * (reward + self.gamma * best_next_q - current_q)
     
     def choose_action(self, state):
 
-        # choose the best action depending on the values in the qtable at the given state
+        ''' 
+        choose the best action depending on the values in the qtable at the given state
+        '''
 
         # we do not need to have this one here necessarily
         # # Explore (random action) or exploit (best action based on Q-value)
@@ -44,25 +53,17 @@ class Q_learning_agent:
         #     return random.choice(self.actions)
         # else:
             # Exploit: choose the action with the highest Q-value
-            # best_action = self.actions[0]
-            # for action in self.actions[1:]:
-            #     if self.get_q_value(state, action) > self.get_q_value(state, best_action):
-            #         best_action = action
-            # return best_action
 
-
-
-        # uncomment this if needed
-        # if random.random() < self.epsilon:  # Explore: choose a random action
-        #     return random.choice(range(len(self.actions)))
-        # Exploit: choose the action with the highest Q-value
-        best_action = max(range(len(self.actions)), key=lambda a: self.getQValue(state, a))
+        best_action = self.actions[0]
+        for action in self.actions[1:]:
+            if self.get_q_value(state, action) > self.get_q_value(state, best_action):
+                best_action = action
         return best_action
 
+        # best_action = max(range(len(self.actions)), key=lambda a: self.getQValue(state, a))
+        # return best_action
     
-    def get_reward (self, player):
-        # computes the reward accounting for the player's networth in comparison with their opponents money
-
+    def get_reward(self, player):
         # player_newtworth = player.neworth()
         # alive_players = get_alive_players()
 
@@ -87,3 +88,4 @@ class Q_learning_agent:
         m = (player_networth / all_players_worth) * 100
         r = ((v / p) * c) / (1 + abs((v / p) * c) - (1 / p) * m)
         return r
+
