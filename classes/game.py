@@ -14,15 +14,12 @@ from classes.action import Action
 
 
 
-def get_alive_players():
+def get_alive_players(players):
     '''
     creates a list of all the alive players
     '''
 
     alive_players = []
-    # Set up players with their behavior settings
-    players = [Player(player_name, player_setting)
-               for player_name, player_setting in GameSettings.players_list]
     for  player in players:
         if player.net_worth() > 0:
             alive_players.append(player)
@@ -31,14 +28,14 @@ def get_alive_players():
 
 
 
-def get_reward (player):
+def get_reward (player, players):
 
     ''' 
     computes the reward accounting for the player's networth in comparison with their opponents money
     '''
 
     player_networth = player.net_worth()
-    alive_players = get_alive_players()
+    alive_players = get_alive_players(players)
 
     all_players_worth = 0
     for player in alive_players:
@@ -109,14 +106,14 @@ def monopoly_game(data_for_simulation):
         state_object = State(current_player, players)
         action_object = Action()
         get_state_vector = state_object.state
-        chosen_action = agent.choose_action(get_state_vector.tobytes())
+        chosen_action = agent.choose_action(get_state_vector)
         property_idx = 0
         # action_vector = action_object.get_action_vector(property_idx, chosen_action)
-        reward = get_reward(players[1])
+        reward = get_reward(players[1], players)
         next_state_instance = State(current_player, players)  
         next_state_vector = next_state_instance.state
 
-        agent.updateQValue(get_state_vector.tobytes(), chosen_action, reward, next_state_vector.tobytes())
+        agent.updateQValue(get_state_vector, chosen_action, reward, next_state_vector)
 
         print (agent.qTable)
 
