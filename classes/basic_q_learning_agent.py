@@ -33,7 +33,7 @@ class Q_learning_agent:
         for act in self.actions:
             if self.getQValue (nextState, act) > bestNextQ:
                 bestNextQ = self.getQValue (nextState, act)
-        self.qTable[(action, state)] = self.getQValue(state, action) + self.alpha * (reward + self.gamma * bestNextQ - self.getQValue(state, action))
+        self.qTable[(state, action)] = self.getQValue(state, action) + self.alpha * (reward + self.gamma * bestNextQ - self.getQValue(state, action))
 
         # best_next_q = max(self.getQValue(nextState, a) for a in range(len(self.actions)))
         # current_q = self.getQValue(state, action)
