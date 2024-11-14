@@ -14,7 +14,7 @@ class Analyzer:
         self.df = pd.read_csv(LogSettings.data_log_file, sep='\t')
 
     def remaining_players(self):
-        ''' How many games had clear winner, how many players remain in tha end
+        ''' How many games had clear winner, how many players remain in the end
         '''
         grouped = self.df.groupby('game_number').size().reset_index(name='Losers')
         result = grouped['Losers'].value_counts().reset_index()

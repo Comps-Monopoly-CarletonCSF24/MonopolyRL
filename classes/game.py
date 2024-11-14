@@ -160,7 +160,21 @@ def monopoly_game(data_for_simulation):
             if result == "bankrupt":
                 datalog.add(f"{game_number}\t{player}\t{turn_n}")
 
-    print (agent.qTable)
+    def convert_state_to_serializable(state):
+    # Convert tuple of np.float64 to list of regular floats
+        numeric_values = [float(x) for x in state[0]]  # First part of state tuple
+        action = state[1]  # Second part of state tuple (the action string)
+        return f"{numeric_values}, {action}"  # Custom string format
+    import json
+        # Save Q-table as JSON
+    q_table_serializable = {
+        convert_state_to_serializable(state): values 
+        for state, values in agent.qTable.items()
+}
+
+    with open("q_table_output.json", "w") as f:
+        json.dump(q_table_serializable, f, indent=4)
+    
 
     # Last thing to log in the game log: the final state of the board
     board.log_current_map(log)
@@ -186,3 +200,5 @@ def agent_turn(agent, action_obj, player, board, state):
     reward = agent.get_reward(player)
     next_state = ...  # Get the next state after action (still need to implement state update logic here)
     agent.updateQValue(state, action_idx, reward, next_state)
+
+
