@@ -12,8 +12,6 @@ from classes.basic_q_learning_agent import Q_learning_agent
 from classes.state import State
 from classes.action import Action
 
-
-
 def get_alive_players(players):
     '''
     creates a list of all the alive players
@@ -25,8 +23,6 @@ def get_alive_players(players):
             alive_players.append(player)
 
     return alive_players
-
-
 
 def get_reward (player, players):
 
@@ -169,8 +165,7 @@ def monopoly_game(data_for_simulation):
         # Save Q-table as JSON
     q_table_serializable = {
         convert_state_to_serializable(state): values 
-        for state, values in agent.qTable.items()
-}
+        for state, values in agent.qTable.items()}
 
     with open("q_table_output.json", "w") as f:
         json.dump(q_table_serializable, f, indent=4)

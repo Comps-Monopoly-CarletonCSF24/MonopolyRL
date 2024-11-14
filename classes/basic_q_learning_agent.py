@@ -43,6 +43,8 @@ class Q_learning_agent:
 
         ''' 
         choose the best action depending on the values in the qtable at the given state
+
+        TODO: Return an index between 0 and 83
         '''
 
         # we do not need to have this one here necessarily
