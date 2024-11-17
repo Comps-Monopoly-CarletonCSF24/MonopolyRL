@@ -1,5 +1,6 @@
 import math
 import random
+from classes.state import State
 class Q_learning_agent:
     '''
     Implements the qlearning algorithm by updating the qvalues from the qtable
@@ -64,4 +65,26 @@ class Q_learning_agent:
         # best_action = max(range(len(self.actions)), key=lambda a: self.getQValue(state, a))
         # return best_action
     
+    def take_turn(self, action_obj, player, board, state):
+        """
+        Executes the agent's turn: chooses an action, maps it, performs it, and updates Q-values.
+        """
+        # Agent selects an action index (0 to 83) for the 1x84 vector of actions
+        action_idx = self.choose_action(state)
+
+        property_idx, action_type = action_obj.map_action_index(action_idx)
+        
+        action_obj.execute_action(player, board, property_idx, action_type)
+
+        reward = self.get_reward(player)  # Make sure this method exists already right now or pass to the agent
+
+        # Get the next state after action
+        next_state_instance = State(player, board.players)
+        next_state = next_state_instance.state
+
+        # Update Q-table
+        self.updateQValue(state, action_idx, reward, next_state)
+
+        # Return the new state to the game logic
+        return next_state
 

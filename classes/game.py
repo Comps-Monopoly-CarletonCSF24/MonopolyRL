@@ -104,19 +104,21 @@ def monopoly_game(data_for_simulation):
     # Play for the required number of turns
     for turn_n in range(1, SimulationSettings.n_moves + 1):
         
-
-        chosen_action = agent.choose_action(get_state_vector)
+        # Thinking of switching all this out for a call to agent turn function moved into q-learning agent file
+        # chosen_action = agent.choose_action(get_state_vector)
         
-        property_idx = 0
-        # action_vector = action_object.get_action_vector(property_idx, chosen_action)
-        reward = get_reward(players[1], players)
-        next_state_instance = State(current_player, players) 
+        # property_idx = 0
+        # # action_vector = action_object.get_action_vector(property_idx, chosen_action)
+        # reward = get_reward(players[1], players)
+        # next_state_instance = State(current_player, players) 
 
-        next_state_vector = next_state_instance.state
+        # next_state_vector = next_state_instance.state
 
-        agent.updateQValue(get_state_vector, chosen_action, reward, next_state_vector)
+        # agent.updateQValue(get_state_vector, chosen_action, reward, next_state_vector)
 
-        get_state_vector = tuple(next_state_vector)
+        # get_state_vector = tuple(next_state_vector)
+        get_state_vector = agent.take_turn(action_object, current_player, board, get_state_vector)
+
         # Start a turn. Log turn's number
         log.add(f"\n== GAME {game_number} Turn {turn_n} ===")
 
@@ -180,20 +182,5 @@ def monopoly_game(data_for_simulation):
 
     # Useless return, but it is here to mark the end of the game
     return None
-
-def agent_turn(agent, action_obj, player, board, state):
-    # Agent selects an action index (0 to 83) for the 1x84 vector of actions
-    action_idx = agent.choose_action(state)
-
-    # Map the action index to a specific property and action type
-    property_idx, action_type = action_obj.map_action_index(action_idx)
-    
-    # Execute the action on the board
-    action_obj.execute_action(player, board, property_idx, action_type)
-
-    # Calculate reward and update Q-table
-    reward = agent.get_reward(player)
-    next_state = ...  # Get the next state after action (still need to implement state update logic here)
-    agent.updateQValue(state, action_idx, reward, next_state)
 
 
