@@ -48,14 +48,6 @@ class Q_learning_agent:
         TODO: Return an index between 0 and 83
         '''
 
-        # we do not need to have this one here necessarily
-        # # Explore (random action) or exploit (best action based on Q-value)
-        # if random.random() < self.epsilon:
-        #     # Explore: choose a random action
-        #     return random.choice(self.actions)
-        # else:
-            # Exploit: choose the action with the highest Q-value
-
         best_action = self.actions[0]
         for action in self.actions[1:]:
             if self.getQValue(state, action) > self.getQValue(state, best_action):
