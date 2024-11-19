@@ -1,9 +1,10 @@
-from q_n_n import QNetwork
+from q_n_n import Q_network
 import torch
 import torch.optim as optim
 import random
 import numpy as np
 from collections import deque
+from classes.state import State
 
 class DQAgent:
     def __init__(self, actions, state_size, action_size, learning_rate=0.001, gamma=0.95, epsilon=0.1):
@@ -15,8 +16,8 @@ class DQAgent:
         self.alpha = learning_rate
         
         # Neural network models
-        self.model = QNetwork(state_size, action_size)
-        self.target_model = QNetwork(state_size, action_size)
+        self.model = Q_network(state_size, action_size)
+        self.target_model = (state_size, action_size)
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         self.criterion = torch.nn.MSELoss()
 
