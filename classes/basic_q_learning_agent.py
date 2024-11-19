@@ -47,23 +47,7 @@ class Q_learning_agent:
 
         Return an index between 0 and 83
         '''
-
-<<<<<<< HEAD
-        # we do not need to have this one here necessarily
-        # # Explore (random action) or exploit (best action based on Q-value)
-        # if random.random() < self.epsilon:
-        #     # Explore: choose a random action
-        #     return random.choice(self.actions)
-        # else:
-            # Exploit: choose the action with the highest Q-value
-
-        #best_action = self.actions[0]
-        #for action in self.actions[1:]:
-        #    if self.getQValue(state, action) > self.getQValue(state, best_action):
-        #        best_action = action
-        #return best_action
-
-        #best_action = max(range(len(self.actions)), key=lambda a: self.getQValue(state, a))
+        
         best_action_idx = 0 #initialize best action index
         best_q_value = self.getQValue(state, best_action_idx)
 
@@ -74,13 +58,6 @@ class Q_learning_agent:
                 best_q_value = q_value
                 
         return best_action_idx
-=======
-        best_action = self.actions[0]
-        for action in self.actions[1:]:
-            if self.getQValue(state, action) > self.getQValue(state, best_action):
-                best_action = action
-        return best_action
->>>>>>> refs/remotes/origin/main
 
     def take_turn(self, action_obj, player, board, state):
         """
