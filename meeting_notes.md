@@ -16,3 +16,17 @@ TODO:
 - Change BQLA to become an instance of Player
 - Make a test environment for the changes (by adding BQLA in players[])
 - Finish agent_turn!! (move it to BQLA?)
+
+## 11/18/2024
+Notes from Dake on qnn.py
+
+the NN that the short paper inplemented uses 3 layers
+- the 1st is 24 nodes (linear), with 23 state and 1 action
+- the 2nd is 150 nodes (sigmoid)
+- the 3rd is 1 node, representing the Q value
+
+the pytorch inplementation uses state as input and action as output, 
+with Q values implicitly stored in the network. DECIDE WHICH ONE TO USE.
+
+Here are the functions that I think should appear in this program:
+update_trace():
