@@ -137,6 +137,8 @@ class Board:
     ''' Class collecting board related information:
     properties and their owners, build houses, etc
     '''
+    
+
 
     def __init__(self, settings):
         ''' Initialize board configuration: properties, special cells etc
@@ -283,7 +285,23 @@ class Board:
             "You have won second prize in a beauty contest. Collect $10",
             "You inherit $100"
         ])
-
+    def get_property(self, property_idx):
+        '''
+        Get a property by its index in property_list
+        '''
+        property_count = 0
+        for cell in self.cells:
+            if isinstance(cell, Property):
+                if property_count == property_idx:
+                    return cell
+                property_count += 1 
+        raise ValueError(f"Property with index {property_idx} not found")
+    @property
+    def property_count(self):
+    '''
+    Get a list of all properties on the board
+    '''
+        return [cell for cell in self.cells if isinstance(cell, Property)]
     def create_property_groups(self):
         ''' self.groups is a convenient way to group cells by color/type,
         so we don't have to check all properties on the board, to, for example,
