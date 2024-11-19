@@ -75,16 +75,15 @@ Note: the short paper chose all actions in a loop until no possible actions. The
 
 - train_neural_network_with_trace(trace, state, action, reward)
   *state,action mean the state and action of last round*
-  - find new Q value based on the 4 variables
-    - for each trace:
-        - if similar to (state, action): continue
-        - else: train nn
-            - q_t = nn(trace.state, trace.action)
-            - max_qt = nn(trace.state, choose_action(trace.state))
-            - max_q = nn(state, choose_action(state)
-            - q updated = nn(trace.state, newaction), where newaction is the result of choose_action(trace.state)
-            - qvalue = q_t  + alpha * (traces[i].value) * (reward + gamma * max_qt - max_q);
-            - train_neural_network(trace.state, trace.action, qvalue)
+- for each trace:
+    - if similar to (state, action): continue
+    - else: train nn
+        - q_t = nn(trace.state, trace.action)
+        - max_qt = nn(trace.state, choose_action(trace.state))
+        - max_q = nn(state, choose_action(state)
+        - q updated = nn(trace.state, newaction), where newaction is the result of choose_action(trace.state)
+        - qvalue = q_t  + alpha * (traces[i].value) * (reward + gamma * max_qt - max_q);
+        - train_neural_network(trace.state, trace.action, qvalue)
 
 TODO:
 - Normalize action to 0-1 or -1-1
