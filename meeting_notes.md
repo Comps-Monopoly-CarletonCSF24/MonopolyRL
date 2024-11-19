@@ -39,13 +39,14 @@ Here are the functions that we need to write:
   - Using eligibility traces in Q-learning offers several benefits that can significantly improve the learning efficiency and convergence rate of the agent.
 
 - Q table: **Remove**. Q values are now stored in the NN
-  
+  - qnn: save the qnn to a file. (instead of the qtable)
+
 - update_trace(trace, state, action, reward):
   modify the trace table according to [Incremental multi-step Q-learning](https://link.springer.com/article/10.1007/BF00114731):
 ![image](https://github.com/user-attachments/assets/c876b13d-1182-458a-8a7b-cecd84b973c7)
 
 - in choose_action(state)
-    - if the state is similar enough to a current state, use the current Q table
+    - if the state is similar enough to a current state, run the nn.
     - else, send (state, action) for all (possible) actions through the nn, find best.
 
 - state.is_similar(self, other)
@@ -56,12 +57,36 @@ Here are the functions that we need to write:
 - in angent.take_turn (this needs to be renamed make_a_move when we convert agent to a player instance):
     - roll
     - get current state
+    - get current reward
+    - update previous trace
+    - train NN with trace
+    - train NN with new Q
     - choose_action
     - execute_action
-    - get reward
-    - get updated Q value
-    - update Trace table
-    - train NN with the new Q
 
+Note: the short paper chose all actions in a loop until no possible actions. Then performed all of them.
 
-    
+- update_trace(trace, state, action, reward):
+    - for each trace:
+        - if similar to (state, action): set trace[state, action] to 1
+        - if similar state but different action: remove, 
+        - if different state and different action: update trace value with decay function
+    - add new (state,action) if not (state action) exists, set value to 1
+
+- train_neural_network_with_trace(trace, state, action, reward)
+  *state,action mean the state and action of last round*
+  - find new Q value based on the 4 variables
+    - for each trace:
+        - if similar to (state, action): continue
+        - else: train nn
+            - q_t = nn(trace.state, trace.action)
+            - max_qt = nn(trace.state, choose_action(trace.state))
+            - max_q = nn(state, choose_action(state)
+            - q updated = nn(trace.state, newaction), where newaction is the result of choose_action(trace.state)
+            - qvalue = q_t  + alpha * (traces[i].value) * (reward + gamma * max_qt - max_q);
+            - train_neural_network(trace.state, trace.action, qvalue)
+
+TODO:
+- Normalize action to 0-1 or -1-1
+- after each game, reduce values in trace[]
+- endgame rewards for winner and loser
