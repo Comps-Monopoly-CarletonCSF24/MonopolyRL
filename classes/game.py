@@ -8,41 +8,6 @@ from classes.player import Player
 from classes.board import Board
 from classes.dice import Dice
 from classes.log import Log
-from classes.basic_q_learning_agent import Q_learning_agent
-from classes.state import State
-from classes.action import Action
-
-def get_alive_players(players):
-    '''
-    creates a list of all the alive players
-    '''
-
-    alive_players = []
-    for  player in players:
-        if player.net_worth() > 0:
-            alive_players.append(player)
-
-    return alive_players
-
-def get_reward (player, players):
-
-    ''' 
-    computes the reward accounting for the player's networth in comparison with their opponents money
-    '''
-
-    player_networth = player.net_worth()
-    alive_players = get_alive_players(players)
-
-    all_players_worth = 0
-    for player in alive_players:
-        all_players_worth += player.net_worth()
-
-    p = 4 # number of players
-    c = 0.450 # smothing factor 
-    v = player_networth - all_players_worth # players total assets values (add up value of all properties in the possession of the player minus the properties of all his opponents)
-    m = (player_networth/all_players_worth) * 100 # player's finance (percentage of the money the player has to the sum of all the players money)
-    r = ((v/p)*c)/ (1+ abs((v/p)*c)-(1/p)*m)
-    return r
 
 def monopoly_game(data_for_simulation):
     ''' Simulation of one game.
@@ -93,31 +58,8 @@ def monopoly_game(data_for_simulation):
         for player in players:
             player.money = GameSettings.starting_money
 
-
-    actions = ['buy', 'sell', 'do_nothing']
-    agent = Q_learning_agent(actions)
-    current_player = players[1]
-    state_object = State(current_player, players)
-    action_object = Action()
-    get_state_vector = tuple(state_object.state)
-    
     # Play for the required number of turns
     for turn_n in range(1, SimulationSettings.n_moves + 1):
-        
-        # Thinking of switching all this out for a call to agent turn function moved into q-learning agent file
-        # chosen_action = agent.choose_action(get_state_vector)
-        
-        # property_idx = 0
-        # # action_vector = action_object.get_action_vector(property_idx, chosen_action)
-        # reward = get_reward(players[1], players)
-        # next_state_instance = State(current_player, players) 
-
-        # next_state_vector = next_state_instance.state
-
-        # agent.updateQValue(get_state_vector, chosen_action, reward, next_state_vector)
-
-        # get_state_vector = tuple(next_state_vector)
-        get_state_vector = agent.take_turn(action_object, current_player, board, get_state_vector)
 
         # Start a turn. Log turn's number
         log.add(f"\n== GAME {game_number} Turn {turn_n} ===")
@@ -149,7 +91,7 @@ def monopoly_game(data_for_simulation):
         if alive < 2:
             log.add("Only 1 player remains, game over")
             break
-        
+
         # Players make their moves
         for player in players:
             # result will be "bankrupt" if player goes bankrupt
@@ -157,21 +99,6 @@ def monopoly_game(data_for_simulation):
             # If player goes bankrupt, log it in the data log file
             if result == "bankrupt":
                 datalog.add(f"{game_number}\t{player}\t{turn_n}")
-
-    def convert_state_to_serializable(state):
-    # Convert tuple of np.float64 to list of regular floats
-        numeric_values = [float(x) for x in state[0]]  # First part of state tuple
-        action = state[1]  # Second part of state tuple (the action string)
-        return f"{numeric_values}, {action}"  # Custom string format
-    import json
-        # Save Q-table as JSON
-    q_table_serializable = {
-        convert_state_to_serializable(state): values 
-        for state, values in agent.qTable.items()}
-
-    with open("q_table_output.json", "w") as f:
-        json.dump(q_table_serializable, f, indent=4)
-    
 
     # Last thing to log in the game log: the final state of the board
     board.log_current_map(log)
@@ -182,5 +109,3 @@ def monopoly_game(data_for_simulation):
 
     # Useless return, but it is here to mark the end of the game
     return None
-
-
