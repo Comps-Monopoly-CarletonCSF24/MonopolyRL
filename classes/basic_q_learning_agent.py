@@ -43,20 +43,22 @@ class Q_learning_agent:
     def choose_action(self, state):
 
         ''' 
-        choose the best action depending on the values in the qtable at the given state
+        Choose the best action depending on the values in the qtable at the given state
 
-        TODO: Return an index between 0 and 83
+        Return an index between 0 and 83
         '''
+        
+        best_action_idx = 0 #initialize best action index
+        best_q_value = self.getQValue(state, best_action_idx)
 
-        best_action = self.actions[0]
-        for action in self.actions[1:]:
-            if self.getQValue(state, action) > self.getQValue(state, best_action):
-                best_action = action
-        return best_action
+        for action_idx in range(1,len(self.actions) *28):
+            q_value = self.getQValue(state,action_idx)
+            if q_value > best_q_value:
+                best_action_idx = action_idx
+                best_q_value = q_value
+                
+        return best_action_idx
 
-        # best_action = max(range(len(self.actions)), key=lambda a: self.getQValue(state, a))
-        # return best_action
-    
     def take_turn(self, action_obj, player, board, state):
         """
         Executes the agent's turn: chooses an action, maps it, performs it, and updates Q-values.
