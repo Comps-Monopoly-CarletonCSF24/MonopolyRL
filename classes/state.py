@@ -22,125 +22,78 @@ class State:
     finance = None
     
     def __init__(self, current_player: Player, players: list):
-        self.area = get_area(current_player, players)
-        self.position = get_position(current_player.position)
-        self.finance = get_finance(current_player, players)
-        self.state = get_state(self.area, self.position, self.finance)
-        
-def get_area(current_player: Player, players: Player) -> np.ndarray:
-    """ returns the area vector describing property owning percentage for each color
-    Args:
-        board (Board): _description_
+        self.state = get_state(self.has_monopoly, self.is_property, self.has_more_money)
+        self.has_monopoly = False
+        self.is_property = False
+        self.has_more_money = False
 
-    Returns:
-        np.ndarray: each index (according to the assigned group indices) represents 
-        the percentage of property points earned in each color group
-    """
-    self_property_points = get_property_points_by_group(current_player)
-    others_property_points = np.zeros(Num_Groups)
-    for player in players:
-        if not (player.is_bankrupt or player.name == current_player.name):
-            others_property_points += get_property_points_by_group(player)
-    area = np.vstack((self_property_points, others_property_points)) / Total_Property_Points
-    return area
-
-def get_property_points_by_group(player:Player) -> np.ndarray:
-    """Gets the number of property of each group that a player has
+def is_property(current_player: Player, position_int: int) -> bool:
+    """Determines if a position is/is not a player's property
 
     Args:
-        player (Player): /
-
-    Returns:
-        np.ndarray: each index (according to the assigned group indices) represents 
-        property points that a player owns, max 17. For all land in the group the 
-        player gets 12 (take fractions if not all owned), and for each house on 
-        any property in that group, the player gets 1 point
-    """
-    property_by_group = [0] * Num_Groups
-    for property in player.owned:
-        group_index = group_indices[property.group]
-        if property.has_hotel > 0:
-            property_by_group[group_index] = Total_Property_Points
-        elif property.has_houses > 0:
-            # get the property with most houses
-            property_by_group[group_index] = max(property_by_group[group_index], LCM_Property_Per_Group + property.has_houses)
-        elif property_by_group[group_index] < LCM_Property_Per_Group:
-            property_by_group[group_index] += LCM_Property_Per_Group / num_property_per_group[property.group]
-            
-    return np.array(property_by_group)
-
-def get_position(position_int : int) -> float:
-    """Converts a position in [0,39] to one in [0,1] by dividing 39
-
-    Args:
-        position_int (int): a number between 0 and 39 representing the players position
-
-    Returns:
-        float: a number between 0 and 1 representing the players position
-    """
-    position_float = (position_int) / (Num_Total_Cells - 1)
-    return position_float
+        position_int(int): a number between 0 and 39 representing the players position
     
-def get_finance(current_player: Player, players: list) -> np.ndarray:
-    """Gets the finance state vector from the player's money and properties
+    Returns:
+        bool: true/false value that indicates if a certain position is a 
+    
+    """
+    if position_int in Player.owned:
+        return True
+    return False
 
+def has_monopoly(player: Player, board: Board, current_position: int) -> bool:
+    """ Returns if the player has monopoly over the current property color they are on
+    Args:
+        board(Board): the game board
+        player(Player): the player to check for monopoly
+        current_position:/
+    
+    Returns:
+        A bool value indicating true/false indicating if the player has monopoly
+    """
+    if not board.is_property(current_position): #check if the current position is a property
+        return False
+    
+    current_color = board.get_property(current_position).color
+    color_group_properties = [prop for prop in board.properties
+                              if prop.color == current_color]
+    
+    for property in color_group_properties:
+        if property not in player.owned:
+            return False
+        
+    return True
+
+# new get_finance function
+def has_more_money(current_player: Player, players: list) -> bool:
+    """Determines if a player has more money than any other 2 players
     Args:
         current_player (Player): /
         players (list): a list of Player objects representing players that are alive
-
-    Returns:
-        np.ndarray: _description_
-    """
-
-    property_owned_total = 0
+    Returns: 
+        bool : a true/false value """
+    current_player_money = Player.money
+    count = 0
     for player in players:
         if not player.is_bankrupt:
-            property_owned_total += get_num_property(player)
-    if property_owned_total == 0:
-        property_ratio = 0
-    else:
-        property_ratio = get_num_property(current_player) / property_owned_total
-    
-    money_normalized = sigmoid_money(current_player.money)
-    finance = np.array([property_ratio, money_normalized])
-    return finance
+            if current_player_money > player.money:
+                count +=1
+        if count >= 2:
+            return True
+    return False
 
-def get_num_property(player: Player, houses = False) -> int:
-    """returns the number of properties a player has
 
-    Args:
-        player (Player): /
-        houses (bool, optional): whether to count houses. Defaults to False.
-
-    Returns:
-        int: total number of property the player has
-    """
-    total_property = 0
-    for property in player.owned:
-        total_property += 1 
-        if houses:
-            total_property += property.has_hotel + property.has_houses
-    return total_property
-
-def sigmoid_money(money: int) -> float:
-    """normalizes the amount of money a player has with a sigmoid function
-
-    Args:
-        money (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    return money / ( 1 + abs(money))
-    
-def get_state(area: np.ndarray, position: int, finance: np.ndarray) -> np.ndarray:
+def get_state(has_more_money: bool, has_monopoly:bool, is_property: bool) -> np.ndarray:
     """converts the 3 vectors/integers into a new one-dimensional vector
 
     Returns:
         state(np.ndarray): a 1 * 23 vector representing the state
     """
-    # Flatten the 2x10 area array to 1x20
-    flattened_area = area.flatten()
-    # Combine all into a 1x23 array
-    state = np.concatenate((flattened_area, [position], finance))
+    #convert boolean to float values (True = 1.0, False = 0.0)
+    state = np.array([
+        float(has_monopoly),
+        float(is_property),
+        float(has_more_money)
+    ], dtdypte = np.float64)
+
     return state
