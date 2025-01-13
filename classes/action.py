@@ -97,6 +97,19 @@ class Action:
         action_type = self.actions[action_index % len(self.actions)]
         return property_idx, action_type
 
+    def is_excutable (self, player, board, property_idx, action_type):
+        '''
+        Checks if the player can take the action that they are attempting to take.
+        Returns true of the player can and False otherwise. 
+        '''
+        if action_type == "do_nothing":
+            return True
+        elif action_type == "sell":
+            if not board[property_idx].is_owned() and player.can_afford(board[property_idx].price):
+                return True
+            return False 
+        
+
     def execute_action(self, player, board, property_idx, action_type):
         """
         Executes the action on the given property for the specified player.
