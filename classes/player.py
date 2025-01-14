@@ -71,7 +71,9 @@ class Player:
         return net_worth
 
     def make_a_move(self, board, players, dice, log):
-        ''' Main function for a player to make a move
+        ''' REVISION 1/11/2025: this class is now purely game logic (except jail)
+        Each agent will be a subclass of this class to add their own action functions
+        Main function for a player to make a move
         Receives:
         - a board, with all cells and other things
         - other players (in case we need to make transactions with them)
@@ -87,16 +89,6 @@ class Player:
                 f"at {board.cells[self.position].name}) goes: ===")
 
         # Things to do before the throwing of the dice:
-        # Trade with other players. Keep trading until no trades are possible
-        while self.do_a_two_way_trade(players, board, log):
-            pass
-
-        # Unmortgage a property. Keep doing it until possible
-        while self.unmortgage_a_property(board, log):
-            pass
-
-        # Improve all properties that can be improved
-        self.improve_properties(board, log)
 
         # The move itself:
         # Player rolls the dice
@@ -122,6 +114,9 @@ class Player:
         self.position %= 40
         log.add(f"Player {self.name} goes to: {board.cells[self.position].name}")
 
+        # For all agents, make actions here:
+        self.handle_action(board, players, dice, log)
+
         # Handle various types of cells player may land on
 
         # Both cards are processed first, as they may send player to a property
@@ -138,10 +133,6 @@ class Player:
             # returning "move is over" means the move is over (even if it was a double)
             if self.handle_community_chest(board, players, log) == "move is over":
                 return
-
-        # Player lands on a property
-        if isinstance(board.cells[self.position], Property):
-            self.handle_landing_on_property(board, players, dice, log)
 
         # Player lands on "Go To Jail"
         if isinstance(board.cells[self.position], GoToJail):
@@ -183,6 +174,9 @@ class Player:
         # If now a double: reset double counter
         else:
             self.had_doubles = 0
+    
+    def handle_action(self, board, players, dice, log):
+        pass
 
     def handle_salary(self, board, log):
         ''' Adding Salary to the player's money, according to the game's settings
@@ -450,179 +444,6 @@ class Player:
                     f"Income tax {tax_to_pay}")
         self.pay_money(tax_to_pay, "bank", board, log)
 
-    def handle_landing_on_property(self, board, players, dice, log):
-        ''' Landing on property: either buy it or pay rent
-        '''
-
-        def is_willing_to_buy_property(property_to_buy):
-            ''' Check if the player is willing to buy an unowned property
-            '''
-            # Player has money lower than unspendable minimum
-            if self.money - property_to_buy.cost_base < self.settings.unspendable_cash:
-                return False
-
-            # Player does not have enough money
-            # If unspendable_cash >= 0 this check is redundant
-            # However we'll need to think if a "mortgage to buy" situation
-            if property_to_buy.cost_base > self.money:
-                return False
-
-            # Property is in one of the groups, player chose to ignore
-            if property_to_buy.group in self.settings.ignore_property_groups:
-                return False
-
-            # Nothing stops the player from making a purchase
-            return True
-
-        def buy_property(property_to_buy):
-            ''' Player buys the property
-            '''
-            property_to_buy.owner = self
-            self.owned.append(property_to_buy)
-            self.money -= property_to_buy.cost_base
-
-        # This is the property a player landed on
-        landed_property = board.cells[self.position]
-
-        # Property is not owned by anyone
-        if landed_property.owner is None:
-
-            # Does the player want to buy it?
-            if is_willing_to_buy_property(landed_property):
-                # Buy property
-                buy_property(landed_property)
-                log.add(f"Player {self.name} bought {landed_property} " +
-                        f"for ${landed_property.cost_base}")
-
-                # Recalculate all monopoly / can build flags
-                board.recalculate_monopoly_coeffs(landed_property)
-
-                # Recalculate who wants to buy what
-                # (for all players, it may affect their decisions too)
-                for player in players:
-                    player.update_lists_of_properties_to_trade(board)
-
-            else:
-                log.add(f"Player {self.name} landed on a {landed_property}, he refuses to buy it")
-                # TODO: Bank auctions the property
-
-        # Property has an owner
-        else:
-            # It is mortgaged: no action
-            if landed_property.is_mortgaged:
-                log.add("Property is mortgaged, no rent")
-            # It is player's own property
-            elif landed_property.owner == self:
-                log.add("Own property, no rent")
-            # Handle rent payments
-            else:
-                log.add(f"Player {self.name} landed on a property, " +
-                        f"owned by {landed_property.owner}")
-                rent_amount = landed_property.calculate_rent(dice)
-                if self.other_notes == "double rent":
-                    rent_amount *= 2
-                    log.add(f"Per Chance card, rent is doubled (${rent_amount}).")
-                if self.other_notes == "10 times dice":
-                    # Divide by monopoly_coef to restore the dice throw
-                    # Multiply that by 10
-                    rent_amount = rent_amount // landed_property.monopoly_coef * 10
-                    log.add(f"Per Chance card, rent is 10x dice throw (${rent_amount}).")
-                self.pay_money(rent_amount, landed_property.owner, board, log)
-                if not self.is_bankrupt:
-                    log.add(f"{self} pays {landed_property.owner} rent ${rent_amount}")
-
-    def improve_properties(self, board, log):
-        ''' While there is money to spend and properties to improve,
-        keep building houses/hotels
-        '''
-
-        def get_next_property_to_improve():
-            ''' Decide what is the next property to improve:
-            - it should be eligible for improvement (is monopoly, not mortgaged,
-            has not more houses than other cells in the group)
-            - start with cheapest
-            '''
-            can_be_improved = []
-            for cell in self.owned:
-                # Property has to be:
-                # - not maxed out (no hotel)
-                # - not mortgaged
-                # - a part of monopoly, but not railway or utility (so the monopoly_coef is 2)
-                if cell.has_hotel == 0 and not cell.is_mortgaged and cell.monopoly_coef == 2 \
-                    and not (cell.group == "Railroads" or cell.group == "Utilities") :
-                    # Look at other cells in this group
-                    # If they have fewer houses, this cell can not be improved
-                    # If any cells in the group is mortgaged, this cell can not be improved
-                    for other_cell in board.groups[cell.group]:
-                        if other_cell.has_houses < cell.has_houses or other_cell.is_mortgaged:
-                            break
-                    else:
-                        # Make sure there are available houses/hotel for this improvement
-                        if cell.has_houses != 4 and board.available_houses > 0 or \
-                           cell.has_houses == 4 and board.available_hotels > 0:
-                            can_be_improved.append(cell)
-            # Sort the list by the cost of house
-            can_be_improved.sort(key = lambda x: x.cost_house)
-
-            # Return first (the cheapest) property that can be improved
-            if can_be_improved:
-                return can_be_improved[0]
-            return None
-
-        while True:
-            cell_to_improve = get_next_property_to_improve()
-
-            # Nothing to improve anymore
-            if cell_to_improve is None:
-                break
-
-            improvement_cost = cell_to_improve.cost_house
-
-            # Don't do it if you don't have money to spend
-            if self.money - improvement_cost < self.settings.unspendable_cash:
-                break
-
-            # Building a house
-            ordinal = {1: "1st", 2: "2nd", 3: "3rd", 4:"4th"}
-
-            if cell_to_improve.has_houses != 4:
-                cell_to_improve.has_houses += 1
-                board.available_houses -= 1
-                # Paying for the improvement
-                self.money -= cell_to_improve.cost_house
-                log.add(f"{self} built {ordinal[cell_to_improve.has_houses]} " +
-                        f"house on {cell_to_improve} for ${cell_to_improve.cost_house}")
-
-            # Building a hotel
-            elif cell_to_improve.has_houses == 4:
-                cell_to_improve.has_houses = 0
-                cell_to_improve.has_hotel = 1
-                board.available_houses += 4
-                board.available_hotels -= 1
-                # Paying for the improvement
-                self.money -= cell_to_improve.cost_house
-                log.add(f"{self} built a hotel on {cell_to_improve}")
-
-    def unmortgage_a_property(self, board, log):
-        ''' Go through the list of properties and unmortgage one,
-        if there is enough money to do so. Return True, if any unmortgaging
-        took place (to call it again)
-        '''
-
-        for cell in self.owned:
-            if cell.is_mortgaged:
-                cost_to_unmortgage = \
-                    cell.cost_base * GameSettings.mortgage_value + \
-                    cell.cost_base * GameSettings.mortgage_fee
-                if self.money - cost_to_unmortgage >= self.settings.unspendable_cash:
-                    log.add(f"{self} unmortgages {cell} for ${cost_to_unmortgage}")
-                    self.money -= cost_to_unmortgage
-                    cell.is_mortgaged = False
-                    self.update_lists_of_properties_to_trade(board)
-                    return True
-
-        return False
-
     def raise_money(self, required_amount, board, log):
         ''' Part of "Pay money" method. If there is not enough cash, player has to 
         sell houses, hotels, mortgage property until you get required_amount of money
@@ -867,6 +688,20 @@ class Player:
             if len(owned_by_others) == 1:
                 self.wants_to_buy.add(owned_by_others[0])
 
+class Fixed_Policy_Player(Player):
+    def handle_action(self, board, players, dice, log):
+        # Trade with other players. Keep trading until no trades are possible
+        while self.do_a_two_way_trade(players, board, log):
+            pass
+        # Unmortgage a property. Keep doing it until possible
+        while self.unmortgage_a_property(board, log):
+            pass
+        # Improve all properties that can be improved
+        self.improve_properties(board, log)
+        # Player lands on a property
+        if isinstance(board.cells[self.position], Property):
+            self.handle_landing_on_property(board, players, dice, log)
+
     def do_a_two_way_trade(self, players, board, log):
         ''' Look for and perform a two-way trade
         '''
@@ -1019,5 +854,180 @@ class Player:
 
                     # Return True, to run trading function again
                     return True
+        return False
+    
+    def unmortgage_a_property(self, board, log):
+        ''' Go through the list of properties and unmortgage one,
+        if there is enough money to do so. Return True, if any unmortgaging
+        took place (to call it again)
+        '''
+
+        for cell in self.owned:
+            if cell.is_mortgaged:
+                cost_to_unmortgage = \
+                    cell.cost_base * GameSettings.mortgage_value + \
+                    cell.cost_base * GameSettings.mortgage_fee
+                if self.money - cost_to_unmortgage >= self.settings.unspendable_cash:
+                    log.add(f"{self} unmortgages {cell} for ${cost_to_unmortgage}")
+                    self.money -= cost_to_unmortgage
+                    cell.is_mortgaged = False
+                    self.update_lists_of_properties_to_trade(board)
+                    return True
 
         return False
+    
+    def improve_properties(self, board, log):
+        ''' While there is money to spend and properties to improve,
+        keep building houses/hotels
+        '''
+
+        def get_next_property_to_improve():
+            ''' Decide what is the next property to improve:
+            - it should be eligible for improvement (is monopoly, not mortgaged,
+            has not more houses than other cells in the group)
+            - start with cheapest
+            '''
+            can_be_improved = []
+            for cell in self.owned:
+                # Property has to be:
+                # - not maxed out (no hotel)
+                # - not mortgaged
+                # - a part of monopoly, but not railway or utility (so the monopoly_coef is 2)
+                if cell.has_hotel == 0 and not cell.is_mortgaged and cell.monopoly_coef == 2 \
+                    and not (cell.group == "Railroads" or cell.group == "Utilities") :
+                    # Look at other cells in this group
+                    # If they have fewer houses, this cell can not be improved
+                    # If any cells in the group is mortgaged, this cell can not be improved
+                    for other_cell in board.groups[cell.group]:
+                        if other_cell.has_houses < cell.has_houses or other_cell.is_mortgaged:
+                            break
+                    else:
+                        # Make sure there are available houses/hotel for this improvement
+                        if cell.has_houses != 4 and board.available_houses > 0 or \
+                           cell.has_houses == 4 and board.available_hotels > 0:
+                            can_be_improved.append(cell)
+            # Sort the list by the cost of house
+            can_be_improved.sort(key = lambda x: x.cost_house)
+
+            # Return first (the cheapest) property that can be improved
+            if can_be_improved:
+                return can_be_improved[0]
+            return None
+
+        while True:
+            cell_to_improve = get_next_property_to_improve()
+
+            # Nothing to improve anymore
+            if cell_to_improve is None:
+                break
+
+            improvement_cost = cell_to_improve.cost_house
+
+            # Don't do it if you don't have money to spend
+            if self.money - improvement_cost < self.settings.unspendable_cash:
+                break
+
+            # Building a house
+            ordinal = {1: "1st", 2: "2nd", 3: "3rd", 4:"4th"}
+
+            if cell_to_improve.has_houses != 4:
+                cell_to_improve.has_houses += 1
+                board.available_houses -= 1
+                # Paying for the improvement
+                self.money -= cell_to_improve.cost_house
+                log.add(f"{self} built {ordinal[cell_to_improve.has_houses]} " +
+                        f"house on {cell_to_improve} for ${cell_to_improve.cost_house}")
+
+            # Building a hotel
+            elif cell_to_improve.has_houses == 4:
+                cell_to_improve.has_houses = 0
+                cell_to_improve.has_hotel = 1
+                board.available_houses += 4
+                board.available_hotels -= 1
+                # Paying for the improvement
+                self.money -= cell_to_improve.cost_house
+                log.add(f"{self} built a hotel on {cell_to_improve}")
+    
+    def handle_landing_on_property(self, board, players, dice, log):
+        ''' Landing on property: either buy it or pay rent
+        '''
+
+        def is_willing_to_buy_property(property_to_buy):
+            ''' Check if the player is willing to buy an unowned property
+            '''
+            # Player has money lower than unspendable minimum
+            if self.money - property_to_buy.cost_base < self.settings.unspendable_cash:
+                return False
+
+            # Player does not have enough money
+            # If unspendable_cash >= 0 this check is redundant
+            # However we'll need to think if a "mortgage to buy" situation
+            if property_to_buy.cost_base > self.money:
+                return False
+
+            # Property is in one of the groups, player chose to ignore
+            if property_to_buy.group in self.settings.ignore_property_groups:
+                return False
+
+            # Nothing stops the player from making a purchase
+            return True
+
+        def buy_property(property_to_buy):
+            ''' Player buys the property
+            '''
+            property_to_buy.owner = self
+            self.owned.append(property_to_buy)
+            self.money -= property_to_buy.cost_base
+
+        # This is the property a player landed on
+        landed_property = board.cells[self.position]
+
+        # Property is not owned by anyone
+        if landed_property.owner is None:
+
+            # Does the player want to buy it?
+            if is_willing_to_buy_property(landed_property):
+                # Buy property
+                buy_property(landed_property)
+                log.add(f"Player {self.name} bought {landed_property} " +
+                        f"for ${landed_property.cost_base}")
+
+                # Recalculate all monopoly / can build flags
+                board.recalculate_monopoly_coeffs(landed_property)
+
+                # Recalculate who wants to buy what
+                # (for all players, it may affect their decisions too)
+                for player in players:
+                    player.update_lists_of_properties_to_trade(board)
+
+            else:
+                log.add(f"Player {self.name} landed on a {landed_property}, he refuses to buy it")
+                # TODO: Bank auctions the property
+
+        # Property has an owner
+        else:
+            # It is mortgaged: no action
+            if landed_property.is_mortgaged:
+                log.add("Property is mortgaged, no rent")
+            # It is player's own property
+            elif landed_property.owner == self:
+                log.add("Own property, no rent")
+            # Handle rent payments
+            else:
+                log.add(f"Player {self.name} landed on a property, " +
+                        f"owned by {landed_property.owner}")
+                rent_amount = landed_property.calculate_rent(dice)
+                if self.other_notes == "double rent":
+                    rent_amount *= 2
+                    log.add(f"Per Chance card, rent is doubled (${rent_amount}).")
+                if self.other_notes == "10 times dice":
+                    # Divide by monopoly_coef to restore the dice throw
+                    # Multiply that by 10
+                    rent_amount = rent_amount // landed_property.monopoly_coef * 10
+                    log.add(f"Per Chance card, rent is 10x dice throw (${rent_amount}).")
+                self.pay_money(rent_amount, landed_property.owner, board, log)
+                if not self.is_bankrupt:
+                    log.add(f"{self} pays {landed_property.owner} rent ${rent_amount}")
+
+class DQAPlayer(Player):
+    pass

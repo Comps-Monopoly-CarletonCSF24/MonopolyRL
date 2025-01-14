@@ -4,7 +4,7 @@ from setting up boards, players etc to making moves by all players
 
 from settings import SimulationSettings, GameSettings, LogSettings
 
-from classes.player import Player
+from classes.player import Player, Fixed_Policy_Player
 from classes.board import Board
 from classes.dice import Dice
 from classes.log import Log
@@ -41,7 +41,7 @@ def monopoly_game(data_for_simulation):
     dice.shuffle(board.chest.cards)
 
     # Set up players with their behavior settings
-    players = [Player(player_name, player_setting)
+    players = [Fixed_Policy_Player(player_name, player_setting)
                for player_name, player_setting in GameSettings.players_list]
 
     if GameSettings.shuffle_players:

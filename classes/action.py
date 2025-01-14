@@ -70,7 +70,6 @@ class Action:
         self.properties = list(range(28))  # Property indices from 0 to 27
         self.actions = ['buy', 'sell', 'do_nothing']  # Available actions for each property
         self.total_actions = len(self.properties) * len(self.actions)  # 1x84 action space
-
     def map_action_index(self, action_index):
         """
         Maps a flattened action index to a specific property and action type.
