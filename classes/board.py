@@ -137,6 +137,8 @@ class Board:
     ''' Class collecting board related information:
     properties and their owners, build houses, etc
     '''
+    
+
 
     def __init__(self, settings):
         ''' Initialize board configuration: properties, special cells etc
