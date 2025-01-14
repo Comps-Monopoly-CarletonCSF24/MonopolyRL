@@ -4,16 +4,94 @@ import torch.optim as optim
 import random
 import numpy as np
 from classes.state import State
-from torch import nn 
-from classes.board import Property, GoToJail, LuxuryTax, IncomeTax
-from classes.board import FreeParking, Chance, CommunityChest
-from settings import GameSettings
+
+# class DQAgent:
+#     def __init__(self, actions, state_size, action_size, learning_rate=0.001, gamma=0.95, epsilon=0.1):
+#         self.actions = actions
+#         self.state_size = state_size
+#         self.action_size = action_size
+#         self.gamma = gamma
+#         self.epsilon = epsilon
+#         self.alpha = learning_rate
+        
+#         # Neural network models
+#         self.model = Q_network(state_size, action_size)
+#         self.target_model = (state_size, action_size)
+#         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
+#         self.criterion = torch.nn.MSELoss()
+
+#         # Replay buffer
+#         self.replay_buffer = deque(maxlen=10000)
+
+#     def choose_action(self, state):
+#         if random.random() < self.epsilon:  # Exploration
+#             return random.choice(self.actions)
+#         else:  # Exploitation
+#             with torch.no_grad():
+#                 q_values = self.model(torch.tensor(state, dtype=torch.float32))
+#                 return torch.argmax(q_values).item()
+
+#     def update_model(self, batch_size=32):
+#         if len(self.replay_buffer) < batch_size:
+#             return  # Not enough data to train
+
+#         # Sample a batch
+#         batch = random.sample(self.replay_buffer, batch_size)
+#         states, actions, rewards, next_states, dones = zip(*batch)
+
+#         # Convert to tensors
+#         states = torch.tensor(states, dtype=torch.float32)
+#         actions = torch.tensor(actions, dtype=torch.int64)
+#         rewards = torch.tensor(rewards, dtype=torch.float32)
+#         next_states = torch.tensor(next_states, dtype=torch.float32)
+#         dones = torch.tensor(dones, dtype=torch.float32)
+
+#         # Get current Q-values
+#         q_values = self.model(states).gather(1, actions.unsqueeze(-1)).squeeze(-1)
+
+#         # Compute target Q-values
+#         with torch.no_grad():
+#             max_next_q_values = self.target_model(next_states).max(1)[0]
+#             targets = rewards + self.gamma * max_next_q_values * (1 - dones)
+
+#         # Compute loss
+#         loss = self.criterion(q_values, targets)
+
+#         # Backpropagation
+#         self.optimizer.zero_grad()
+#         loss.backward()
+#         self.optimizer.step()
+
+#     def take_turn(self, action_obj, player, board, state):
+#         "Same thing as original take turn function but now it's adding in NN integration"
+
+#         action_idx = self.choose_action(state)
+#         property_idx, action_type = action_obj.map_action_index(action_idx)
+#         action_obj.execute_action(player, board, property_idx, action_type)
+
+#         reward = self.get_reward(player)
+#         next_state_instance = State(player, board.players)
+#         next_state = next_state_instance.state
+
+#         # Add to replay buffer
+#         done = False  # Adjust based on game logic
+#         self.replay_buffer.append((state, action_idx, reward, next_state, done))
+
+#         # Train the model
+#         self.update_model()
+
+#         return next_state
+    
+
+
+
+# simpler approach matching paper
 
 class QNetwork(nn.Module):
     def __init__(self, state_size, action_size):
         super(QNetwork, self).__init__()
         # Paper uses a simple 3-layer network
-        self.layer1 = nn.Linear(state_size + 1, )  
+        self.layer1 = nn.Linear(state_size, 64)  
         self.layer2 = nn.Linear(64, 32)
         self.output_layer = nn.Linear(32, action_size)
         
@@ -40,7 +118,7 @@ class QLambdaAgent:
         self.e_traces = {}
         for name, param in self.model.named_parameters():
             self.e_traces[name] = torch.zeros_like(param.data)
-
+            
     def reset_traces(self):
         """Reset eligibility traces at the end of each episode"""
         for name in self.e_traces:
@@ -49,6 +127,9 @@ class QLambdaAgent:
     def choose_action(self, state):
         """Select action using ε-greedy policy"""
         if random.random() < 0.1:  # 10% exploration rate
+            # this should be call function for checking if action is executable, and choose from that
+            # executable_actions = [action for action in self.actions 
+            #                 if paul's function (idk where it is)'(action)] 
             return random.choice(self.actions)
         else:
             with torch.no_grad():
@@ -66,6 +147,7 @@ class QLambdaAgent:
         area_diff = sum(abs(a1 - a2) for a1, a2 in zip(area1, area2)) <= 0.1
         finance_diff = abs(finance1 - finance2) <= 0.1
         position_same = pos1 == pos2
+        
         return area_diff and finance_diff and position_same
         
     def get_reward(self, player, all_players):
