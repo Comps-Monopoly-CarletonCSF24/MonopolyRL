@@ -1,14 +1,19 @@
 import math
 import random
 from classes.state import State
-class Q_learning_agent:
+from classes.player import Player
+class Q_learning_agent(Player):
     '''
-    Implements the qlearning algorithm by updating the qvalues from the qtable
+    Implements the qlearning algorithm by updating the qvalues from the qtable.
+    Inherits from Player class
     '''
 
-    def __init__(self, actions):
+    def __init__(self, name, settings, position=0, money=1500):
+        super().__init__(name,settings)
+        self.settings = settings
+        self.name = name
+        self.actions =[] #using a list to store actions
         self.qTable = {}
-        self.actions = actions
         self.alpha = 0.2; 
         self.gamma = 0.95
         self.epsilon = 0.1  # Exploration rate
@@ -81,4 +86,18 @@ class Q_learning_agent:
 
         # Return the new state to the game logic
         return next_state
+    '''
+    def get_reward(self,player):
+        """Calculate the reward for the agent's current state
+        Rewards are based on:
+        - Net worth (money + property values)
+        - Property ownership
+        - Monopoly set completion
+        - Bankruptcy (large negative reward)"""
 
+        reward =0
+        if player.is_bankrupt:
+            return -1000
+        
+        for property 
+        '''

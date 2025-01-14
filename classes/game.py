@@ -1,7 +1,6 @@
 ''' Function, that wraps one game of monopoly:
 from setting up boards, players etc to making moves by all players
 '''
-
 from settings import SimulationSettings, GameSettings, LogSettings
 
 from classes.player import Player
@@ -94,8 +93,9 @@ def monopoly_game(data_for_simulation):
             player.money = GameSettings.starting_money
 
 
-    actions = ['buy', 'sell', 'do_nothing']
-    agent = Q_learning_agent(actions)
+    actions = ['buy_all', 'do_nothing']
+    agent = Q_learning_agent(name="Q_Agent",settings=GameSettings)
+    agent.actions = actions
     current_player = players[1]
     state_object = State(current_player, players)
     action_object = Action()

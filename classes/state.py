@@ -20,12 +20,15 @@ class State:
     area = None
     position = None
     finance = None
+    has_monopoly =None
+    is_property =None
+    has_more_money=None
     
     def __init__(self, current_player: Player, players: list):
-        self.state = get_state(self.has_monopoly, self.is_property, self.has_more_money)
         self.has_monopoly = False
         self.is_property = False
         self.has_more_money = False
+        self.state = get_state(self.has_monopoly, self.is_property, self.has_more_money)
 
 def is_property(current_player: Player, position_int: int) -> bool:
     """Determines if a position is/is not a player's property
@@ -94,6 +97,6 @@ def get_state(has_more_money: bool, has_monopoly:bool, is_property: bool) -> np.
         float(has_monopoly),
         float(is_property),
         float(has_more_money)
-    ], dtdypte = np.float64)
+    ], dtype = np.float64)
 
     return state

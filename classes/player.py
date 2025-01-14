@@ -473,10 +473,9 @@ class Player:
 
             # Nothing stops the player from making a purchase
             return True
-
-        def buy_property(property_to_buy):
-            ''' Player buys the property
-            '''
+    '''more complicated original buy_property method
+    def buy_property(property_to_buy):
+            
             property_to_buy.owner = self
             self.owned.append(property_to_buy)
             self.money -= property_to_buy.cost_base
@@ -530,6 +529,13 @@ class Player:
                 self.pay_money(rent_amount, landed_property.owner, board, log)
                 if not self.is_bankrupt:
                     log.add(f"{self} pays {landed_property.owner} rent ${rent_amount}")
+
+    '''
+    def buy_property(self, property_to_buy):
+        """Player buys the property"""
+        property_to_buy.owner = self
+        self.owned.append(property_to_buy)
+        self.money -= property_to_buy.cost_base
 
     def improve_properties(self, board, log):
         ''' While there is money to spend and properties to improve,
