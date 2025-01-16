@@ -11,38 +11,6 @@ from classes.basic_q_learning_agent import Q_learning_agent
 from classes.state import State
 from classes.action import Action
 
-def get_alive_players(players):
-    '''
-    creates a list of all the alive players
-    '''
-
-    alive_players = []
-    for  player in players:
-        if player.net_worth() > 0:
-            alive_players.append(player)
-
-    return alive_players
-
-def get_reward (player, players):
-
-    ''' 
-    computes the reward accounting for the player's networth in comparison with their opponents money
-    '''
-
-    player_networth = player.net_worth()
-    alive_players = get_alive_players(players)
-
-    all_players_worth = 0
-    for player in alive_players:
-        all_players_worth += player.net_worth()
-
-    p = 4 # number of players
-    c = 0.450 # smothing factor 
-    v = player_networth - all_players_worth # players total assets values (add up value of all properties in the possession of the player minus the properties of all his opponents)
-    m = (player_networth/all_players_worth) * 100 # player's finance (percentage of the money the player has to the sum of all the players money)
-    r = ((v/p)*c)/ (1+ abs((v/p)*c)-(1/p)*m)
-    return r
-
 def monopoly_game(data_for_simulation):
     ''' Simulation of one game.
     For convenience to set up a multi-thread,
@@ -99,7 +67,7 @@ def monopoly_game(data_for_simulation):
     current_player = players[1]
     state_object = State(current_player, players)
     action_object = Action()
-    get_state_vector = tuple(state_object.state)
+    current_state = tuple(state_object.state) #renamed from get_state_vector
     
     # Play for the required number of turns
     for turn_n in range(1, SimulationSettings.n_moves + 1):
@@ -117,7 +85,7 @@ def monopoly_game(data_for_simulation):
         # agent.updateQValue(get_state_vector, chosen_action, reward, next_state_vector)
 
         # get_state_vector = tuple(next_state_vector)
-        get_state_vector = agent.take_turn(action_object, current_player, board, get_state_vector)
+        current_state = agent.take_turn(action_object, current_player, board, players,current_state)
 
         # Start a turn. Log turn's number
         log.add(f"\n== GAME {game_number} Turn {turn_n} ===")

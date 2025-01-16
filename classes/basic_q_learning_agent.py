@@ -1,7 +1,9 @@
 import math
 import random
+from classes.rewards import get_reward
 from classes.state import State
 from classes.player import Player
+
 class Q_learning_agent(Player):
     '''
     Implements the qlearning algorithm by updating the qvalues from the qtable.
@@ -64,40 +66,29 @@ class Q_learning_agent(Player):
                 
         return best_action_idx
 
-    def take_turn(self, action_obj, player, board, state):
+    def take_turn(self, action_obj, current_player, board, players, state): 
         """
         Executes the agent's turn: chooses an action, maps it, performs it, and updates Q-values.
+        Since the list of players alive are managed at game level, added players as a parameter.
         """
         # Agent selects an action index (0 to 83) for the 1x84 vector of actions
         action_idx = self.choose_action(state)
 
         property_idx, action_type = action_obj.map_action_index(action_idx)
         
-        action_obj.execute_action(player, board, property_idx, action_type)
+        action_obj.execute_action(current_player, board, property_idx, action_type)
 
-        reward = self.get_reward(player)  # Make sure this method exists already right now or pass to the agent
-
+        reward = get_reward(current_player, players)  #method moved to rewards.py to aviod circular import
         # Get the next state after action
-        next_state_instance = State(player, board.players)
-        next_state = next_state_instance.state
+        next_state_instance = State(current_player, players)
+        next_state = tuple(next_state_instance.state) 
+        '''convert to tuple, we need the tuple so that it can be used as dictionary
+        keys for Q-tables
+        '''
 
         # Update Q-table
         self.updateQValue(state, action_idx, reward, next_state)
 
         # Return the new state to the game logic
         return next_state
-    '''
-    def get_reward(self,player):
-        """Calculate the reward for the agent's current state
-        Rewards are based on:
-        - Net worth (money + property values)
-        - Property ownership
-        - Monopoly set completion
-        - Bankruptcy (large negative reward)"""
-
-        reward =0
-        if player.is_bankrupt:
-            return -1000
-        
-        for property 
-        '''
+    

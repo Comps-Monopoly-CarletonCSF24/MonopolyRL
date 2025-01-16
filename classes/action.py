@@ -53,12 +53,12 @@ class Action:
         Executes the action on the given property for the specified player.
         """
         property = board.get_property(property_idx)
-        if action_type == 'buy':
+        if action_type == 'buy_all':
             # Changed board[property_idx] to board.get_property(property_idx)
             if property.owner is None and player.money >= property.cost_base:    #direct money comparison to attribute cost_base
                 player.buy_property(property)
-        elif action_type == 'sell':
-            if board.get_property(property_idx).owner == player:
-                player.sell_property(board.get_property(property_idx))
+        #elif action_type == 'sell':
+            #if board.get_property(property_idx).owner == player:
+               # player.sell_property(board.get_property(property_idx))
         elif action_type == 'do_nothing':
             pass  # No action is taken
