@@ -12,13 +12,13 @@ class SimulationSettings():
 
     # Number of games to simulate
     
-    n_games = 10
+    n_games = 5000
 
     # Random seed to start simulation with
     seed = 0
 
     # Number of parallel processes to use in the simulation
-    multi_process = 4
+    multi_process = 2
 
 class LogSettings:
     ''' Settings for logging
@@ -51,9 +51,6 @@ class StandardPlayer:
     trade_max_diff_abs = 200 # More expensive - less expensive
     trade_max_diff_rel = 2 # More expensive / less expensive
 
-class ExperimentPlayer(StandardPlayer):
-    ''' Changed settings for the Experiment Player
-    '''
 
 class GameSettings():
     ''' Setting for the game (rules + player list)
@@ -64,10 +61,11 @@ class GameSettings():
 
     # Players and their behavior settings
     players_list = [
-        ("Experiment", ExperimentPlayer),
-        ("Standard 1", StandardPlayer),
+        # ("Experiment", StandardPlayer),
+        # ("Standard 1", StandardPlayer),
+
         ("Standard 2", StandardPlayer),
-        ("Standard 3", StandardPlayer),
+        ("Agent     ", StandardPlayer),
     ]
 
     # Randomly shuffle order of players each game
