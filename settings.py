@@ -8,7 +8,7 @@ class SimulationSettings():
     # Number of moves to simulate
     # (if there are more than one player alive after then,
     # the game is considered to have no winner)
-    n_moves = 1000
+    n_moves = 5000
 
     # Number of games to simulate
     
@@ -62,12 +62,13 @@ class GameSettings():
     dice_count = 2
     dice_sides = 6
 
-    # Players and their behavior settings
+    # Player Names, Player Type, and Player Settings
+    # A Player can be 1 of "Fixed Policy", "QLambda", or "BasicQ"
     players_list = [
-        ("Experiment", ExperimentPlayer),
-        ("Standard 1", StandardPlayer),
-        ("Standard 2", StandardPlayer),
-        ("Standard 3", StandardPlayer),
+        ("QLambda Player", "QLambda", StandardPlayer),
+        ("Fixed Policy Player 1", "Fixed Policy", StandardPlayer),
+        ("Fixed Policy Player 2", "Fixed Policy", StandardPlayer),
+        ("Fixed Policy Player 3", "Fixed Policy", StandardPlayer),
     ]
 
     # Randomly shuffle order of players each game

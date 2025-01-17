@@ -1,89 +1,10 @@
 
 import torch
 import torch.optim as optim
+import torch.nn as nn
 import random
 import numpy as np
 from classes.state import State
-
-# class DQAgent:
-#     def __init__(self, actions, state_size, action_size, learning_rate=0.001, gamma=0.95, epsilon=0.1):
-#         self.actions = actions
-#         self.state_size = state_size
-#         self.action_size = action_size
-#         self.gamma = gamma
-#         self.epsilon = epsilon
-#         self.alpha = learning_rate
-        
-#         # Neural network models
-#         self.model = Q_network(state_size, action_size)
-#         self.target_model = (state_size, action_size)
-#         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
-#         self.criterion = torch.nn.MSELoss()
-
-#         # Replay buffer
-#         self.replay_buffer = deque(maxlen=10000)
-
-#     def choose_action(self, state):
-#         if random.random() < self.epsilon:  # Exploration
-#             return random.choice(self.actions)
-#         else:  # Exploitation
-#             with torch.no_grad():
-#                 q_values = self.model(torch.tensor(state, dtype=torch.float32))
-#                 return torch.argmax(q_values).item()
-
-#     def update_model(self, batch_size=32):
-#         if len(self.replay_buffer) < batch_size:
-#             return  # Not enough data to train
-
-#         # Sample a batch
-#         batch = random.sample(self.replay_buffer, batch_size)
-#         states, actions, rewards, next_states, dones = zip(*batch)
-
-#         # Convert to tensors
-#         states = torch.tensor(states, dtype=torch.float32)
-#         actions = torch.tensor(actions, dtype=torch.int64)
-#         rewards = torch.tensor(rewards, dtype=torch.float32)
-#         next_states = torch.tensor(next_states, dtype=torch.float32)
-#         dones = torch.tensor(dones, dtype=torch.float32)
-
-#         # Get current Q-values
-#         q_values = self.model(states).gather(1, actions.unsqueeze(-1)).squeeze(-1)
-
-#         # Compute target Q-values
-#         with torch.no_grad():
-#             max_next_q_values = self.target_model(next_states).max(1)[0]
-#             targets = rewards + self.gamma * max_next_q_values * (1 - dones)
-
-#         # Compute loss
-#         loss = self.criterion(q_values, targets)
-
-#         # Backpropagation
-#         self.optimizer.zero_grad()
-#         loss.backward()
-#         self.optimizer.step()
-
-#     def take_turn(self, action_obj, player, board, state):
-#         "Same thing as original take turn function but now it's adding in NN integration"
-
-#         action_idx = self.choose_action(state)
-#         property_idx, action_type = action_obj.map_action_index(action_idx)
-#         action_obj.execute_action(player, board, property_idx, action_type)
-
-#         reward = self.get_reward(player)
-#         next_state_instance = State(player, board.players)
-#         next_state = next_state_instance.state
-
-#         # Add to replay buffer
-#         done = False  # Adjust based on game logic
-#         self.replay_buffer.append((state, action_idx, reward, next_state, done))
-
-#         # Train the model
-#         self.update_model()
-
-#         return next_state
-    
-
-
 
 # simpler approach matching paper
 
@@ -101,17 +22,17 @@ class QNetwork(nn.Module):
         return self.output_layer(x)
 
 class QLambdaAgent:
-    def __init__(self, actions, state_size, action_size):
+    def __init__(self, actions, state_size):
         # Parameters from the paper
         self.actions = actions
         self.state_size = state_size
-        self.action_size = action_size
+        self.action_size = len(actions)
         self.alpha = 0.2       # Learning rate from paper
         self.gamma = 0.95      # Discount factor from paper
         self.lambda_param = 0.85  # Lambda parameter from paper
         
         # Initialize network and optimizer
-        self.model = QNetwork(state_size, action_size)
+        self.model = QNetwork(state_size, self.action_size)
         self.optimizer = optim.SGD(self.model.parameters(), lr=self.alpha)
         
         # Initialize eligibility traces
@@ -133,7 +54,8 @@ class QLambdaAgent:
             return random.choice(self.actions)
         else:
             with torch.no_grad():
-                state_tensor = torch.tensor(state, dtype=torch.float32)
+                state_tensor = torch.tensor(state.state
+                                            , dtype=torch.float32)
                 q_values = self.model(state_tensor)
                 return self.actions[torch.argmax(q_values).item()]
                 
@@ -175,8 +97,8 @@ class QLambdaAgent:
     def update(self, state, action, reward, next_state):
         """Update Q-values using Q(λ) learning"""
         # Convert states to tensors
-        state_tensor = torch.tensor(state, dtype=torch.float32)
-        next_state_tensor = torch.tensor(next_state, dtype=torch.float32)
+        state_tensor = torch.tensor(state.state, dtype=torch.float32)
+        next_state_tensor = torch.tensor(next_state.state, dtype=torch.float32)
         
         # Get current Q-values
         current_q = self.model(state_tensor)
@@ -207,24 +129,6 @@ class QLambdaAgent:
                 # Zero gradients
                 param.grad.zero_()
                 
-    def take_turn(self, action_obj, player, board, state):
-        """Execute a turn in the game"""
-        # Choose and execute action
-        action = self.choose_action(state)
-        property_idx, action_type = action_obj.map_action_index(
-            self.actions.index(action))
-        action_obj.execute_action(player, board, property_idx, action_type)
-        
-        # Get new state and reward
-        next_state_instance = State(player, board.players)
-        next_state = next_state_instance.state
-        reward = self.get_reward(player, board.players)
-        
-        # Update Q-values
-        self.update(state, action, reward, next_state)
-        
-        return next_state
-        
     def end_episode(self):
         """Clean up at the end of an episode"""
         self.reset_traces()

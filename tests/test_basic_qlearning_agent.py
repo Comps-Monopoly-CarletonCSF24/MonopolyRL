@@ -8,7 +8,7 @@ import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from settings import GameSettings, LogSettings
-from classes.player import Player
+from classes.player_logistics import Player
 from classes.board import Board
 from classes.dice import Dice
 from classes.log import Log
