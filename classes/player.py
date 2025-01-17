@@ -453,10 +453,11 @@ class Player:
     def handle_landing_on_property(self, board, players, dice, log):
         ''' Landing on property: either buy it or pay rent
         '''
-
+        #log.add(f"DEBUG: {self.name} is inside of handle_landing_on_proper")
         def is_willing_to_buy_property(property_to_buy):
             ''' Check if the player is willing to buy an unowned property
             '''
+            log.add(f"DEBUG: {self.name} is inside of is_willingt_tobuy_property")
             # Player has money lower than unspendable minimum
             if self.money - property_to_buy.cost_base < self.settings.unspendable_cash:
                 return False
@@ -473,17 +474,17 @@ class Player:
 
             # Nothing stops the player from making a purchase
             return True
-    '''more complicated original buy_property method
-    def buy_property(property_to_buy):
-            
-            property_to_buy.owner = self
-            self.owned.append(property_to_buy)
-            self.money -= property_to_buy.cost_base
+    
+        def buy_property(property_to_buy):
+                
+                property_to_buy.owner = self
+                self.owned.append(property_to_buy)
+                self.money -= property_to_buy.cost_base
 
-        # This is the property a player landed on
+         # This is the property a player landed on
         landed_property = board.cells[self.position]
 
-        # Property is not owned by anyone
+                # Property is not owned by anyone
         if landed_property.owner is None:
 
             # Does the player want to buy it?
@@ -536,7 +537,7 @@ class Player:
         property_to_buy.owner = self
         self.owned.append(property_to_buy)
         self.money -= property_to_buy.cost_base
-
+    '''
     def improve_properties(self, board, log):
         ''' While there is money to spend and properties to improve,
         keep building houses/hotels
