@@ -325,7 +325,7 @@ class DQAPlayer(Player):
     def __init__(self, name, settings):
         super().__init__(name, settings)
         self.action = Action()
-        self.agent = QLambdaAgent(self.action, State_Size, self.action.total_actions)
+        pass
     
     def handle_action(self, board, players, dice, log):
         """Moved agent.take_turn to here. The agent takes a turn and performs 

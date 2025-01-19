@@ -28,6 +28,16 @@ class State:
         self.position = get_position(current_player.position)
         self.finance = get_finance(current_player, players)
         self.state = get_state(self.area, self.position, self.finance)
+    def is_similar_to(self, s2):
+        """Implement state similarity metric from paper"""
+        # Extract area, finance, and position from states
+        area1, finance1, pos1 = self.area, self.finance, self.position
+        area2, finance2, pos2 = s2.area, s2.finance, s2.position
+        # Check conditions from paper
+        area_diff = sum(abs(a1 - a2) for a1, a2 in zip(area1, area2)) <= 0.1
+        finance_diff = abs(finance1 - finance2) <= 0.1
+        position_same = pos1 == pos2
+        return np.all(area_diff) and np.all(finance_diff) and position_same
         
 def get_area(current_player: "Player", players: list["Player"]) -> np.ndarray:
     """ returns the area vector describing property owning percentage for each color
