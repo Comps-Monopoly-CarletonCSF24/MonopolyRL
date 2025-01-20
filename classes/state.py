@@ -1,12 +1,14 @@
 from classes.player_logistics import Player
-from classes.board import Board, Property, Cell
-from classes.log import Log
 import numpy as np
+from settings import GameSettings
 
 # the number of properties on the board in each group
-num_property_per_group = {'Brown': 2, 'Railroads': 4, 'Lightblue': 3, 'Pink': 3, 'Utilities': 4, 'Orange': 3, 'Red': 3, 'Yellow': 3, 'Green': 3, 'Indigo': 2}
+num_property_per_group = {'Brown': 2, 'Railroads': 4, 'Lightblue': 3, 'Pink': 3, 'Utilities': 2, 'Orange': 3, 'Red': 3, 'Yellow': 3, 'Green': 3, 'Indigo': 2}
 # tn arbitrary index for groups between 1 - 9
 group_indices = {'Brown': 0, 'Railroads': 1, 'Lightblue': 2, 'Pink': 3, 'Utilities': 4, 'Orange': 5, 'Red': 6, 'Yellow': 7, 'Green': 8, 'Indigo': 9}
+# the cells in each group, indexed by the indices above
+group_cell_indices = [[1, 3], [5, 15, 25, 35], [6,8,9], [11,13,14], [12,28], [16,18,19], [21,23,24], [26,27,29], [31,32,34], [37, 39]]
+
 # dimensions that a state vector has
 State_Size = 23
 # number of groups ob the board
@@ -22,7 +24,6 @@ class State:
     area = None
     position = None
     finance = None
-    
     def __init__(self, current_player: "Player", players: list["Player"]):
         self.area = get_area(current_player, players)
         self.position = get_position(current_player.position)
@@ -38,7 +39,15 @@ class State:
         finance_diff = abs(finance1 - finance2) <= 0.1
         position_same = pos1 == pos2
         return np.all(area_diff) and np.all(finance_diff) and position_same
-        
+    
+def get_initial_state():
+    state_init = State.__new__(State)
+    state_init.area = np.zeros(20)
+    state_init.position = 0
+    state_init.finance = np.array([0, sigmoid_money(GameSettings.starting_money)])
+    state_init.state = get_state(state_init.area, state_init.position, state_init.finance)
+    return state_init
+
 def get_area(current_player: "Player", players: list["Player"]) -> np.ndarray:
     """ returns the area vector describing property owning percentage for each color
     Args:

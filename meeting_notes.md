@@ -80,7 +80,7 @@ Note: the short paper chose all actions in a loop until no possible actions. The
         - else: train nn
             - q_t = nn(trace.state, trace.action)
             - max_qt = nn(trace.state, choose_action(trace.state))
-            - max_q = nn(state, choose_action(state)
+            - max_q = nn(state, choose_action(state))           
             - q updated = nn(trace.state, newaction), where newaction is the result of choose_action(trace.state)
             - qvalue = q_t  + alpha * (traces[i].value) * (reward + gamma * max_qt - max_q);
             - train_neural_network(trace.state, trace.action, qvalue)

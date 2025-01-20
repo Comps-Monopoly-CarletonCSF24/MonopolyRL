@@ -1,8 +1,11 @@
-from classes.board import Property
+from typing import List
+from classes.board import Board, Property
+from classes.dice import Dice
+from classes.log import Log
 from settings import GameSettings
-from classes.DQAgent import QLambdaAgent
-from classes.action import Action, map_action_index, is_excutable
-from classes.state import State, State_Size
+from classes.DQAgent_paper import QLambdaAgent
+from classes.action_paper import Action, Actions
+from classes.state import State, group_cell_indices
 from classes.player_logistics import Player
 
 class Fixed_Policy_Player(Player):
@@ -324,41 +327,168 @@ class Fixed_Policy_Player(Player):
 class DQAPlayer(Player):
     def __init__(self, name, settings):
         super().__init__(name, settings)
-        self.action = Action()
+        self.action = Action("do_nothing")
+        self.agent = QLambdaAgent()
         pass
     
-    def handle_action(self, board, players, dice, log):
+    def handle_action(self, board: Board, players: List[Player], dice: Dice, log: Log):
+        for group_idx in range(len(group_cell_indices)):
+            if self.is_group_actionable(group_idx, board):
+                action = self.take_one_action(board, players)
+                self.execute_action(board, log, action, group_idx)
+
+    def take_one_action(self, board: Board, players: List[Player]):
         """Moved agent.take_turn to here. The agent takes a turn and performs 
         all possible actiosn according to the NN.
 
         Args:
-            board (_type_): _description_
+            board (Board): _description_
             players (_type_): _description_
             dice (_type_): _description_
             log (_type_): _description_
         """
-        # This can be optimized.
-        state = State(self, players)
-        action = self.agent.choose_action(state)
-        property_idx, action_type = map_action_index(self.actions.index(action))
-        self.execute_action(self, board, property_idx, action_type)
-        next_state_instance = State(self, board.players)
-        next_state = next_state_instance.state
-        reward = self.agent.get_reward(self, board.players)
-        self.agent.update(state, action, reward, next_state)
+        current_state = State(self, players)
+        current_action_idx = self.agent.choose_action(current_state)
+        current_action = Action(Actions[current_action_idx])
+        self.agent.update_trace(current_state, current_action)
+        reward = self.agent.get_reward(self, players)
+        q_value = self.agent.q_learning(current_state, current_action, reward)
+        self.agent.train_neural_network(self.agent.model, self.agent.last_state, self.agent.last_action, q_value)
+        self.agent.last_state = current_state
+        self.agent.last_action = current_action
+        return current_action
         
-    def execute_action(self, player, board, property_idx, action_type):
+    def execute_action(self, board: Board, log: Log, action: Action, group_idx):
+        """Executes the action on the given property for the specified player.
+
+        Args:
+            board (Board): _description_
+            log (Log): _description_
+            action (Action): _description_
+            group_idx (_type_): _description_
         """
-        Executes the action on the given property for the specified player.
-        """
-        if action_type == 'buy':
-            if not board[property_idx].is_owned() and player.can_afford(board[property_idx].price):
-                player.buy_property(board[property_idx])
-        elif action_type == 'sell':
-            if board[property_idx].owner == player:
-                player.sell_property(board[property_idx])
-        elif action_type == 'do_nothing':
-            pass  # No action is taken
+    
+        match action.action_type:
+            case 'buy':
+                # self.buy_in_group(group_idx, board, log)
+                pass
+            case 'sell':
+                # self.sell_group(group_idx)
+                pass
+            case 'do_nothing':
+                pass  
+        return 
+    
+    def buy_in_group(self, group_idx: int, board: Board, log: Log):
+
+        cells_in_group = []
+        for cell_idx in group_cell_indices[group_idx]:
+            cells_in_group.append(board.cells[cell_idx])
+            
+        def can_buy_property():
+            '''
+            Check if the player can buy a property
+            '''
+            property_to_buy = board.cells[self.position]
+            if property_to_buy.owner != None:
+                return False
+            if self.money - property_to_buy.cost_base < self.settings.unspendable_cash:
+                return False
+            
+        def buy_property():
+            ''' Player buys the property'''
+            property_to_buy = board.cells[self.position]
+            property_to_buy.owner = self
+            self.owned.append(property_to_buy)
+            self.money -= property_to_buy.cost_base
+            return True
+        
+        def get_next_property_to_improve():
+            ''' Decide what is the next property to improve:
+            - it should be eligible for improvement (is monopoly, not mortgaged,
+            has not more houses than other cells in the group)
+            - start with cheapest
+            '''
+            can_be_improved = []
+            for cell in cells_in_group:
+                # Property has to be:
+                # - not maxed out (no hotel)
+                # - not mortgaged
+                # - a part of monopoly, but not railway or utility (so the monopoly_coef is 2)
+                if cell.has_hotel == 0 and not cell.is_mortgaged and cell.monopoly_coef == 2 \
+                    and not (cell.group == "Railroads" or cell.group == "Utilities") :
+                    # Look at other cells in this group
+                    # If they have fewer houses, this cell can not be improved
+                    # If any cells in the group is mortgaged, this cell can not be improved
+                    for other_cell in board.groups[cell.group]:
+                        if other_cell.has_houses < cell.has_houses or other_cell.is_mortgaged:
+                            break
+                    else:
+                        # Make sure there are available houses/hotel for this improvement
+                        if cell.has_houses != 4 and board.available_houses > 0 or \
+                            cell.has_houses == 4 and board.available_hotels > 0:
+                            can_be_improved.append(cell)
+            # Sort the list by the cost of house
+            can_be_improved.sort(key = lambda x: x.cost_house)
+            
+            # Return first (the cheapest) property that can be improved
+            if can_be_improved:
+                return can_be_improved[0]
+            return None
+    
+        def improve_property(cell_to_improve):
+            if not cell_to_improve:
+                return False
+            
+            improvement_cost = cell_to_improve.cost_house
+
+            # Don't do it if you don't have money to spend
+            if self.money - improvement_cost < self.settings.unspendable_cash:
+                return False
+
+            # Building a house
+            ordinal = {1: "1st", 2: "2nd", 3: "3rd", 4:"4th"}
+
+            if cell_to_improve.has_houses != 4:
+                cell_to_improve.has_houses += 1
+                board.available_houses -= 1
+                # Paying for the improvement
+                self.money -= cell_to_improve.cost_house
+                log.add(f"{self} built {ordinal[cell_to_improve.has_houses]} " +
+                        f"house on {cell_to_improve} for ${cell_to_improve.cost_house}")
+
+            # Building a hotel
+            elif cell_to_improve.has_houses == 4:
+                cell_to_improve.has_houses = 0
+                cell_to_improve.has_hotel = 1
+                board.available_houses += 4
+                board.available_hotels -= 1
+                # Paying for the improvement
+                self.money -= cell_to_improve.cost_house
+                log.add(f"{self} built a hotel on {cell_to_improve}")
+            return True
+        
+        # if landed on an unowned property: buy it
+        if can_buy_property():
+            return buy_property()
+        else:
+            cell_to_improve = get_next_property_to_improve()
+            return improve_property(cell_to_improve)       
+
+    def is_group_actionable(self, group_idx: int, board: Board):
+        cell_indices_in_group = group_cell_indices[group_idx]
+        for cell_idx in cell_indices_in_group:
+            cell = board.cells[cell_idx]
+            # can sell
+            if cell.owner == self: 
+                return True
+            # can buy
+            if self.position == cell_idx and not cell.owner:
+                return True
+            # can improve
+            if cell.monopoly_coef == 2:
+                return True
+        return False
         
 class BasicQPlayer(Player):
     pass

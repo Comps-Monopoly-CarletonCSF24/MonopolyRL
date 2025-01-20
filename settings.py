@@ -8,11 +8,11 @@ class SimulationSettings():
     # Number of moves to simulate
     # (if there are more than one player alive after then,
     # the game is considered to have no winner)
-    n_moves = 5000
+    n_moves = 1000
 
     # Number of games to simulate
     
-    n_games = 1000
+    n_games = 100
 
     # Random seed to start simulation with
     seed = 0
@@ -66,7 +66,7 @@ class GameSettings():
     # A Player can be 1 of "Fixed Policy", "QLambda", or "BasicQ"
     players_list = [
         # ("QLambda Player", "QLambda", StandardPlayer),
-        ("Fixed Policy Player 1", "Fixed Policy", StandardPlayer),
+        ("QLambda Player 1", "QLambda", ExperimentPlayer),
         ("Fixed Policy Player 2", "Fixed Policy", StandardPlayer),
         ("Fixed Policy Player 3", "Fixed Policy", StandardPlayer),
         ("Fixed Policy Player 4", "Fixed Policy", StandardPlayer)

@@ -50,7 +50,7 @@ def monopoly_game(data_for_simulation):
                 players.append(DQAPlayer(player_name, player_setting))
             case "BasicQ":
                 players.append(BasicQPlayer(player_name, player_setting))
-                
+            
     if GameSettings.shuffle_players:
         # dice has a thread-safe copy of random.shuffle
         dice.shuffle(players)
@@ -67,7 +67,6 @@ def monopoly_game(data_for_simulation):
 
     # Play for the required number of turns
     for turn_n in range(1, SimulationSettings.n_moves + 1):
-
         # Start a turn. Log turn's number
         log.add(f"\n== GAME {game_number} Turn {turn_n} ===")
 
@@ -110,9 +109,13 @@ def monopoly_game(data_for_simulation):
     # Last thing to log in the game log: the final state of the board
     board.log_current_map(log)
 
+    for player in players:
+        if isinstance(player, DQAPlayer):
+            player.agent.save_nn()
+            
     # Save the logs
     log.save()
     datalog.save()
-
+            
     # Useless return, but it is here to mark the end of the game
     return None
