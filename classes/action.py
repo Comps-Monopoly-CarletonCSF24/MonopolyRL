@@ -8,7 +8,7 @@ import numpy as np
 class Action:
     def __init__(self):
         self.properties = list(range(28))  # Property indices from 0 to 27
-        self.actions = ['buy', 'sell', 'do_nothing']  # Available actions for each property
+        self.actions = ['buy', 'sell', 'trade','do_nothing']  # Available actions for each property
         self.total_actions = len(self.properties) * len(self.actions)  # 1x84 action space
 
     def map_action_index(self, action_index):
@@ -45,7 +45,7 @@ class Action:
         if action_idx == 1:
             return True
         elif action_idx == 0:
-            if not board[property_idx].is_owned() and player.can_afford(board[property_idx].price):
+            if not board[property_idx].is_owned() and player.can_afford(board[property_idx].cost_base):
                 return True
             return False 
         

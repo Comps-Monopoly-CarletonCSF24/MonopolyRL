@@ -16,10 +16,6 @@ class Reward:
         """
         player_networth = player.net_worth()
         alive_players = self.get_alive_players(players)
-
-        rem_players = [_.name for _ in alive_players]
-        # if (len(rem_players) == 1):
-            # print("Survivor:", rem_players)
         
         all_players_worth = sum(player.net_worth() for player in alive_players)
         

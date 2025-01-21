@@ -2,6 +2,7 @@ from classes.player import Player
 from classes.board import Board, Property, Cell
 from classes.log import Log
 import numpy as np
+import copy
 
 # the number of properties on the board in each group
 num_property_per_group = {'Brown': 2, 'Railroads': 4, 'Lightblue': 3, 'Pink': 3, 'Utilities': 4, 'Orange': 3, 'Red': 3, 'Yellow': 3, 'Green': 3, 'Indigo': 2}
@@ -26,6 +27,55 @@ class State:
         self.position = get_position(current_player.position)
         self.finance = get_finance(current_player, players)
         self.state = get_state(self.area, self.position, self.finance)
+
+    def update_after_purchase(self, current_player: Player, players: list, property: Property, property_cost: int):
+        """ Updates the state after a player buys a property. """
+
+        player = copy.deepcopy(current_player)
+        if property.owner == None and player.money >= property.cost_base:
+            # Update the player's finance (subtract the property cost)
+            player.money -= property_cost
+            
+            # Add the property to the player's owned properties
+            player.owned.append(property)
+            
+            # Recalculate the player's area, finance, and other attributes after the purchase
+            self.state = get_state(get_area(player, players), 
+                                        get_position(player.position), 
+                                        get_finance(player, players))
+            return self.state
+        return 0
+
+    def update_after_sale(self, current_player: Player, players: list, property: Property, sale_price: int):
+
+        player = copy.deepcopy(current_player)
+        """ Updates the state after a player sells a property. """
+        # if property.owner != None and property.owner.name == current_player.name:
+        if property in player.owned:
+            # Update the player's finance (add the sale price)
+            player.money += sale_price
+            
+            # Remove the property from the player's owned properties
+            current_player.owned.remove(property)
+            # Recalculate the player's area, finance, and other attributes after the sale
+            self.state = get_state(get_area(player, players), 
+                                        get_position(player.position), 
+                                        get_finance(player, players))
+            return self.state
+        return 0
+    
+    def update_after_trade(self, current_player, trade: dict, players: list):
+        """ Updates the state after a player trades with another player. """
+        player = copy.deepcopy(current_player)
+        # Process the trade logic (transferring properties and money)
+        self.process_trade(trade)
+        
+        # Recalculate the area and finance for both players after the trade
+        self.state = get_state(get_area(player, players), 
+                                    get_position(player.position), 
+                                    self.get_finance(player, players))
+
+    
         
 def get_area(current_player: Player, players: Player) -> np.ndarray:
     """ returns the area vector describing property owning percentage for each color

@@ -89,27 +89,19 @@ def monopoly_game(data_for_simulation):
             from classes.rewards import Reward
             
             current_player = players[-1]
-            agent = ApproxQLearningAgent(name = current_player.name, settings=GameSettings, feature_size=33)  
+            agent = ApproxQLearningAgent(name = current_player.name, settings=GameSettings, feature_size=150)  
 
             current_state = State(current_player=current_player, players= players)
-            action = agent.select_action(current_state)
-            next_state = agent.simulate_action(current_state, action)
+            action_property = agent.select_action(current_state)
+            next_state = agent.simulate_action(board, current_state, current_player, players, action_property[0])
 
             Reward = Reward()
             # Simulate a reward
             reward = Reward.get_reward(current_player, players)
             print ("agent ", reward)
             print ("player1 ", Reward.get_reward(players[0], players))
-            # print ("player2 ", Reward.get_reward(players[1], players))
-            # print ("player3 ", Reward.get_reward(players[2], players))
-
-
-
-            # print (f"action: {action}, rewar: {reward}")
-            # Update the agent
-            agent.update(current_state, action, reward, next_state)
-            # print (action)
-
+            agent.update(current_state, action_property[0], reward, next_state)
+            
         # Log the number of available Houses/Hotels etc
         board.log_board_state(log)
         # Add an empty line before players' moves
@@ -123,7 +115,7 @@ def monopoly_game(data_for_simulation):
             break
 
         # Players make their moves
-        result1 = current_player.make_a_move(board, players, dice, log, action)
+        result1 = current_player.make_a_move(board, players, dice, log, action_property)
         if result1 == "bankrupt":
                 datalog.add(f"{game_number}\t{player}\t{turn_n}")
 

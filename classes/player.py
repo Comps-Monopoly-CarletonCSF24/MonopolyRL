@@ -70,7 +70,7 @@ class Player:
 
         return net_worth
 
-    def make_a_move(self, board, players, dice, log, action = None):
+    def make_a_move(self, board, players, dice, log, action_property = None):
         ''' Main function for a player to make a move
         Receives:
         - a board, with all cells and other things
@@ -78,7 +78,12 @@ class Player:
         - dice (to roll)
         - log handle
         '''
-        
+        if isinstance(action_property, tuple):
+            action = action_property[0]
+            print (f"Here is to the action property: {action_property}")
+        else:
+            print (f"borringggggggg{action_property}")
+            action = action_property
         # Is player is bankrupt - do nothing
         if self.is_bankrupt:
             return None
@@ -472,7 +477,7 @@ class Player:
                 return False
 
             # Nothing stops the player from making a purchase
-            if action == 1 or action == 2:
+            if action == 1 or action == 2 or action == 3:
                 # when the agent wanted to sell or do nothing
                 return False
             return True
