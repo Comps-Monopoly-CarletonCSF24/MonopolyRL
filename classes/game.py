@@ -43,13 +43,12 @@ def monopoly_game(data_for_simulation):
     players = []
     # Set up players with their behavior settings
     for player_name, player_type, player_setting in GameSettings.players_list:
-        match player_type:
-            case "Fixed Policy":
-                players.append(Fixed_Policy_Player(player_name, player_setting))
-            case "QLambda":
-                players.append(DQAPlayer(player_name, player_setting))
-            case "BasicQ":
-                players.append(BasicQPlayer(player_name, player_setting))
+        if player_type == "Fixed Policy":
+            players.append(Fixed_Policy_Player(player_name, player_setting))
+        elif player_type == "QLambda":
+            players.append(DQAPlayer(player_name, player_setting))
+        elif player_type == "BasicQ":
+            players.append(BasicQPlayer(player_name, player_setting))
             
     if GameSettings.shuffle_players:
         # dice has a thread-safe copy of random.shuffle

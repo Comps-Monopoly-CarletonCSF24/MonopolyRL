@@ -368,16 +368,16 @@ class DQAPlayer(Player):
             group_idx (_type_): _description_
         """
     
-        match action.action_type:
-            case 'buy':
-                # self.buy_in_group(group_idx, board, log)
-                pass
-            case 'sell':
-                # self.sell_group(group_idx)
-                pass
-            case 'do_nothing':
-                pass  
-        return 
+        if action.action_type == 'buy':
+            self.buy_in_group(group_idx, board, log)
+            pass
+        elif action.action_type == 'sell':
+            # self.sell_group(group_idx)
+            pass
+        elif action.action_type == 'do_nothing':
+            pass
+
+        return
     
     def buy_in_group(self, group_idx: int, board: Board, log: Log):
 
@@ -473,7 +473,89 @@ class DQAPlayer(Player):
             return buy_property()
         else:
             cell_to_improve = get_next_property_to_improve()
-            return improve_property(cell_to_improve)       
+            return improve_property(cell_to_improve)    
+
+
+    def sell_in_group(self, group_idx: int, board: Board, log: Log):
+        cells_in_group = []
+        for cell_idx in group_cell_indices[group_idx]:
+            cells_in_group.append(board.cells[cell_idx])
+            
+        def can_sell_property():
+            '''
+            Wrote similar function to see if the player can seal a property
+            '''
+            property_to_sell = board.cells[self.position]
+            if property_to_sell.owner != self:
+                return False
+            if property_to_sell.has_houses > 0 or property_to_sell.has_hotel > 0:
+                return False
+            return True
+            
+        def sell_property():
+            ''' Player sells the property'''
+            property_to_sell = board.cells[self.position]
+            sell_price = property_to_sell.cost_base // 2  # think this is standard for monopoly, if selling to bank not to person
+            property_to_sell.owner = None
+            self.owned.remove(property_to_sell)
+            self.money += sell_price
+            log.add(f"{self} sold {property_to_sell} for ${sell_price}")
+            return True
+            
+        def get_next_property_to_downgrade():
+            ''' Decide what is the next property to downgrade:
+            - start with most developed properties
+            - must maintain even building
+            '''
+            can_be_downgraded = []
+            for cell in cells_in_group:
+                if cell.owner == self:
+                    if cell.has_hotel == 1 or cell.has_houses > 0:
+                        # Look at other cells in group to maintain even building
+                        for other_cell in board.groups[cell.group]:
+                            if other_cell.has_houses > cell.has_houses:
+                                break
+                        else:
+                            can_be_downgraded.append(cell)
+                            
+            # Sort by development level (hotel first, then most houses)
+            can_be_downgraded.sort(key=lambda x: (x.has_hotel * 5 + x.has_houses), reverse=True)
+            return can_be_downgraded[0] if can_be_downgraded else None
+        
+        def downgrade_property(cell_to_downgrade):
+            if not cell_to_downgrade:
+                return False
+                
+            if cell_to_downgrade.has_hotel == 1:
+                # Convert hotel back to 4 houses if possible
+                if board.available_houses >= 4:
+                    cell_to_downgrade.has_hotel = 0
+                    cell_to_downgrade.has_houses = 4
+                    board.available_hotels += 1
+                    board.available_houses -= 4
+                    sell_price = cell_to_downgrade.cost_house // 2
+                    self.money += sell_price
+                    log.add(f"{self} downgraded hotel to houses on {cell_to_downgrade} for ${sell_price}")
+                    return True
+            elif cell_to_downgrade.has_houses > 0:
+                cell_to_downgrade.has_houses -= 1
+                board.available_houses += 1
+                sell_price = cell_to_downgrade.cost_house // 2
+                self.money += sell_price
+                log.add(f"{self} sold house on {cell_to_downgrade} for ${sell_price}")
+                return True
+            return False
+
+        # First try to sell buildings if any exist
+        cell_to_downgrade = get_next_property_to_downgrade()
+        if cell_to_downgrade:
+            return downgrade_property(cell_to_downgrade)
+        
+        # If no buildings to sell, try to sell property
+        if can_sell_property():
+            return sell_property()
+            
+        return False   
 
     def is_group_actionable(self, group_idx: int, board: Board):
         cell_indices_in_group = group_cell_indices[group_idx]

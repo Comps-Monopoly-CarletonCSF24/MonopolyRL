@@ -1,5 +1,10 @@
 ''' Main file to run monopoly simulation
 '''
+import multiprocessing
+import os
+
+# Allow duplicate OpenMP runtime libraries to load
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 import random
 import concurrent.futures
@@ -43,10 +48,12 @@ def run_simulation(config):
         list(tqdm(executor.map(monopoly_game, data_for_simulation), total=len(data_for_simulation)))
 
     # Print analysis of the simulation (data is read from datalog file)
-    analysis = Analyzer()
-    analysis.remaining_players()
-    analysis.game_length()
-    analysis.winning_rate()
+    # analysis = Analyzer()
+    # analysis.remaining_players()
+    # analysis.game_length()
+    # analysis.winning_rate()
     
 if __name__ == "__main__":
+
+    # multiprocessing.set_start_method("spawn")
     run_simulation(SimulationSettings)
