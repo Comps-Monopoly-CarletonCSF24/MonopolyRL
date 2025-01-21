@@ -12,13 +12,13 @@ class SimulationSettings():
 
     # Number of games to simulate
     
-    n_games = 1
+    n_games = 100
 
     # Random seed to start simulation with
     seed = 0
 
     # Number of parallel processes to use in the simulation
-    multi_process = 4
+    multi_process = 1
 
 class LogSettings:
     ''' Settings for logging
