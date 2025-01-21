@@ -50,7 +50,7 @@ class QLambdaAgent:
         self.model = QNetwork()
         # If there is a file to start with, continue to train on that
         if os.path.exists(model_param_path):
-            self.model.load_state_dict(torch.load(model_param_path))
+            self.model.load_state_dict(torch.load(model_param_path, weights_only=True))
 
         # Initialize eligibility traces
         self.traces = []

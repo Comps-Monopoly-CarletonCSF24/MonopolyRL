@@ -334,10 +334,10 @@ class DQAPlayer(Player):
     def handle_action(self, board: Board, players: List[Player], dice: Dice, log: Log):
         for group_idx in range(len(group_cell_indices)):
             if self.is_group_actionable(group_idx, board):
-                action = self.take_one_action(board, players)
+                action = self.take_one_action(players)
                 self.execute_action(board, log, action, group_idx)
 
-    def take_one_action(self, board: Board, players: List[Player]):
+    def take_one_action(self, players: List[Player]):
         """Moved agent.take_turn to here. The agent takes a turn and performs 
         all possible actiosn according to the NN.
 
@@ -372,7 +372,7 @@ class DQAPlayer(Player):
             self.buy_in_group(group_idx, board, log)
             pass
         elif action.action_type == 'sell':
-            # self.sell_group(group_idx)
+            self.sell_in_group(group_idx, board, log)
             pass
         elif action.action_type == 'do_nothing':
             pass
@@ -390,6 +390,8 @@ class DQAPlayer(Player):
             Check if the player can buy a property
             '''
             property_to_buy = board.cells[self.position]
+            if not isinstance(property_to_buy, Property):
+                return False
             if property_to_buy.owner != None:
                 return False
             if self.money - property_to_buy.cost_base < self.settings.unspendable_cash:
@@ -486,6 +488,8 @@ class DQAPlayer(Player):
             Wrote similar function to see if the player can seal a property
             '''
             property_to_sell = board.cells[self.position]
+            if not isinstance(property_to_sell, Property):
+                return False
             if property_to_sell.owner != self:
                 return False
             if property_to_sell.has_houses > 0 or property_to_sell.has_hotel > 0:
