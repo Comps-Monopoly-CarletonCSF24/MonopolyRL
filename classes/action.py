@@ -1,4 +1,4 @@
-from classes.player import Player
+from classes.player_logistics import Player
 from classes.board import Board
 from classes.log import Log
 import numpy as np
