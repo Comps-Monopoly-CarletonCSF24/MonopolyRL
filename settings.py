@@ -12,7 +12,7 @@ class SimulationSettings():
 
     # Number of games to simulate
     
-    n_games = 1
+    n_games = 10
     # Random seed to start simulation with
     seed = 0
 
@@ -50,6 +50,9 @@ class StandardPlayer:
     trade_max_diff_abs = 200 # More expensive - less expensive
     trade_max_diff_rel = 2 # More expensive / less expensive
 
+class ExperimentPlayer(StandardPlayer):
+    ''' Changed settings for the Experiment Player
+    '''
 
 class GameSettings():
     ''' Setting for the game (rules + player list)
@@ -60,11 +63,8 @@ class GameSettings():
 
     # Players and their behavior settings
     players_list = [
-        # ("Experiment", StandardPlayer),
-        # ("Standard 1", StandardPlayer),
-
-        ("Standard 2", StandardPlayer),
-        ("Agent     ", StandardPlayer),
+        ("Approx_q_ Agent", "Approx_q_l", StandardPlayer),
+        ("Fixed Policy Player", "Fixed Policy", StandardPlayer)
     ]
 
     # Randomly shuffle order of players each game

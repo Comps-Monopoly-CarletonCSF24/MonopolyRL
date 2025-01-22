@@ -1,4 +1,4 @@
-from classes.player import Player
+from classes.player_logistics import Player
 
 class Reward:
     def __init__(self):

@@ -1,4 +1,4 @@
-from classes.player import Player
+from classes.player_logistics import Player
 from classes.board import Board, Property, Cell
 from classes.log import Log
 import numpy as np
@@ -15,6 +15,7 @@ LCM_Property_Per_Group = 12
 # number of cells on the board
 Num_Total_Cells = 40
 # a number to represent how much property the player owns within one color, max 17
+group_cell_indices = [[1, 3], [5, 15, 25, 35], [6,8,9], [11,13,14], [12,28], [16,18,19], [21,23,24], [26,27,29], [31,32,34], [37, 39]]
 Total_Property_Points = 17
 class State:
     state = None
@@ -98,7 +99,7 @@ def get_property_points_by_group(player:Player) -> np.ndarray:
     """Gets the number of property of each group that a player has
 
     Args:
-        player (Player): /
+        player (Player): 
 
     Returns:
         np.ndarray: each index (according to the assigned group indices) represents 
@@ -189,8 +190,6 @@ def get_state(area: np.ndarray, position: int, finance: np.ndarray) -> np.ndarra
     Returns:
         state(np.ndarray): a 1 * 23 vector representing the state
     """
-    # Flatten the 2x10 area array to 1x20
     flattened_area = area.flatten()
-    # Combine all into a 1x23 array
     state = np.concatenate((flattened_area, [position], finance))
     return state

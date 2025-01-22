@@ -3,8 +3,8 @@ from setting up boards, players etc to making moves by all players
 '''
 
 from settings import SimulationSettings, GameSettings, LogSettings
-
-from classes.player import Player
+from classes.player import Fixed_Policy_Player, Approx_q_agent
+from classes.player_logistics import Player
 from classes.board import Board
 from classes.dice import Dice
 from classes.log import Log
@@ -40,9 +40,13 @@ def monopoly_game(data_for_simulation):
     dice.shuffle(board.chance.cards)
     dice.shuffle(board.chest.cards)
 
+    players = []
     # Set up players with their behavior settings
-    players = [Player(player_name, player_setting)
-               for player_name, player_setting in GameSettings.players_list]
+    for player_name, player_type, player_setting in GameSettings.players_list:
+        if player_type == "Fixed Policy":
+            players.append(Fixed_Policy_Player(player_name, player_setting))
+        elif player_type == "Approx_q_l":
+            players.append(Approx_q_agent(player_name, player_setting))
 
     if GameSettings.shuffle_players:
         # dice has a thread-safe copy of random.shuffle
@@ -60,7 +64,6 @@ def monopoly_game(data_for_simulation):
 
     # Play for the required number of turns
     for turn_n in range(1, SimulationSettings.n_moves + 1):
-
         # Start a turn. Log turn's number
         log.add(f"\n== GAME {game_number} Turn {turn_n} ===")
 
@@ -80,28 +83,6 @@ def monopoly_game(data_for_simulation):
             else:
                 log.add(f"- Player {player_n}, '{player.name}': Bankrupt")
 
-
-            '''---------------------------------------------------------------------------------------------'''
-            from classes.approx_ql import ApproxQLearningAgent
-            import random
-            import numpy as np
-            from classes.state import State
-            from classes.rewards import Reward
-            
-            current_player = players[-1]
-            agent = ApproxQLearningAgent(name = current_player.name, settings=GameSettings, feature_size=150)  
-
-            current_state = State(current_player=current_player, players= players)
-            action_property = agent.select_action(current_state)
-            next_state = agent.simulate_action(board, current_state, current_player, players, action_property[0])
-
-            Reward = Reward()
-            # Simulate a reward
-            reward = Reward.get_reward(current_player, players)
-            print ("agent ", reward)
-            print ("player1 ", Reward.get_reward(players[0], players))
-            agent.update(current_state, action_property[0], reward, next_state)
-            
         # Log the number of available Houses/Hotels etc
         board.log_board_state(log)
         # Add an empty line before players' moves
@@ -115,11 +96,7 @@ def monopoly_game(data_for_simulation):
             break
 
         # Players make their moves
-        result1 = current_player.make_a_move(board, players, dice, log, action_property)
-        if result1 == "bankrupt":
-                datalog.add(f"{game_number}\t{player}\t{turn_n}")
-
-        for player in players[:1]:
+        for player in players:
             # result will be "bankrupt" if player goes bankrupt
             result = player.make_a_move(board, players, dice, log)
             # If player goes bankrupt, log it in the data log file
@@ -128,10 +105,9 @@ def monopoly_game(data_for_simulation):
 
     # Last thing to log in the game log: the final state of the board
     board.log_current_map(log)
-
     # Save the logs
     log.save()
     datalog.save()
-
+            
     # Useless return, but it is here to mark the end of the game
     return None
