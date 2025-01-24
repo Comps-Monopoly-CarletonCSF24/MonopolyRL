@@ -372,7 +372,7 @@ class DQAPlayer(Player):
             self.buy_in_group(group_idx, board, log)
             pass
         elif action.action_type == 'sell':
-            self.sell_in_group(group_idx, board, log)
+            # self.sell_in_group(group_idx, board, log)
             pass
         elif action.action_type == 'do_nothing':
             pass
@@ -380,7 +380,6 @@ class DQAPlayer(Player):
         return
     
     def buy_in_group(self, group_idx: int, board: Board, log: Log):
-
         cells_in_group = []
         for cell_idx in group_cell_indices[group_idx]:
             cells_in_group.append(board.cells[cell_idx])
@@ -396,13 +395,16 @@ class DQAPlayer(Player):
                 return False
             if self.money - property_to_buy.cost_base < self.settings.unspendable_cash:
                 return False
-            
+            return True
+        
         def buy_property():
             ''' Player buys the property'''
             property_to_buy = board.cells[self.position]
             property_to_buy.owner = self
             self.owned.append(property_to_buy)
             self.money -= property_to_buy.cost_base
+            log.add(f"Player {self.name} bought {property_to_buy} " +
+                        f"for ${property_to_buy.cost_base}")
             return True
         
         def get_next_property_to_improve():
@@ -432,7 +434,6 @@ class DQAPlayer(Player):
                             can_be_improved.append(cell)
             # Sort the list by the cost of house
             can_be_improved.sort(key = lambda x: x.cost_house)
-            
             # Return first (the cheapest) property that can be improved
             if can_be_improved:
                 return can_be_improved[0]
@@ -441,16 +442,12 @@ class DQAPlayer(Player):
         def improve_property(cell_to_improve):
             if not cell_to_improve:
                 return False
-            
             improvement_cost = cell_to_improve.cost_house
-
             # Don't do it if you don't have money to spend
             if self.money - improvement_cost < self.settings.unspendable_cash:
                 return False
-
             # Building a house
             ordinal = {1: "1st", 2: "2nd", 3: "3rd", 4:"4th"}
-
             if cell_to_improve.has_houses != 4:
                 cell_to_improve.has_houses += 1
                 board.available_houses -= 1
@@ -458,7 +455,6 @@ class DQAPlayer(Player):
                 self.money -= cell_to_improve.cost_house
                 log.add(f"{self} built {ordinal[cell_to_improve.has_houses]} " +
                         f"house on {cell_to_improve} for ${cell_to_improve.cost_house}")
-
             # Building a hotel
             elif cell_to_improve.has_houses == 4:
                 cell_to_improve.has_houses = 0
@@ -477,13 +473,12 @@ class DQAPlayer(Player):
             cell_to_improve = get_next_property_to_improve()
             return improve_property(cell_to_improve)    
 
-
     def sell_in_group(self, group_idx: int, board: Board, log: Log):
         cells_in_group = []
         for cell_idx in group_cell_indices[group_idx]:
             cells_in_group.append(board.cells[cell_idx])
             
-        def can_sell_property():
+        def can_sell_property(property):
             '''
             Wrote similar function to see if the player can seal a property
             '''

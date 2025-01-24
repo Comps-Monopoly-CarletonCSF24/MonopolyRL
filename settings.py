@@ -1,5 +1,11 @@
 ''' Config file for monopoly simulation
 '''
+class TrainingSettings():
+    is_training = True
+    n_episodes = 100
+    n_games_per_episode = 25
+    n_moves = 1000
+    multi_process = 1
 
 class SimulationSettings():
     ''' Simulation settings
@@ -8,11 +14,10 @@ class SimulationSettings():
     # Number of moves to simulate
     # (if there are more than one player alive after then,
     # the game is considered to have no winner)
-    n_moves = 1000
+    n_moves = 100
 
     # Number of games to simulate
-    
-    n_games = 500
+    n_games = 100
 
     # Random seed to start simulation with
     seed = 0
