@@ -12,7 +12,7 @@ class SimulationSettings():
 
     # Number of games to simulate
     
-    n_games = 10
+    n_games = 50
     # Random seed to start simulation with
     seed = 0
 

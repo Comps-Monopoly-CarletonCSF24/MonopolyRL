@@ -33,12 +33,13 @@ class State:
         """ Updates the state after a player buys a property. """
 
         player = copy.deepcopy(current_player)
-        if property.owner == None and player.money >= property.cost_base:
+        property_copy = copy.deepcopy(property)
+        if property_copy.owner == None and player.money >= property_copy.cost_base:
             # Update the player's finance (subtract the property cost)
             player.money -= property_cost
-            
+            property_copy.owner = player
             # Add the property to the player's owned properties
-            player.owned.append(property)
+            player.owned.append(property_copy)
             
             # Recalculate the player's area, finance, and other attributes after the purchase
             self.state = get_state(get_area(player, players), 
@@ -51,18 +52,17 @@ class State:
 
         player = copy.deepcopy(current_player)
         """ Updates the state after a player sells a property. """
-        # if property.owner != None and property.owner.name == current_player.name:
-        if property in player.owned:
-            # Update the player's finance (add the sale price)
-            player.money += sale_price
-            
-            # Remove the property from the player's owned properties
-            current_player.owned.remove(property)
-            # Recalculate the player's area, finance, and other attributes after the sale
-            self.state = get_state(get_area(player, players), 
-                                        get_position(player.position), 
-                                        get_finance(player, players))
-            return self.state
+
+        if property.owner and player.name:
+            if property.owner.name.strip() == player.name.strip():
+                player.money += sale_price
+
+                player.owned.remove(property)
+
+                self.state = get_state(get_area(player, players), 
+                                            get_position(player.position), 
+                                            get_finance(player, players))
+                return self.state
         return 0
     
     def update_after_trade(self, current_player, trade: dict, players: list):

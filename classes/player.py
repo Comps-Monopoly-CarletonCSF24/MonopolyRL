@@ -13,8 +13,8 @@ from classes.rewards import Reward
 class Fixed_Policy_Player(Player):
     def handle_action(self, board, players, dice, log):
         # Trade with other players. Keep trading until no trades are possible
-        while self.do_a_two_way_trade(players, board, log):
-            pass
+        # while self.do_a_two_way_trade(players, board, log):
+        #     pass
         # Unmortgage a property. Keep doing it until possible
         while self.unmortgage_a_property(board, log):
             pass
@@ -331,6 +331,7 @@ class Approx_q_agent(Player):
         super().__init__(name, settings)
         self.action_object = Action()
         self.agent = ApproxQLearningAgent(name = name, settings=GameSettings, feature_size=150) 
+        self.action_idx = None
         pass
     
     def handle_action(self, board: Board, players: List[Player], dice: Dice, log: Log):
@@ -354,11 +355,12 @@ class Approx_q_agent(Player):
 
         current_state = State(current_player=current_player, players= players)
         action_index, action_index_list = self.agent.select_action(current_state)
+        self.action_index = action_index_list
         next_state = self.agent.simulate_action(board, current_state, current_player, players, action_index)
 
         reward = Reward().get_reward(current_player, players)
-        print ("agent ", reward)
-        print ("player1 ", Reward().get_reward(players[0], players))
+        # print ("agent ", reward)
+        # print ("player1 ", Reward().get_reward(players[0], players))
         self.agent.update(current_state, action_index_list, reward, next_state)
         actions = self.action_object.actions
         return actions[action_index]
@@ -372,7 +374,8 @@ class Approx_q_agent(Player):
             action (Action): _description_
             group_idx (_type_): _description_
         """
-    
+        while self.unmortgage_a_property(board, log):
+            pass
         if action == 'buy':
             self.buy_in_group(group_idx, board, log)
             pass
@@ -390,21 +393,20 @@ class Approx_q_agent(Player):
         for cell_idx in group_cell_indices[group_idx]:
             cells_in_group.append(board.cells[cell_idx])
             
-        def can_buy_property():
+        def can_buy_property(property_to_buy):
             '''
             Check if the player can buy a property
             '''
-            property_to_buy = board.cells[self.position]
             if not isinstance(property_to_buy, Property):
                 return False
             if property_to_buy.owner != None:
                 return False
             if self.money - property_to_buy.cost_base < self.settings.unspendable_cash:
                 return False
-            
-        def buy_property():
+            return True
+        
+        def buy_property(property_to_buy):
             ''' Player buys the property'''
-            property_to_buy = board.cells[self.position]
             property_to_buy.owner = self
             self.owned.append(property_to_buy)
             self.money -= property_to_buy.cost_base
@@ -476,23 +478,26 @@ class Approx_q_agent(Player):
             return True
         
         # if landed on an unowned property: buy it
-        if can_buy_property():
-            return buy_property()
-        else:
-            cell_to_improve = get_next_property_to_improve()
-            return improve_property(cell_to_improve)    
 
-
+        property_to_buy = board.cells[self.position]
+        if can_buy_property(property_to_buy):
+            return buy_property(property_to_buy)
+        
+        while True:
+                cell_to_improve = get_next_property_to_improve()
+                if not improve_property(cell_to_improve):
+                    return False
+    
     def sell_in_group(self, group_idx: int, board: Board, log: Log):
         cells_in_group = []
         for cell_idx in group_cell_indices[group_idx]:
             cells_in_group.append(board.cells[cell_idx])
             
-        def can_sell_property():
+        def can_sell_property(property_to_sell):
             '''
             Wrote similar function to see if the player can seal a property
             '''
-            property_to_sell = board.cells[self.position]
+
             if not isinstance(property_to_sell, Property):
                 return False
             if property_to_sell.owner != self:
@@ -501,9 +506,9 @@ class Approx_q_agent(Player):
                 return False
             return True
             
-        def sell_property():
+        def sell_property(property_to_sell):
             ''' Player sells the property'''
-            property_to_sell = board.cells[self.position]
+
             # you should not sell the property you landed on. I am sure that is not how it works
             sell_price = property_to_sell.cost_base // 2  # think this is standard for monopoly, if selling to bank not to person
             property_to_sell.owner = None
@@ -562,8 +567,12 @@ class Approx_q_agent(Player):
             return downgrade_property(cell_to_downgrade)
         
         # If no buildings to sell, try to sell property
-        if can_sell_property():
-            return sell_property()
+        
+        if self.action_idx != None:
+            property_index, _ = self.action_object.map_action_index(self.action_idx)
+            property_to_sell = board.get_property(property_idx=property_index)
+            if can_sell_property(property_to_sell):
+                return sell_property(property_to_sell)
             
         return False   
 
@@ -580,6 +589,26 @@ class Approx_q_agent(Player):
             # can improve
             if cell.monopoly_coef == 2:
                 return True
+        return False
+    
+    def unmortgage_a_property(self, board, log):
+        ''' Go through the list of properties and unmortgage one,
+        if there is enough money to do so. Return True, if any unmortgaging
+        took place (to call it again)
+        '''
+
+        for cell in self.owned:
+            if cell.is_mortgaged:
+                cost_to_unmortgage = \
+                    cell.cost_base * GameSettings.mortgage_value + \
+                    cell.cost_base * GameSettings.mortgage_fee
+                if self.money - cost_to_unmortgage >= self.settings.unspendable_cash:
+                    log.add(f"{self} unmortgages {cell} for ${cost_to_unmortgage}")
+                    self.money -= cost_to_unmortgage
+                    cell.is_mortgaged = False
+                    self.update_lists_of_properties_to_trade(board)
+                    return True
+
         return False
         
 class BasicQPlayer(Player):
