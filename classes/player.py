@@ -2,7 +2,7 @@ from typing import List
 from classes.board import Board, Property
 from classes.dice import Dice
 from classes.log import Log
-from settings import GameSettings
+from settings import GameSettings, TrainingSettings
 from classes.DQAgent_paper import QLambdaAgent
 from classes.action_paper import Action, Actions
 from classes.state import State, group_cell_indices
@@ -334,10 +334,18 @@ class DQAPlayer(Player):
     def handle_action(self, board: Board, players: List[Player], dice: Dice, log: Log):
         for group_idx in range(len(group_cell_indices)):
             if self.is_group_actionable(group_idx, board):
-                action = self.take_one_action(players)
+                state, action = self.select_action(players)
+                if TrainingSettings.is_training:
+                    self.train_agent_with_one_action(players, state, action)
                 self.execute_action(board, log, action, group_idx)
 
-    def take_one_action(self, players: List[Player]):
+    def select_action(self, players: List[Player]):
+        current_state = State(self, players)
+        current_action_idx = self.agent.choose_action(current_state)
+        current_action = Action(Actions[current_action_idx])
+        return current_state, current_action
+    
+    def train_agent_with_one_action(self, players: List[Player], current_state, current_action):
         """Moved agent.take_turn to here. The agent takes a turn and performs 
         all possible actiosn according to the NN.
 
@@ -347,17 +355,13 @@ class DQAPlayer(Player):
             dice (_type_): _description_
             log (_type_): _description_
         """
-        current_state = State(self, players)
-        current_action_idx = self.agent.choose_action(current_state)
-        current_action = Action(Actions[current_action_idx])
         self.agent.update_trace(current_state, current_action)
         reward = self.agent.get_reward(self, players)
         q_value = self.agent.q_learning(current_state, current_action, reward)
         self.agent.train_neural_network(self.agent.last_state, self.agent.last_action, q_value)
         self.agent.last_state = current_state
         self.agent.last_action = current_action
-        return current_action
-        
+
     def execute_action(self, board: Board, log: Log, action: Action, group_idx):
         """Executes the action on the given property for the specified player.
 
@@ -372,7 +376,7 @@ class DQAPlayer(Player):
             self.buy_in_group(group_idx, board, log)
             pass
         elif action.action_type == 'sell':
-            # self.sell_in_group(group_idx, board, log)
+            self.sell_in_group(group_idx, board, log)
             pass
         elif action.action_type == 'do_nothing':
             pass
@@ -478,22 +482,22 @@ class DQAPlayer(Player):
         for cell_idx in group_cell_indices[group_idx]:
             cells_in_group.append(board.cells[cell_idx])
             
-        def can_sell_property(property):
+        def can_sell_property(property_to_sell):
             '''
             Wrote similar function to see if the player can seal a property
             '''
-            property_to_sell = board.cells[self.position]
-            if not isinstance(property_to_sell, Property):
-                return False
-            if property_to_sell.owner != self:
-                return False
-            if property_to_sell.has_houses > 0 or property_to_sell.has_hotel > 0:
-                return False
-            return True
-            
-        def sell_property():
+            for cell in cells_in_group:
+                if not isinstance(property_to_sell, Property):
+                    continue
+                if property_to_sell.owner != self:
+                    continue
+                if property_to_sell.has_houses > 0 or property_to_sell.has_hotel > 0:
+                    continue
+                return cell
+            return None
+        
+        def sell_property(property_to_sell):
             ''' Player sells the property'''
-            property_to_sell = board.cells[self.position]
             sell_price = property_to_sell.cost_base // 2  # think this is standard for monopoly, if selling to bank not to person
             property_to_sell.owner = None
             self.owned.remove(property_to_sell)
@@ -551,8 +555,9 @@ class DQAPlayer(Player):
             return downgrade_property(cell_to_downgrade)
         
         # If no buildings to sell, try to sell property
-        if can_sell_property():
-            return sell_property()
+        property_to_sell = can_sell_property()
+        if property_to_sell:
+            return sell_property(property_to_sell)
             
         return False   
 
