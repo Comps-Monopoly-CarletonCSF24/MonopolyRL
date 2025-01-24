@@ -373,26 +373,44 @@ class DQAPlayer(Player):
         """
     
         if action.action_type == 'buy':
-            self.buy_in_group(group_idx, board, log)
-            pass
+            return self.buy_in_group(group_idx, board, log)
         elif action.action_type == 'sell':
-            self.sell_in_group(group_idx, board, log)
-            pass
+            return self.sell_in_group(group_idx, board, log)
         elif action.action_type == 'do_nothing':
-            pass
+            return True
 
-        return
-    
     def buy_in_group(self, group_idx: int, board: Board, log: Log):
         cells_in_group = []
         for cell_idx in group_cell_indices[group_idx]:
             cells_in_group.append(board.cells[cell_idx])
-            
+        
+        def get_next_property_to_unmortgage():
+            for cell in cells_in_group:
+                if not cell.is_mortgaged:
+                    continue
+                if not cell.owner == self:
+                    continue
+                cost_to_unmortgage = \
+                        cell.cost_base * GameSettings.mortgage_value + \
+                        cell.cost_base * GameSettings.mortgage_fee
+                if not self.money - cost_to_unmortgage >= self.settings.unspendable_cash:
+                    continue
+                return cell
+            return None    
+        
+        def unmortgage_property(property_to_unmortgage, cost_to_unmortgage):
+            log.add(f"{self} unmortgages {property_to_unmortgage} for ${cost_to_unmortgage}")
+            self.money -= cost_to_unmortgage
+            property_to_unmortgage.is_mortgaged = False
+            return True
+
         def can_buy_property():
             '''
             Check if the player can buy a property
             '''
             property_to_buy = board.cells[self.position]
+            if not self.position in group_cell_indices[group_idx]:
+                return False
             if not isinstance(property_to_buy, Property):
                 return False
             if property_to_buy.owner != None:
@@ -470,28 +488,30 @@ class DQAPlayer(Player):
                 log.add(f"{self} built a hotel on {cell_to_improve}")
             return True
         
-        # if landed on an unowned property: buy it
-        if can_buy_property():
-            return buy_property()
-        else:
-            cell_to_improve = get_next_property_to_improve()
+        cell_to_improve = get_next_property_to_improve()
+        if cell_to_improve:
             return improve_property(cell_to_improve)    
+        cell_to_unmortgage = get_next_property_to_unmortgage()
+        if cell_to_unmortgage:
+            return unmortgage_property(cell_to_unmortgage)
+        if can_buy_property(): 
+            return buy_property()
 
     def sell_in_group(self, group_idx: int, board: Board, log: Log):
         cells_in_group = []
         for cell_idx in group_cell_indices[group_idx]:
             cells_in_group.append(board.cells[cell_idx])
             
-        def can_sell_property(property_to_sell):
+        def can_sell_property():
             '''
             Wrote similar function to see if the player can seal a property
             '''
             for cell in cells_in_group:
-                if not isinstance(property_to_sell, Property):
+                if not isinstance(cell, Property):
                     continue
-                if property_to_sell.owner != self:
+                if cell.owner != self:
                     continue
-                if property_to_sell.has_houses > 0 or property_to_sell.has_hotel > 0:
+                if cell.has_houses > 0 or cell.has_hotel > 0:
                     continue
                 return cell
             return None
@@ -555,9 +575,9 @@ class DQAPlayer(Player):
             return downgrade_property(cell_to_downgrade)
         
         # If no buildings to sell, try to sell property
-        property_to_sell = can_sell_property()
-        if property_to_sell:
-            return sell_property(property_to_sell)
+        cell = can_sell_property()
+        if cell:
+            return sell_property(cell)
             
         return False   
 
