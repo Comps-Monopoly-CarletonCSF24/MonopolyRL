@@ -19,6 +19,11 @@ class QNetwork(nn.Module):
         self.input_layer = nn.Linear(State_Size + Action_Size, 150)  # Input layer to hidden layer
         self.activation = nn.Sigmoid()  # Sigmoid activation for the hidden layer
         self.output_layer = nn.Linear(150, 1)  # Hidden layer to output layer
+        # Initialize weights and biases to zero
+        nn.init.constant_(self.input_layer.weight, 0.0)
+        nn.init.constant_(self.input_layer.bias, 0.0)
+        nn.init.constant_(self.output_layer.weight, 0.0)
+        nn.init.constant_(self.output_layer.bias, 0.0)
         
     def forward(self, state: State, action: Action):
         stacked_input = np.append(state.state, action.action_index)
@@ -48,17 +53,25 @@ class QLambdaAgent:
         self.lambda_param = 0.85  # Lambda parameter from paper
         # Initialize network and optimizer
         self.model = QNetwork()
+        self.optimizer = optim.SGD(self.model.parameters(), lr = self.alpha)
+        
         # If there is a file to start with, continue to train on that
         if os.path.exists(model_param_path):
-            self.model.load_state_dict(torch.load(model_param_path, weights_only=True))
-
+            checkpoint = torch.load(model_param_path, weights_only=True)
+            self.model.load_state_dict(checkpoint['model_state_dict'])
+            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            
         # Initialize eligibility traces
         self.traces = []
         self.last_state = get_initial_state()
         self.last_action = Action("do_nothing")
     
     def save_nn(self):
-        torch.save(self.model.state_dict(), model_param_path)
+        checkpoint = {
+            'model_state_dict': self.model.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+        }
+        torch.save(checkpoint, model_param_path)
         
     def q_learning(self, state, action, reward):
         last_q_value = self.model(self.last_state, self.last_action)
@@ -68,7 +81,6 @@ class QLambdaAgent:
             
     def choose_action_helper(self, q_values: List[int]):
         """_summary_
-        TODO: break ties randomly
         Args:
             state (State): _description_
             q_values (List[int]): _description_
@@ -77,8 +89,16 @@ class QLambdaAgent:
             _type_: _description_
         """
         if random.random() < self.epsilon:  # exploration rate
+            ## DELETE THIS LINE
+            print("random")
             return random.choice(all_actions)
         else:
+            ## DELETE
+            valid_q_values = [q_values[i] for i in all_actions]
+            test_str = ""
+            for i in all_actions:
+                test_str += str(Actions[i]) + ": " + str(valid_q_values[i])
+            print(test_str)
             return self.find_action_with_max_value(q_values)
     
     def choose_action(self, state):
@@ -136,17 +156,15 @@ class QLambdaAgent:
             self.traces.append(new_trace)
         return state_action_exists
     
-    def train_neural_network(self, model, input_state: State, input_action: Action, target_q_value: float):
+    def train_neural_network(self, input_state: State, input_action: Action, target_q_value: torch.Tensor):
         criterion = nn.MSELoss()
-        optimizer = optim.SGD(self.model.parameters(), lr = self.alpha)
-        
-        output_q_value = model(input_state, input_action)
+        output_q_value = self.model(input_state, input_action)
         loss = criterion(output_q_value, target_q_value)
         # Backward pass
-        optimizer.zero_grad()
+        self.optimizer.zero_grad()
         loss.backward()
         # Update weights
-        optimizer.step()
+        self.optimizer.step()
 
     def train_nn_with_trace(self, state, action, reward):
         for trace in self.traces: 
@@ -189,4 +207,5 @@ class QLambdaAgent:
         # Calculate reward using paper's formula
         reward = (v/p * c)/(1 + abs(v/p * c)) + (1/p * m)
         return reward
+    
 
