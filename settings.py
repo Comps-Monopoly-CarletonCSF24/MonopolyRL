@@ -1,9 +1,7 @@
 ''' Config file for monopoly simulation
 '''
 class TrainingSettings():
-    n_episodes = 2
-    n_games = 2500
-    multi_process = 1
+    n_games = 100
 
 class SimulationSettings():
     ''' Simulation settings
