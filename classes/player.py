@@ -375,7 +375,8 @@ class DQAPlayer(Player):
         if action.action_type == 'buy':
             return self.buy_in_group(group_idx, board, log)
         elif action.action_type == 'sell':
-            return self.sell_in_group(group_idx, board, log)
+            pass
+            #return self.sell_in_group(group_idx, board, log)
         elif action.action_type == 'do_nothing':
             return True
 
@@ -395,8 +396,8 @@ class DQAPlayer(Player):
                         cell.cost_base * GameSettings.mortgage_fee
                 if not self.money - cost_to_unmortgage >= self.settings.unspendable_cash:
                     continue
-                return cell
-            return None    
+                return cell, cost_to_unmortgage
+            return None, None   
         
         def unmortgage_property(property_to_unmortgage, cost_to_unmortgage):
             log.add(f"{self} unmortgages {property_to_unmortgage} for ${cost_to_unmortgage}")
@@ -491,9 +492,9 @@ class DQAPlayer(Player):
         cell_to_improve = get_next_property_to_improve()
         if cell_to_improve:
             return improve_property(cell_to_improve)    
-        cell_to_unmortgage = get_next_property_to_unmortgage()
+        cell_to_unmortgage, cost_to_unmortgate = get_next_property_to_unmortgage()
         if cell_to_unmortgage:
-            return unmortgage_property(cell_to_unmortgage)
+            return unmortgage_property(cell_to_unmortgage, cost_to_unmortgate)
         if can_buy_property(): 
             return buy_property()
 
