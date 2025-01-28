@@ -115,6 +115,5 @@ def monopoly_game(data_for_simulation):
     # Save the logs
     log.save()
     datalog.save()
-            
     # Useless return, but it is here to mark the end of the game
     return None

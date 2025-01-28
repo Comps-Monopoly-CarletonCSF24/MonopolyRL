@@ -1,12 +1,13 @@
 from classes.player_logistics import Player
 from classes.board import Board
 from classes.log import Log
+from classes.board import Property
 import numpy as np
 
 class Action:
     def __init__(self):
         self.properties = list(range(28))  # Property indices from 0 to 27
-        self.actions = ['buy', 'sell', 'do_nothing']  # Available actions for each property
+        self.actions = ['buy', 'do_nothing']  # Available actions for each property
         self.total_actions = len(self.properties) * len(self.actions)  # 1x84 action space
 
     def map_action_index(self, action_index):
@@ -40,25 +41,40 @@ class Action:
         Checks if the player can take the action that they are attempting to take.
         Returns true of the player can and False otherwise. 
         """
-        if action_idx == 1:
-            return True
-        elif action_idx == 0:
-            # Changed board[property_idx] to board.get_property(property_idx)
-            if property.owner is None and player.can_afford(property.price):
-                return True
-        return False
-
-    def execute_action(self, player, board, property_idx, action_type):
+        property = board.get_property(property_idx)
+    
+        if action_idx == 0:  # buy
+            return property.owner == player
+        #elif action_idx == 0:  # buy
+           #return (property.owner is None and 
+                    #player.can_afford(property.cost_base))  # Changed price to cost_base
+        return True  # do_nothing is always executable
+    
+    def execute_action(self, player, board, property_idx, action_type, log):
         """
         Executes the action on the given property for the specified player.
         """
-        property = board.get_property(property_idx)
-        if action_type == 'buy_all':
-            # Changed board[property_idx] to board.get_property(property_idx)
-            if property.owner is None and player.money >= property.cost_base:    #direct money comparison to attribute cost_base
-                player.buy_property(property)
-        #elif action_type == 'sell':
-            #if board.get_property(property_idx).owner == player:
-               # player.sell_property(board.get_property(property_idx))
+       
+        #property = board.get_property(property_idx)
+        current_property = board.cells[player.position]
+        
+        if action_type == 'buy':  # Changed from 'buy_all' to 'buy'
+
+            
+            if (isinstance(current_property, Property) and 
+                current_property.owner is None and 
+                player.money >= current_property.cost_base):    
+                
+                player.buy_property(current_property, log)
+                log.add(f"{player.name} bought {current_property.name} for ${current_property.cost_base}")
+                return True
+            
+            else:
+                log.add(f"DEBUG: Buy action failed for {current_property.name}")
+
+
         elif action_type == 'do_nothing':
-            pass  # No action is taken
+            if isinstance(current_property, Property) and current_property.owner is None and player.money >= current_property.cost_base:
+                log.add(f">>> {player.name} chose not to buy {current_property.name} (${current_property.cost_base})")
+            else:
+                log.add(f"DEBUG: {player.name} did nothing for {current_property.name}")

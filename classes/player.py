@@ -1,5 +1,6 @@
 from typing import List
 import random
+import numpy as np
 from classes.board import Board, Property
 from classes.dice import Dice
 from classes.log import Log
@@ -323,590 +324,258 @@ class Fixed_Policy_Player(Player):
             else:
                 log.add(f"Player {self.name} landed on a {landed_property}, he refuses to buy it")
                 # TODO: Bank auctions the property
-
-class DQAPlayer(Player):
-    def __init__(self, name, settings):
-        super().__init__(name, settings)
-        self.action = Action("do_nothing")
-        self.agent = QLambdaAgent()
-        pass
-    
-    def handle_action(self, board: Board, players: List[Player], dice: Dice, log: Log):
-        for group_idx in range(len(group_cell_indices)):
-            if self.is_group_actionable(group_idx, board):
-                action = self.take_one_action(players)
-                self.execute_action(board, log, action, group_idx)
-
-    def take_one_action(self, players: List[Player]):
-        """Moved agent.take_turn to here. The agent takes a turn and performs 
-        all possible actiosn according to the NN.
-
-        Args:
-            board (Board): _description_
-            players (_type_): _description_
-            dice (_type_): _description_
-            log (_type_): _description_
-        """
-        current_state = State(self, players)
-        current_action_idx = self.agent.choose_action(current_state)
-        current_action = Action(Actions[current_action_idx])
-        self.agent.update_trace(current_state, current_action)
-        reward = self.agent.get_reward(self, players)
-        q_value = self.agent.q_learning(current_state, current_action, reward)
-        self.agent.train_neural_network(self.agent.model, self.agent.last_state, self.agent.last_action, q_value)
-        self.agent.last_state = current_state
-        self.agent.last_action = current_action
-        return current_action
-        
-    def execute_action(self, board: Board, log: Log, action: Action, group_idx):
-        """Executes the action on the given property for the specified player.
-
-        Args:
-            board (Board): _description_
-            log (Log): _description_
-            action (Action): _description_
-            group_idx (_type_): _description_
-        """
-    
-        if action.action_type == 'buy':
-            self.buy_in_group(group_idx, board, log)
-            pass
-        elif action.action_type == 'sell':
-            self.sell_in_group(group_idx, board, log)
-            pass
-        elif action.action_type == 'do_nothing':
-            pass
-
-        return
-    
-    def buy_in_group(self, group_idx: int, board: Board, log: Log):
-
-        cells_in_group = []
-        for cell_idx in group_cell_indices[group_idx]:
-            cells_in_group.append(board.cells[cell_idx])
-            
-        def can_buy_property():
-            '''
-            Check if the player can buy a property
-            '''
-            property_to_buy = board.cells[self.position]
-            if not isinstance(property_to_buy, Property):
-                return False
-            if property_to_buy.owner != None:
-                return False
-            if self.money - property_to_buy.cost_base < self.settings.unspendable_cash:
-                return False
-            
-        def buy_property():
-            ''' Player buys the property'''
-            property_to_buy = board.cells[self.position]
-            property_to_buy.owner = self
-            self.owned.append(property_to_buy)
-            self.money -= property_to_buy.cost_base
-            return True
-        
-        def get_next_property_to_improve():
-            ''' Decide what is the next property to improve:
-            - it should be eligible for improvement (is monopoly, not mortgaged,
-            has not more houses than other cells in the group)
-            - start with cheapest
-            '''
-            can_be_improved = []
-            for cell in cells_in_group:
-                # Property has to be:
-                # - not maxed out (no hotel)
-                # - not mortgaged
-                # - a part of monopoly, but not railway or utility (so the monopoly_coef is 2)
-                if cell.has_hotel == 0 and not cell.is_mortgaged and cell.monopoly_coef == 2 \
-                    and not (cell.group == "Railroads" or cell.group == "Utilities") :
-                    # Look at other cells in this group
-                    # If they have fewer houses, this cell can not be improved
-                    # If any cells in the group is mortgaged, this cell can not be improved
-                    for other_cell in board.groups[cell.group]:
-                        if other_cell.has_houses < cell.has_houses or other_cell.is_mortgaged:
-                            break
-                    else:
-                        # Make sure there are available houses/hotel for this improvement
-                        if cell.has_houses != 4 and board.available_houses > 0 or \
-                            cell.has_houses == 4 and board.available_hotels > 0:
-                            can_be_improved.append(cell)
-            # Sort the list by the cost of house
-            can_be_improved.sort(key = lambda x: x.cost_house)
-            
-            # Return first (the cheapest) property that can be improved
-            if can_be_improved:
-                return can_be_improved[0]
-            return None
-    
-        def improve_property(cell_to_improve):
-            if not cell_to_improve:
-                return False
-            
-            improvement_cost = cell_to_improve.cost_house
-
-            # Don't do it if you don't have money to spend
-            if self.money - improvement_cost < self.settings.unspendable_cash:
-                return False
-
-            # Building a house
-            ordinal = {1: "1st", 2: "2nd", 3: "3rd", 4:"4th"}
-
-            if cell_to_improve.has_houses != 4:
-                cell_to_improve.has_houses += 1
-                board.available_houses -= 1
-                # Paying for the improvement
-                self.money -= cell_to_improve.cost_house
-                log.add(f"{self} built {ordinal[cell_to_improve.has_houses]} " +
-                        f"house on {cell_to_improve} for ${cell_to_improve.cost_house}")
-
-            # Building a hotel
-            elif cell_to_improve.has_houses == 4:
-                cell_to_improve.has_houses = 0
-                cell_to_improve.has_hotel = 1
-                board.available_houses += 4
-                board.available_hotels -= 1
-                # Paying for the improvement
-                self.money -= cell_to_improve.cost_house
-                log.add(f"{self} built a hotel on {cell_to_improve}")
-            return True
-        
-        # if landed on an unowned property: buy it
-        if can_buy_property():
-            return buy_property()
-        else:
-            cell_to_improve = get_next_property_to_improve()
-            return improve_property(cell_to_improve)    
-
-
-    def sell_in_group(self, group_idx: int, board: Board, log: Log):
-        cells_in_group = []
-        for cell_idx in group_cell_indices[group_idx]:
-            cells_in_group.append(board.cells[cell_idx])
-            
-        def can_sell_property():
-            '''
-            Wrote similar function to see if the player can seal a property
-            '''
-            property_to_sell = board.cells[self.position]
-            if not isinstance(property_to_sell, Property):
-                return False
-            if property_to_sell.owner != self:
-                return False
-            if property_to_sell.has_houses > 0 or property_to_sell.has_hotel > 0:
-                return False
-            return True
-            
-        def sell_property():
-            ''' Player sells the property'''
-            property_to_sell = board.cells[self.position]
-            sell_price = property_to_sell.cost_base // 2  # think this is standard for monopoly, if selling to bank not to person
-            property_to_sell.owner = None
-            self.owned.remove(property_to_sell)
-            self.money += sell_price
-            log.add(f"{self} sold {property_to_sell} for ${sell_price}")
-            return True
-            
-        def get_next_property_to_downgrade():
-            ''' Decide what is the next property to downgrade:
-            - start with most developed properties
-            - must maintain even building
-            '''
-            can_be_downgraded = []
-            for cell in cells_in_group:
-                if cell.owner == self:
-                    if cell.has_hotel == 1 or cell.has_houses > 0:
-                        # Look at other cells in group to maintain even building
-                        for other_cell in board.groups[cell.group]:
-                            if other_cell.has_houses > cell.has_houses:
-                                break
-                        else:
-                            can_be_downgraded.append(cell)
-                            
-            # Sort by development level (hotel first, then most houses)
-            can_be_downgraded.sort(key=lambda x: (x.has_hotel * 5 + x.has_houses), reverse=True)
-            return can_be_downgraded[0] if can_be_downgraded else None
-        
-        def downgrade_property(cell_to_downgrade):
-            if not cell_to_downgrade:
-                return False
-                
-            if cell_to_downgrade.has_hotel == 1:
-                # Convert hotel back to 4 houses if possible
-                if board.available_houses >= 4:
-                    cell_to_downgrade.has_hotel = 0
-                    cell_to_downgrade.has_houses = 4
-                    board.available_hotels += 1
-                    board.available_houses -= 4
-                    sell_price = cell_to_downgrade.cost_house // 2
-                    self.money += sell_price
-                    log.add(f"{self} downgraded hotel to houses on {cell_to_downgrade} for ${sell_price}")
-                    return True
-            elif cell_to_downgrade.has_houses > 0:
-                cell_to_downgrade.has_houses -= 1
-                board.available_houses += 1
-                sell_price = cell_to_downgrade.cost_house // 2
-                self.money += sell_price
-                log.add(f"{self} sold house on {cell_to_downgrade} for ${sell_price}")
-                return True
-            return False
-
-        # First try to sell buildings if any exist
-        cell_to_downgrade = get_next_property_to_downgrade()
-        if cell_to_downgrade:
-            return downgrade_property(cell_to_downgrade)
-        
-        # If no buildings to sell, try to sell property
-        if can_sell_property():
-            return sell_property()
-            
-        return False   
-
-    def is_group_actionable(self, group_idx: int, board: Board):
-        cell_indices_in_group = group_cell_indices[group_idx]
-        for cell_idx in cell_indices_in_group:
-            cell = board.cells[cell_idx]
-            # can sell
-            if cell.owner == self: 
-                return True
-            # can buy
-            if self.position == cell_idx and not cell.owner:
-                return True
-            # can improve
-            if cell.monopoly_coef == 2:
-                return True
-        return False
         
 class BasicQPlayer(Player):
+
     def __init__(self, name, settings, position=0, money=1500):
         super().__init__(name, settings)
         self.qTable = {}
-        self.alpha = 0.2  # Learning rate
-        self.gamma = 0.95  # Discount factor
-        self.epsilon = 0.1  # Exploration rate
-        self.epsilon_decay = 0.995
-        self.epsilon_min = 0.01
-        
-    def handle_action(self, board: Board, players: List[Player], dice: Dice, log: Log):
-        """Main action handler with trading"""
-        # First try to trade
-        while self.do_a_two_way_trade(players, board, log):
-            pass
-        '''   
-        # Then handle other actions
-        for group_idx in range(len(group_cell_indices)):
-            if self.is_group_actionable(group_idx, board):
-                action = self.take_one_action(players)
-                self.execute_action(board, log, action, group_idx)
+        self.alpha = 0.4  # increase
+        self.gamma = 0.9  # Discount factor
+        self.epsilon = 0.4  # increased
+        self.previous_state = None
+        self.previous_action = None
+        self.previous_reward = 0
+
+        #desperate to get this working
+        self.is_willing_to_buy_property = True
+        self.action_obj=Action() #create an action object
+        self.min_money = 100 #set a lowest amount of money
+    
+    def get_state(self, board, players):
+        """gets the state of the player
+        """
+    
+        current_property = board.cells[self.position]
+
+        is_property = isinstance(current_property, Property)
+        can_afford = is_property and self.money >= current_property.cost_base
+        property_value = current_property.cost_base if is_property else 0
+        money_ratio = min(self.money / 2000, 1.0)
+
+        #count properties owned in the same color group
+        same_color_properties = 0
+        if is_property and hasattr(current_property, 'color'):
+            for prop in self.owned:
+                if hasattr(prop, 'color') and prop.color == current_property.color:
+                    same_color_properties += 1
+        return (float(same_color_properties), float(can_afford), round(money_ratio,2), same_color_properties)
+    
+    
+    def choose_action(self, board,state, available_actions):
         '''
-    def do_a_two_way_trade(self, players, board, log):
-        """Q-learning based trading decision"""
-        def get_price_difference(gives, receives):
-            cost_gives = sum(cell.cost_base for cell in gives)
-            cost_receives = sum(cell.cost_base for cell in receives)
-            diff_abs = cost_gives - cost_receives
+        chooses an action from the available actions. Big pereference buying properties
+        '''
+        if not available_actions:
+            return None
+        current_property = board.cells[self.position]
+        is_property = isinstance(current_property, Property)
+        # Always try to buy if:
+        # 1. It's a property
+        # 2. We can afford it
+        # 3. We have more than minimum cash reserve
+        if (is_property and 
+            current_property.owner is None and 
+            self.money >= current_property.cost_base + self.min_money):
             
-            diff_giver, diff_receiver = float("inf"), float("inf")
-            if receives:
-                diff_giver = cost_gives / cost_receives
-            if gives:
-                diff_receiver = cost_receives / cost_gives
-            
-            return diff_abs, diff_giver, diff_receiver
+            buy_actions = [a for a in available_actions 
+                          if self.action_obj.actions[a % len(self.action_obj.actions)] == 'buy']
+            if buy_actions:
+                return buy_actions[0]
+        
+        # Normal exploration/exploitation for other cases
+        if np.random.rand() < self.epsilon:
+            return np.random.choice(available_actions)
+        else:
+            q_values = [self.get_q_value(state, action) for action in available_actions]
+            max_q = max(q_values)
+            best_actions = [action for action, q in zip(available_actions, q_values) 
+                          if q == max_q]
+            return np.random.choice(best_actions)
+    
+    
+    def get_q_value(self, state, action):
+        '''
+        gets the qvalues from the qtable
+        '''
+        
+        return self.qTable.get((state,action), 0.0)
+    
+    def update_q_value(self, state, action, reward, next_state, next_available_actions):
+        '''
+        updates the qtable by adding better qvalues depending on the most recent move, 
+        if it had a better reward than the previous one
+        '''
+        
+        #convert state and nextState to tuples if they are not already
+        if not next_available_actions:
+            next_max_q = 0
+        else:
+            next_q_values = [self.get_q_value(next_state, next_action) for next_action in next_available_actions]
+            next_max_q = max(next_q_values) if next_q_values else 0
+        
+        #q-learning update formula
+        old_q = self.get_q_value(state, action)
 
-        def remove_by_color(cells, color):
-            return [cell for cell in cells if cell.group != color]
-
-        def fair_deal(player_gives, player_receives, other_player):
-            # Get colors in both sides
-            color_receives = [cell.group for cell in player_receives]
-            color_gives = [cell.group for cell in player_gives]
-            
-            # Check for size-2 groups
-            both_colors = set(color_receives + color_gives)
-            if both_colors.issubset({"Utilities", "Indigo", "Brown"}):
-                return [], []
-
-            # Handle size-2 properties
-            for questionable_color in ["Utilities", "Indigo", "Brown"]:
-                if questionable_color in color_receives and questionable_color in color_gives:
-                    if len(player_receives) > len(player_gives):
-                        player_receives = remove_by_color(player_receives, questionable_color)
-                    elif len(player_receives) < len(player_gives):
-                        player_gives = remove_by_color(player_gives, questionable_color)
-                    else:
-                        player_receives = remove_by_color(player_receives, questionable_color)
-                        player_gives = remove_by_color(player_gives, questionable_color)
-
-            # Sort by cost
-            player_receives.sort(key=lambda x: -x.cost_base)
-            player_gives.sort(key=lambda x: -x.cost_base)
-
-            # Q-learning decision for trade fairness
-            while player_gives and player_receives:
-                diff_abs, diff_giver, diff_receiver = get_price_difference(player_gives, player_receives)
-                
-                state = State(self, players)  # Get current state
-                state_tuple = tuple(state.state)
-                
-                # Use epsilon-greedy for trade decision
-                if random.random() < self.epsilon:
-                    should_trade = random.choice([True, False])
-                else:
-                    q_values = [self.getQValue(state_tuple, a) for a in range(3)]
-                    should_trade = q_values[1] > q_values[0]  # Compare buy vs do_nothing
-                
-                if not should_trade:
-                    if len(player_gives) > len(player_receives):
-                        player_gives.pop()
-                    else:
-                        player_receives.pop()
-                    continue
-                
-                # Check traditional fairness constraints
-                if diff_abs > self.settings.trade_max_diff_abs or diff_giver > self.settings.trade_max_diff_rel:
-                    player_gives.pop()
-                    continue
-                if -diff_abs > other_player.settings.trade_max_diff_abs or diff_receiver > other_player.settings.trade_max_diff_rel:
-                    player_receives.pop()
-                    continue
-                break
-
-            return player_gives, player_receives
-
-        # Main trading logic
-        for other_player in players:
-            if self.wants_to_buy.intersection(other_player.wants_to_sell) and \
-               self.wants_to_sell.intersection(other_player.wants_to_buy):
-                
-                player_receives = list(self.wants_to_buy.intersection(other_player.wants_to_sell))
-                player_gives = list(self.wants_to_sell.intersection(other_player.wants_to_buy))
-
-                player_gives, player_receives = fair_deal(player_gives, player_receives, other_player)
-
-                if player_receives and player_gives:
-                    price_difference, _, _ = get_price_difference(player_gives, player_receives)
-
-                    # Handle money transfer
-                    if price_difference > 0:
-                        if other_player.money - price_difference < other_player.settings.unspendable_cash:
-                            return False
-                        other_player.money -= price_difference
-                        self.money += price_difference
-                    elif price_difference < 0:
-                        if self.money - abs(price_difference) < self.settings.unspendable_cash:
-                            return False
-                        other_player.money += abs(price_difference)
-                        self.money -= abs(price_difference)
-
-                    # Transfer properties
-                    for cell_to_receive in player_receives:
-                        cell_to_receive.owner = self
-                        self.owned.append(cell_to_receive)
-                        other_player.owned.remove(cell_to_receive)
-                    for cell_to_give in player_gives:
-                        cell_to_give.owner = other_player
-                        other_player.owned.append(cell_to_give)
-                        self.owned.remove(cell_to_give)
-
-                    # Log the trade
-                    log.add(f"Trade: {self} gives {[str(cell) for cell in player_gives]}, " +
-                           f"receives {[str(cell) for cell in player_receives]} from {other_player}")
-                    
-                    if price_difference > 0:
-                        log.add(f"{self} received price difference compensation ${abs(price_difference)} from {other_player}")
-                    if price_difference < 0:
-                        log.add(f"{other_player} received price difference compensation ${abs(price_difference)} from {self}")
-
-                    # Update game state
-                    board.recalculate_monopoly_coeffs(player_gives[0])
-                    board.recalculate_monopoly_coeffs(player_receives[0])
-                    
-                    # Update Q-values based on trade outcome
-                    reward = self.get_reward(players)
-                    state = State(self, players)
-                    self.updateQValue(tuple(state.state), 1, reward)  # Use action 1 (buy) for trades
-                    
-                    # Update trade lists
-                    for player in players:
-                        player.update_lists_of_properties_to_trade(board)
-
-                    return True
-        return False
-                
-    def buy_property(self, property_to_buy, log):
-        """Execute property purchase"""
-        property_to_buy.owner = self
-        self.owned.append(property_to_buy)
-        self.money -= property_to_buy.cost_base
-        log.add(f"DEBUG: {self.name} bought {property_to_buy.name} for ${property_to_buy.cost_base}")
-        log.add(f"DEBUG: {self.name} now has ${self.money} remaining")
-
-    def get_reward(self, players):
-        """Get reward that explicitly encourages buying properties"""
+        #if old_q is None, initialize it to 0
+        if old_q is None:
+            old_q = 0.0
+        reward = reward if reward is not None else 0.0
+        next_max_q = next_max_q if next_max_q is not None else 0.0
+        
+        if next_max_q is None or reward is None:
+            raise ValueError("next_max_q or reward must not be None")
+        new_q = old_q + self.alpha * (reward + self.gamma * next_max_q - old_q)
+        self.qTable[(state, action)] = new_q
+        
+    def calculate_reward(self, board, players):
+        """Calculate the reward based on the player's current state."""
         reward = 0
+        #reward for money
+        reward += self.money * 0.01
+
         
-        # Base reward for properties owned
-        num_properties = len(self.owned)
-        reward += num_properties * 10   
-        
-        # Reward for having houses/hotels
         for prop in self.owned:
-            if hasattr(prop, 'has_houses'):
-                reward += prop.has_houses * 15
-            if hasattr(prop, 'has_hotel') and prop.has_hotel:
-                reward += 75  # Extra reward for hotels
-        
-        # Penalty for being close to bankrupt
-        if self.money < 100:
-            reward -= 50
+            #reward for properties owned
+            reward += len(self.owned) * 0.5
+            if hasattr(prop, 'color'):  # Only count colored properties
+                same_color_count = sum(
+                    1 for other_prop in self.owned
+                    if hasattr(other_prop, 'color') and other_prop.color == prop.color
+                )
+                reward += same_color_count * 100
+                reward += 50 #immediate reward for owning a property        
+        # Huge reward for monopolies
+        for group in board.groups.values():
+            if all(prop.owner == self for prop in group):
+                reward += 1000  # Increased from 50
+                
+        # Penalty for having very low cash reserves
+        #if self.money < 100:  # Add penalty if cash is too low
+           #reward -= 200
             
-        # Add bonus for monopolies
-        color_counts = {}
-        for prop in self.owned:
-            if prop.group in color_counts:
-                color_counts[prop.group] += 1
-            else:
-                color_counts[prop.group] = 1
-                
-        # Define complete sets for each color
-        color_set_sizes = {
-            'brown': 2, 'lightblue': 3, 'pink': 3, 'orange': 3,
-            'red': 3, 'yellow': 3, 'green': 3, 'indigo': 2,
-            'Railroads': 4, 'Utilities': 2
-        }
-        
-        # Add bonus for monopolies
-        for color, count in color_counts.items():
-            if color in color_set_sizes and count == color_set_sizes[color]:
-                reward += 50  # Bonus for completing a set
-                
         return reward
     
-    def handle_landing_on_property(self, board, players, dice, log):
-        """Handle landing on property with Q-learning decision making"""
-        landed_property = board.cells[self.position]
-
-        # Property is not owned by anyone
-        if landed_property.owner is None:
-            log.add(f"DEBUG: {self.name} landed on unowned property {landed_property}")
-            
-            # Get current state and choose action
-            current_state = State(self, players)
-            current_state_tuple = tuple(current_state.state)
-            
-            # Use epsilon-greedy for exploration
-            if random.random() < self.epsilon:
-                should_buy = random.choice([True, False])
-                log.add(f"DEBUG: Exploring - randomly decided to {'buy' if should_buy else 'not buy'}")
-            else:
-                action = self.choose_action(current_state_tuple)
-                should_buy = action == 1  # Assuming 1 is the buy action
-                log.add(f"DEBUG: Exploiting - Q-learning decided to {'buy' if should_buy else 'not buy'}")
-
-            # Check if willing and able to buy
-            if should_buy and self.is_willing_to_buy_property(landed_property):
-                # Buy property
-                self.buy_property(landed_property, log)
-                
-                # Recalculate monopoly coefficients
-                board.recalculate_monopoly_coeffs(landed_property)
-
-                # Recalculate who wants to buy what
-                for player in players:
-                    player.update_lists_of_properties_to_trade(board)
-                    
-                # Get reward and update Q-values
-                reward = self.get_reward(self, players)
-                self.updateQValue(current_state_tuple, 1, reward)  # 1 for buy action
-            else:
-                log.add(f"Player {self.name} refuses to buy {landed_property}")
-                # Update Q-values for not buying
-                reward = self.get_reward(self, players)
-                self.updateQValue(current_state_tuple, 0, reward)  # 0 for do_nothing action
-
-        # Property has an owner
-        else:
-            # Handle rent payment logic
-            if landed_property.is_mortgaged:
-                log.add("Property is mortgaged, no rent")
-            elif landed_property.owner == self:
-                log.add("Own property, no rent")
-            else:
-                log.add(f"Player {self.name} landed on a property owned by {landed_property.owner}")
-                rent_amount = landed_property.calculate_rent(dice)
-                
-                # Handle special rent conditions
-                if self.other_notes == "double rent":
-                    rent_amount *= 2
-                    log.add(f"Per Chance card, rent is doubled (${rent_amount}).")
-                elif self.other_notes == "10 times dice":
-                    rent_amount = rent_amount // landed_property.monopoly_coef * 10
-                    log.add(f"Per Chance card, rent is 10x dice throw (${rent_amount}).")
-                
-                # Pay rent
-                self.pay_money(rent_amount, landed_property.owner, board, log)
-                if not self.is_bankrupt:
-                    log.add(f"{self} pays {landed_property.owner} rent ${rent_amount}")
-
-        # Decay exploration rate
-        self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
-        
-    def execute_action(self, board: Board, log: Log, action: Action, group_idx: int):
-        """Execute the chosen action on the specified property group"""
-        if action.action_type == 'buy':
-            success = self.buy_in_group(group_idx, board, log)
-            log.add(f"DEBUG: {self.name} attempted buy in group {group_idx}, success: {success}")
-            
-        elif action.action_type == 'sell':
-            success = self.sell_in_group(group_idx, board, log)
-            log.add(f"DEBUG: {self.name} attempted sell in group {group_idx}, success: {success}")
-            
-        elif action.action_type == 'do_nothing':
-            log.add(f"DEBUG: {self.name} chose to do nothing for group {group_idx}")
-            
-    def choose_action(self, state):
-        """Choose the best action for the given state"""
-        best_action = 0
-        best_value = float('-inf')
-        
-        for action in range(3):  # 3 possible actions
-            q_value = self.getQValue(state, action)
-            if q_value > best_value:
-                best_value = q_value
-                best_action = action
-                
-        return best_action
-        
-    def getQValue(self, state, action):
-        """Get Q-value from Q-table"""
-        return self.qTable.get((state, action), 0.0)
-        
-    def updateQValue(self, state, action, reward):
-        """Update Q-value using Q-learning formula"""
-        old_value = self.getQValue(state, action)
-        next_state = State(self, self.get_other_players())  # You'll need to implement get_other_players
-        next_state_tuple = tuple(next_state.state)
-        
-        # Get max Q-value for next state
-        next_max = max(self.getQValue(next_state_tuple, a) for a in range(3))
-        
-        # Q-learning formula
-        new_value = old_value + self.alpha * (reward + self.gamma * next_max - old_value)
-        self.qTable[(state, action)] = new_value
-        
-    def is_group_actionable(self, group_idx: int, board: Board):
-        """Check if actions can be taken on this property group"""
-        cell_indices = group_cell_indices[group_idx]
-        for cell_idx in cell_indices:
-            cell = board.cells[cell_idx]
-            # Can buy if unowned and we're on it
-            if self.position == cell_idx and not cell.owner:
-                return True
-            # Can sell if we own it
-            if cell.owner == self:
-                return True
-            # Can improve if we have monopoly
-            if cell.monopoly_coef == 2:
-                return True
-        return False
+    def make_a_move(self, board, players, dice, log):
+        #call parent's make_a_move to handle the dice roll
+        result = super().make_a_move(board, players, dice, log)
+        if result == "bankrupt" or result == "move is over":
+            return result
+   
+        # Q learning execution
+        # Exploration: choose random action
     
+        current_state = self.get_state(board, players)
+        #get available actions
+        action_obj = Action()
+        available_actions = []
+
+        for action_idx in range(len(action_obj.actions)):
+            property_idx, action_type = action_obj.map_action_index(action_idx)
+            if action_obj.is_excutable(self, board, property_idx, action_type):
+                available_actions.append(action_idx)
+        
+        #choose action
+        chosen_action = self.choose_action(board,current_state, available_actions)
+        
+        #execute action
+        property_idx, action_type = action_obj.map_action_index(chosen_action)
+        action_obj.execute_action(self, board, property_idx, action_type, log)
+
+        #calculate reward
+        reward = self.calculate_reward(board, players)
+
+       #update q-table if we have a previous state-action pair
+        if self.previous_state is not None:
+            self.update_q_value(
+                self.previous_state,
+                self.previous_action,
+                self.previous_reward,
+                current_state,
+                available_actions
+            )
+       
+
+       #store current state and action pair for next iteration
+        self.previous_state = current_state
+        self.previous_action = chosen_action
+        self.previous_reward = reward
+
+        self.log_q_table()
+
+        return "continue"
+    def should_buy_property(self, property, board):
+        """Determine if the agent should buy a property"""
+        if not property or not isinstance(property, Property):
+            return False
+            
+        if property.owner is not None:
+            return False
+            
+        if self.money < property.cost_base + self.min_cash_reserve:
+            return False
+            
+        # Count properties in same color group
+        same_color_count = 0
+        if hasattr(property, 'color'):
+            for prop in self.owned:
+                if hasattr(prop, 'color') and prop.color == property.color:
+                    same_color_count += 1
+                    
+        # More likely to buy if we have properties of same color
+        if same_color_count > 0:
+            return True
+            
+        # Always buy railroads and utilities
+        if property.group in ['Railroads', 'Utilities']:
+            return True
+            
+        # Buy if price is reasonable compared to our money
+        return property.cost_base <= self.money * 0.4
+    def buy_property(self, property_to_buy, log):
+        """Buy a property and update the game state
+    
+    Args:
+        property_to_buy (Property): The property being purchased
+        log (Log): Game log instance
+    """
+        if self.is_willing_to_buy_property:
+            # Update property ownership
+            property_to_buy.owner = self
+            self.owned.append(property_to_buy)
+            self.money -= property_to_buy.cost_base
+            
+            # Log the purchase
+            log.add(f"Player {self.name} bought {property_to_buy} " +
+                        f"for ${property_to_buy.cost_base}")
+            
+            # Recalculate monopoly / can build flags
+            #board.recalculate_monopoly_coeffs(property_to_buy)
+
+            # Recalculate who wants to buy what
+            #for player in players:
+                #player.update_lists_of_properties_to_trade(board)
+        else:
+            log.add(f"Player {self.name} landed on {property_to_buy}, but refuses to buy it")
+            # TODO: Bank auctions the property
+
+    def log_q_table(self):
+        """log q table to a file"""
+        with open(f"qtable_{self.name}.txt", "w") as f:
+            f.write(f"Q-table for {self.name}:\n\n")
+            f.write("State-Action Pairs with non-zero Q-values:\n\n")
+            
+            # Sort Q-table by Q-value for better readability
+            sorted_q = sorted(self.qTable.items(), key=lambda x: x[1], reverse=True)
+            
+            for (state, action), q_value in sorted_q:
+                if q_value != 0:  # Only show non-zero Q-values
+                    f.write(f"State: {state}\n")
+                    property_idx = action // 3  # Assuming 3 actions per property
+                    action_type = ['buy', 'sell', 'do_nothing'][action % 3]
+                    f.write(f"Action: Property {property_idx}, {action_type}\n")
+                    f.write(f"Q-value: {q_value:.2f}\n\n")
+            
+
+class DQAPlayer(Player):
+    pass

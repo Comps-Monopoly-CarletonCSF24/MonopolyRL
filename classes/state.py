@@ -29,7 +29,8 @@ class State:
     has_monopoly =None
     is_property =None
     has_more_money=None
-    can_make_trade=None
+    
+    
     def __init__(self, current_player: Player, players: list):
         self.has_monopoly = False
         self.is_property = False
@@ -108,7 +109,7 @@ def get_state(has_more_money: bool, has_monopoly:bool, is_property: bool) -> np.
     ], dtype = np.float64)
 
     return state
-
+'''
 def can_make_trade(current_player: Player, players: list) -> bool:
     """Determines if the player has viable trading opportunities
     
@@ -150,9 +151,9 @@ def can_make_trade(current_player: Player, players: list) -> bool:
                         if other_player.money - abs(price_diff) >= other_player.settings.unspendable_cash:
                             return True
     return False
-
+'''
 def get_state(has_monopoly: bool, is_property: bool, 
-              has_more_money: bool, can_trade: bool) -> np.ndarray:
+              has_more_money: bool) -> np.ndarray:
     """Converts the state booleans into a one-dimensional vector
     
     Returns:
@@ -162,11 +163,11 @@ def get_state(has_monopoly: bool, is_property: bool,
         float(has_monopoly),
         float(is_property),
         float(has_more_money),
-        float(can_trade)  # Added trade state
+       
     ], dtype=np.float64)
     
     return state
-
+'''
 # Optional: Add more detailed trade state information
 def get_detailed_trade_state(current_player: Player, players: list) -> dict:
     """Gets detailed information about trading possibilities
@@ -214,3 +215,4 @@ def get_detailed_trade_state(current_player: Player, players: list) -> dict:
     trade_state['best_trade_value_diff'] = best_value_diff
     
     return trade_state
+    '''
