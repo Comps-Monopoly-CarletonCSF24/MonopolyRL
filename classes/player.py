@@ -335,9 +335,7 @@ class DQAPlayer(Player):
         for group_idx in range(len(group_cell_indices)):
             if self.is_group_actionable(group_idx, board):
                 state, action = self.select_action(players)
-                if not self.agent.is_training:
-                    print("not training")
-                else:
+                if self.agent.is_training:
                     self.train_agent_with_one_action(players, state, action)
                 self.execute_action(board, log, action, group_idx)
                 ## DELETE
@@ -379,25 +377,45 @@ class DQAPlayer(Player):
         """
     
         if action.action_type == 'buy':
-            self.buy_in_group(group_idx, board, log)
-            pass
+            return self.buy_in_group(group_idx, board, log)
         elif action.action_type == 'sell':
-            self.sell_in_group(group_idx, board, log)
             pass
+            #return self.sell_in_group(group_idx, board, log)
         elif action.action_type == 'do_nothing':
-            pass
-        return
-    
+            return True
+
     def buy_in_group(self, group_idx: int, board: Board, log: Log):
         cells_in_group = []
         for cell_idx in group_cell_indices[group_idx]:
             cells_in_group.append(board.cells[cell_idx])
-            
+        
+        def get_next_property_to_unmortgage():
+            for cell in cells_in_group:
+                if not cell.is_mortgaged:
+                    continue
+                if not cell.owner == self:
+                    continue
+                cost_to_unmortgage = \
+                        cell.cost_base * GameSettings.mortgage_value + \
+                        cell.cost_base * GameSettings.mortgage_fee
+                if not self.money - cost_to_unmortgage >= self.settings.unspendable_cash:
+                    continue
+                return cell, cost_to_unmortgage
+            return None, None   
+        
+        def unmortgage_property(property_to_unmortgage, cost_to_unmortgage):
+            log.add(f"{self} unmortgages {property_to_unmortgage} for ${cost_to_unmortgage}")
+            self.money -= cost_to_unmortgage
+            property_to_unmortgage.is_mortgaged = False
+            return True
+
         def can_buy_property():
             '''
             Check if the player can buy a property
             '''
             property_to_buy = board.cells[self.position]
+            if not self.position in group_cell_indices[group_idx]:
+                return False
             if not isinstance(property_to_buy, Property):
                 return False
             if property_to_buy.owner != None:
@@ -475,12 +493,14 @@ class DQAPlayer(Player):
                 log.add(f"{self} built a hotel on {cell_to_improve}")
             return True
         
-        # if landed on an unowned property: buy it
-        if can_buy_property():
-            return buy_property()
-        else:
-            cell_to_improve = get_next_property_to_improve()
+        cell_to_improve = get_next_property_to_improve()
+        if cell_to_improve:
             return improve_property(cell_to_improve)    
+        cell_to_unmortgage, cost_to_unmortgate = get_next_property_to_unmortgage()
+        if cell_to_unmortgage:
+            return unmortgage_property(cell_to_unmortgage, cost_to_unmortgate)
+        if can_buy_property(): 
+            return buy_property()
 
     def sell_in_group(self, group_idx: int, board: Board, log: Log):
         cells_in_group = []
@@ -560,6 +580,9 @@ class DQAPlayer(Player):
             return downgrade_property(cell_to_downgrade)
         
         # If no buildings to sell, try to sell property
+        cell = can_sell_property()
+        if cell:
+            return sell_property(cell)
         cell = can_sell_property()
         if cell:
             return sell_property(cell)
