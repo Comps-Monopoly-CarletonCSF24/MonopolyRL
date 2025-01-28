@@ -2,6 +2,7 @@
 '''
 class TrainingSettings():
     n_episodes = 2
+    n_moves = 100
     n_games = 100
     multi_process = 1
 

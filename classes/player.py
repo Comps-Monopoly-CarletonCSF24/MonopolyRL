@@ -335,9 +335,7 @@ class DQAPlayer(Player):
         for group_idx in range(len(group_cell_indices)):
             if self.is_group_actionable(group_idx, board):
                 state, action = self.select_action(players)
-                if not self.agent.is_training:
-                    print("not training")
-                else:
+                if self.agent.is_training:
                     self.train_agent_with_one_action(players, state, action)
                 self.execute_action(board, log, action, group_idx)
                 ## DELETE
