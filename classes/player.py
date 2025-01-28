@@ -483,16 +483,16 @@ class DQAPlayer(Player):
         for cell_idx in group_cell_indices[group_idx]:
             cells_in_group.append(board.cells[cell_idx])
             
-        def can_sell_property(property_to_sell):
+        def can_sell_property():
             '''
             Wrote similar function to see if the player can seal a property
             '''
             for cell in cells_in_group:
-                if not isinstance(property_to_sell, Property):
+                if not isinstance(cell, Property):
                     continue
-                if property_to_sell.owner != self:
+                if cell.owner != self:
                     continue
-                if property_to_sell.has_houses > 0 or property_to_sell.has_hotel > 0:
+                if cell.has_houses > 0 or cell.has_hotel > 0:
                     continue
                 return cell
             return None
@@ -556,9 +556,9 @@ class DQAPlayer(Player):
             return downgrade_property(cell_to_downgrade)
         
         # If no buildings to sell, try to sell property
-        property_to_sell = can_sell_property()
-        if property_to_sell:
-            return sell_property(property_to_sell)
+        cell = can_sell_property()
+        if cell:
+            return sell_property(cell)
             
         return False   
 
