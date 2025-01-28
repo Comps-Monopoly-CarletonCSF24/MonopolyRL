@@ -379,8 +379,7 @@ class DQAPlayer(Player):
         if action.action_type == 'buy':
             return self.buy_in_group(group_idx, board, log)
         elif action.action_type == 'sell':
-            pass
-            #return self.sell_in_group(group_idx, board, log)
+            return self.sell_in_group(group_idx, board, log)
         elif action.action_type == 'do_nothing':
             return True
 

@@ -26,7 +26,8 @@ def train_model(config: TrainingSettings):
     for i in tqdm(range(config.n_games)):
         monopoly_game(data_for_simulation[i], qlambda_agent = qlambda_agent)
         qlambda_agent.end_game()
-
+    qlambda_agent.save_nn()
+    
 if __name__ == "__main__":
     print("Training...")
     train_model(TrainingSettings)
