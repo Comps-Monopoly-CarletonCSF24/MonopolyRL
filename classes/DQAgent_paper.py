@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 import random
+import math
 from typing import List
 from classes.state import State, State_Size, get_initial_state
 from classes.action_paper import Action, Action_Size, Total_Actions, Actions
@@ -27,8 +28,6 @@ class QNetwork(nn.Module):
         nn.init.uniform_(self.output_layer.weight, -0.5, 0.5)
         nn.init.uniform_(self.output_layer.bias, -0.5, 0.5)
         
-        # Set learning rate to match Java from paper
-        self.learning_rate = 0.2
         
     def forward(self, state: State, action: Action):
         stacked_input = np.append(state.state, action.action_index)
@@ -79,6 +78,8 @@ class QLambdaAgent:
         self.traces = []
         self.last_state = get_initial_state()
         self.last_action = Action("do_nothing")
+        self.epsilon *= 0.99
+        self.alpha *= 0.99
     
     def save_nn(self):
         checkpoint = {
@@ -105,7 +106,7 @@ class QLambdaAgent:
         if random.random() < self.epsilon:  # exploration rate
             ## DELETE THIS LINE
             # print("random")
-            return random.choice(all_actions)
+            return Action(random.choice(Actions))
         else:
             ## DELETE
             # valid_q_values = [q_values[i] for i in all_actions]
@@ -123,8 +124,8 @@ class QLambdaAgent:
         valid_q_values = [q_values[i] for i in all_actions]
         max_q_value = max(valid_q_values)
         # Break the tie randomly
-        max_q_indices = [i for i, x in enumerate(q_values) if x == max_q_value]
-        return random.choice(max_q_indices)
+        max_q_indices = [i for i, x in enumerate(q_values) if math.isclose(x, max_q_value, rel_tol=1e-9)]
+        return Action(Actions[random.choice(max_q_indices)])
     
     def calculate_all_q_values(self, state: State):
         """For all possible actions (0-2), generate a list of predicted q-values with the NN
@@ -184,63 +185,23 @@ class QLambdaAgent:
         self.optimizer.step()
 
     def train_nn_with_trace(self, state, action, reward):
-        # for trace in self.traces: 
-        #     if trace.is_similar_to_state(state) and trace.is_similar_to_action(action):
-        #         continue
-        #     else:
-        #         q_t = self.model(trace.state, trace.action)
-                
-        #         q_values_current_state = self.calculate_all_q_values(state)
-        #         predicted_action_current_state = self.find_action_with_max_value(q_values_current_state)
-        #         max_qt = self.model(state, predicted_action_current_state)
-                
-        #         q_values_previous_state = self.calculate_all_q_values(self.last_state)
-        #         predicted_action_previous_state = self.find_action_with_max_value(q_values_previous_state)
-        #         max_q = self.model(self.last_state, predicted_action_previous_state)
-
-        #         target_q_value = q_t + self.alpha * trace.value * (reward + self.gamma * max_qt - max_q)
-                
-        #         self.train_neural_network(trace.state, trace.action, target_q_value)
-
-         # Calculate Q-values for current state
-
-        """Implements Peng's Q(λ) algorithm like the Java version"""
-        q_values_current = self.calculate_all_q_values(state)
-        best_action_current = self.find_action_with_max_value(q_values_current)
-        max_qt = q_values_current[best_action_current]
-        
-        # Calculate max Q for previous state
-        q_values_previous = self.calculate_all_q_values(self.last_state)
-        best_action_previous = self.find_action_with_max_value(q_values_previous)
-        max_q = q_values_previous[best_action_previous]
-        
-        for trace in self.traces:
-            if trace.is_similar_to_state(state):
-                if not trace.is_similar_to_action(action):
-                    # Remove traces for same state but different actions
-                    self.traces.remove(trace)
-                else:
-                    # Update trace value to 1 for matching state-action
-                    trace.value = 1
-                    
-                    # Get current Q-value for this trace
-                    qt = self.model(trace.state, trace.action)
-                    
-                    # Calculate new Q-value using Peng's Q(λ)
-                    target_q = qt + self.alpha * trace.value * (reward + self.gamma * max_qt - max_q)
-                    
-                    # Train network
-                    self.train_neural_network(trace.state, trace.action, target_q)
+        for trace in self.traces: 
+            if trace.is_similar_to_state(state) and trace.is_similar_to_action(action):
+                continue
             else:
-                # Decay trace value
-                trace.value = self.gamma * self.lambda_param * trace.value
+                q_t = self.model(trace.state, trace.action)
                 
-                # Update Q-value for this trace
-                qt = self.model(trace.state, trace.action)
-                target_q = qt + self.alpha * trace.value * (reward + self.gamma * max_qt - max_q)
+                q_values_current_state = self.calculate_all_q_values(state)
+                predicted_action_current_state = self.find_action_with_max_value(q_values_current_state)
+                max_qt = self.model(state, predicted_action_current_state)
                 
-                # Train network
-                self.train_neural_network(trace.state, trace.action, target_q)
+                q_values_previous_state = self.calculate_all_q_values(self.last_state)
+                predicted_action_previous_state = self.find_action_with_max_value(q_values_previous_state)
+                max_q = self.model(self.last_state, predicted_action_previous_state)
+
+                target_q_value = q_t + self.alpha * trace.value * (reward + self.gamma * max_qt - max_q)
+                
+                self.train_neural_network(trace.state, trace.action, target_q_value)
 
     def get_reward(self, player, players):
         """Implement reward function from paper"""
