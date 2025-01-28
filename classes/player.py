@@ -515,9 +515,7 @@ class DQAPlayer(Player):
             '''
             for cell in cells_in_group:
                 if not isinstance(cell, Property):
-                if not isinstance(cell, Property):
                     continue
-                if cell.owner != self:
                 if cell.owner != self:
                     continue
                 if cell.has_houses > 0 or cell.has_hotel > 0:
