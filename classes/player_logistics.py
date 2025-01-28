@@ -73,6 +73,9 @@ class Player:
                 net_worth += (cell.has_houses + cell.has_hotel) * cell.cost_house
 
         return net_worth
+    def calculate_max_bid(self, property_to_auction, current_bid):
+        #calculate max bid for the player
+        return min(self.money * 0.7, property_to_auction.cost_base * 1.1)
 
     def make_a_move(self, board, players, dice, log):
         ''' REVISION 1/11/2025: this class is now purely game logic (except jail)
@@ -720,3 +723,57 @@ class Player:
             self.pay_money(rent_amount, landed_property.owner, board, log)
             if not self.is_bankrupt:
                 log.add(f"{self} pays {landed_property.owner} rent ${rent_amount}")
+    
+    def auction_property(self, property_to_auction, players, log):
+        """Auction a property to the highest bidder once a player chooses not to buy"
+        Args:
+            property_to_auction: the property to auction
+            players: the list of players
+            log: the log object
+        """
+        if property_to_auction.owner is not None:
+            return
+        
+        #start auction at half the property's base cost
+        current_bid = property_to_auction.cost_base // 2
+        current_winner = None
+
+        log.add(f"\n===Auctioning {property_to_auction} starting at ${current_bid}===")
+
+        #continue auction until no one wants to bid higher
+        while True:
+            #check if any player wants to bid higher
+            had_new_bid = False
+
+            #each player has a chance to bid
+            for player in players or player == self: #skip bankrupt players or the player who refuses to buy the property
+                if player.is_bankrupt:
+                    continue
+
+                #check if player wants to bid higher, player has enough money to bid at least $10 more to enter
+                if (player.money >  current_bid + 10 and 
+                    current_bid < property_to_auction.cost_base):
+                    #use player's calculate_max_bid method to determine max bid for different player types
+                    max_bid=player.calculate_max_bid(property_to_auction, current_bid)  #don't bid above the property's base cost
+                
+                
+                
+                    if current_bid < max_bid:
+                        new_bid = min(current_bid + 10, max_bid) #increment bid by $10
+                        current_bid = new_bid
+                        current_winner = player
+                        had_new_bid = True
+                        log.add(f"{player.name} bids ${new_bid}")
+
+
+            if not had_new_bid: #no one wants to bid higher
+                break
+
+        #sell to highest bidder
+        if current_winner is not None:
+            current_winner.money -= current_bid
+            property_to_auction.owner = current_winner
+            current_winner.owned.append(property_to_auction)   #add property to the winner's owned list
+            log.add(f"{current_winner.name} buys {property_to_auction} for ${current_bid}")
+        else:
+            log.add(f"No one buys {property_to_auction}")

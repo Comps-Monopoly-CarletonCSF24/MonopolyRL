@@ -50,9 +50,17 @@ class Action:
                     #player.can_afford(property.cost_base))  # Changed price to cost_base
         return True  # do_nothing is always executable
     
-    def execute_action(self, player, board, property_idx, action_type, log):
+    def execute_action(self, player, board, property_idx, action_type, log, players):
+
         """
         Executes the action on the given property for the specified player.
+        Args:
+            player: the player who is taking the action
+            board: the board object
+            property_idx: the index of the property to be acted on
+            action_type: the type of action to be taken
+            log: the log object
+            players: the list of players (for auction)
         """
        
         #property = board.get_property(property_idx)
@@ -76,5 +84,7 @@ class Action:
         elif action_type == 'do_nothing':
             if isinstance(current_property, Property) and current_property.owner is None and player.money >= current_property.cost_base:
                 log.add(f">>> {player.name} chose not to buy {current_property.name} (${current_property.cost_base})")
+                #trigger auction
+                player.auction_property(current_property, players, log)
             else:
                 log.add(f"DEBUG: {player.name} did nothing for {current_property.name}")

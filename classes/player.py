@@ -323,8 +323,9 @@ class Fixed_Policy_Player(Player):
 
             else:
                 log.add(f"Player {self.name} landed on a {landed_property}, he refuses to buy it")
-                # TODO: Bank auctions the property
-        
+                # Trigger auction
+                self.auction_property(landed_property, players, log)
+
 class BasicQPlayer(Player):
 
     def __init__(self, name, settings, position=0, money=1500):
@@ -455,6 +456,9 @@ class BasicQPlayer(Player):
            #reward -= 200
             
         return reward
+    def calculate_max_bid(self, property_to_auction, current_bid):
+        #more conservative for basic q-learning player
+        return min(self.money * 0.5, property_to_auction.cost_base)
     
     def make_a_move(self, board, players, dice, log):
         #call parent's make_a_move to handle the dice roll
@@ -480,7 +484,7 @@ class BasicQPlayer(Player):
         
         #execute action
         property_idx, action_type = action_obj.map_action_index(chosen_action)
-        action_obj.execute_action(self, board, property_idx, action_type, log)
+        action_obj.execute_action(self, board, property_idx, action_type, log, players)
 
         #calculate reward
         reward = self.calculate_reward(board, players)
@@ -504,6 +508,7 @@ class BasicQPlayer(Player):
         self.log_q_table()
 
         return "continue"
+
     def should_buy_property(self, property, board):
         """Determine if the agent should buy a property"""
         if not property or not isinstance(property, Property):
