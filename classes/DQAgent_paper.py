@@ -14,11 +14,21 @@ model_param_path = "./model_parameters.pth"
 
 class QNetwork(nn.Module):
     def __init__(self):
+
         super(QNetwork, self).__init__()
         # Define layers
         self.input_layer = nn.Linear(State_Size + Action_Size, 150)  # Input layer to hidden layer
         self.activation = nn.Sigmoid()  # Sigmoid activation for the hidden layer
         self.output_layer = nn.Linear(150, 1)  # Hidden layer to output layer
+
+        # Match Java's weight initialization (they had 0.5 as weights)
+        nn.init.uniform_(self.input_layer.weight, -0.5, 0.5)
+        nn.init.uniform_(self.input_layer.bias, -0.5, 0.5)
+        nn.init.uniform_(self.output_layer.weight, -0.5, 0.5)
+        nn.init.uniform_(self.output_layer.bias, -0.5, 0.5)
+        
+        # Set learning rate to match Java from paper
+        self.learning_rate = 0.2
         
     def forward(self, state: State, action: Action):
         stacked_input = np.append(state.state, action.action_index)
@@ -45,10 +55,12 @@ class QLambdaAgent:
     def __init__(self, is_training = False):
         self.is_training = is_training
         # Parameters from the paper
-        self.epsilon = 0.1     # Greedy coeff from paper
+        self.epsilon = 0.5     # Greedy coeff from paper
         self.alpha = 0.2       # Learning rate from paper
         self.gamma = 0.95      # Discount factor from paper
-        self.lambda_param = 0.85  # Lambda parameter from paper
+        self.lambda_param = 0.8  # Lambda parameter from paper
+        self.current_epoch = 1 
+
         # Initialize network and optimizer
         self.model = QNetwork()
         self.optimizer = optim.SGD(self.model.parameters(), lr = self.alpha)
@@ -155,6 +167,9 @@ class QLambdaAgent:
         return state_action_exists
     
     def train_neural_network(self, input_state: State, input_action: Action, target_q_value: torch.Tensor):
+        #tracking epoch like java did 
+        self.current_epoch += 1
+
         criterion = nn.MSELoss()
         output_q_value = self.model(input_state, input_action)
         loss = criterion(output_q_value, target_q_value)
@@ -165,23 +180,63 @@ class QLambdaAgent:
         self.optimizer.step()
 
     def train_nn_with_trace(self, state, action, reward):
-        for trace in self.traces: 
-            if trace.is_similar_to_state(state) and trace.is_similar_to_action(action):
-                continue
-            else:
-                q_t = self.model(trace.state, trace.action)
+        # for trace in self.traces: 
+        #     if trace.is_similar_to_state(state) and trace.is_similar_to_action(action):
+        #         continue
+        #     else:
+        #         q_t = self.model(trace.state, trace.action)
                 
-                q_values_current_state = self.calculate_all_q_values(state)
-                predicted_action_current_state = self.find_action_with_max_value(q_values_current_state)
-                max_qt = self.model(state, predicted_action_current_state)
+        #         q_values_current_state = self.calculate_all_q_values(state)
+        #         predicted_action_current_state = self.find_action_with_max_value(q_values_current_state)
+        #         max_qt = self.model(state, predicted_action_current_state)
                 
-                q_values_previous_state = self.calculate_all_q_values(self.last_state)
-                predicted_action_previous_state = self.find_action_with_max_value(q_values_previous_state)
-                max_q = self.model(self.last_state, predicted_action_previous_state)
+        #         q_values_previous_state = self.calculate_all_q_values(self.last_state)
+        #         predicted_action_previous_state = self.find_action_with_max_value(q_values_previous_state)
+        #         max_q = self.model(self.last_state, predicted_action_previous_state)
 
-                target_q_value = q_t + self.alpha * trace.value * (reward + self.gamma * max_qt - max_q)
+        #         target_q_value = q_t + self.alpha * trace.value * (reward + self.gamma * max_qt - max_q)
                 
-                self.train_neural_network(trace.state, trace.action, target_q_value)
+        #         self.train_neural_network(trace.state, trace.action, target_q_value)
+
+         # Calculate Q-values for current state
+
+        """Implements Peng's Q(λ) algorithm like the Java version"""
+        q_values_current = self.calculate_all_q_values(state)
+        best_action_current = self.find_action_with_max_value(q_values_current)
+        max_qt = q_values_current[best_action_current]
+        
+        # Calculate max Q for previous state
+        q_values_previous = self.calculate_all_q_values(self.last_state)
+        best_action_previous = self.find_action_with_max_value(q_values_previous)
+        max_q = q_values_previous[best_action_previous]
+        
+        for trace in self.traces:
+            if trace.is_similar_to_state(state):
+                if not trace.is_similar_to_action(action):
+                    # Remove traces for same state but different actions
+                    self.traces.remove(trace)
+                else:
+                    # Update trace value to 1 for matching state-action
+                    trace.value = 1
+                    
+                    # Get current Q-value for this trace
+                    qt = self.model(trace.state, trace.action)
+                    
+                    # Calculate new Q-value using Peng's Q(λ)
+                    target_q = qt + self.alpha * trace.value * (reward + self.gamma * max_qt - max_q)
+                    
+                    # Train network
+                    self.train_neural_network(trace.state, trace.action, target_q)
+            else:
+                # Decay trace value
+                trace.value = self.gamma * self.lambda_param * trace.value
+                
+                # Update Q-value for this trace
+                qt = self.model(trace.state, trace.action)
+                target_q = qt + self.alpha * trace.value * (reward + self.gamma * max_qt - max_q)
+                
+                # Train network
+                self.train_neural_network(trace.state, trace.action, target_q)
 
     def get_reward(self, player, players):
         """Implement reward function from paper"""
