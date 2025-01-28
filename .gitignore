@@ -1,6 +1,9 @@
 # settings
 settings.py
 
+# training results
+*.pth
+
 # Output and log files
 *.txt
 
