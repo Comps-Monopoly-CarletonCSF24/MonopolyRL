@@ -345,8 +345,7 @@ class DQAPlayer(Player):
 
     def select_action(self, players: List[Player]):
         current_state = State(self, players)
-        current_action_idx = self.agent.choose_action(current_state)
-        current_action = Action(Actions[current_action_idx])
+        current_action = self.agent.choose_action(current_state)
         return current_state, current_action
     
     def train_agent_with_one_action(self, players: List[Player], current_state, current_action):
@@ -361,6 +360,7 @@ class DQAPlayer(Player):
         """
         self.agent.update_trace(current_state, current_action)
         reward = self.agent.get_reward(self, players)
+        self.agent.train_nn_with_trace(current_state, current_action, reward)
         q_value = self.agent.q_learning(current_state, current_action, reward)
         self.agent.train_neural_network(self.agent.last_state, self.agent.last_action, q_value)
         self.agent.last_state = current_state
