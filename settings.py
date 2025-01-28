@@ -1,10 +1,8 @@
 ''' Config file for monopoly simulation
 '''
 class TrainingSettings():
-    is_training = True
-    n_episodes = 10
-    n_games_per_episode = 20
-    n_moves = 1000
+    n_episodes = 2
+    n_games = 100
     multi_process = 1
 
 class SimulationSettings():
@@ -17,13 +15,13 @@ class SimulationSettings():
     n_moves = 100
 
     # Number of games to simulate
-    n_games = 1
+    n_games = 100
 
     # Random seed to start simulation with
     seed = 0
 
     # Number of parallel processes to use in the simulation
-    multi_process = 1
+    multi_process = 4
 
 class LogSettings:
     ''' Settings for logging

@@ -2,7 +2,7 @@ from typing import List
 from classes.board import Board, Property
 from classes.dice import Dice
 from classes.log import Log
-from settings import GameSettings, TrainingSettings
+from settings import GameSettings
 from classes.DQAgent_paper import QLambdaAgent
 from classes.action_paper import Action, Actions
 from classes.state import State, group_cell_indices
@@ -335,10 +335,15 @@ class DQAPlayer(Player):
         for group_idx in range(len(group_cell_indices)):
             if self.is_group_actionable(group_idx, board):
                 state, action = self.select_action(players)
-                if TrainingSettings.is_training:
-                    print("training")
+                if not self.agent.is_training:
+                    print("not training")
+                else:
                     self.train_agent_with_one_action(players, state, action)
                 self.execute_action(board, log, action, group_idx)
+                ## DELETE
+                # print("traces after update:")
+                # for trace in self.agent.traces:
+                #     print(trace)
 
     def select_action(self, players: List[Player]):
         current_state = State(self, players)
@@ -381,7 +386,6 @@ class DQAPlayer(Player):
             pass
         elif action.action_type == 'do_nothing':
             pass
-
         return
     
     def buy_in_group(self, group_idx: int, board: Board, log: Log):

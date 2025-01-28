@@ -19,11 +19,6 @@ class QNetwork(nn.Module):
         self.input_layer = nn.Linear(State_Size + Action_Size, 150)  # Input layer to hidden layer
         self.activation = nn.Sigmoid()  # Sigmoid activation for the hidden layer
         self.output_layer = nn.Linear(150, 1)  # Hidden layer to output layer
-        # Initialize weights and biases to zero
-        nn.init.constant_(self.input_layer.weight, 0.0)
-        nn.init.constant_(self.input_layer.bias, 0.0)
-        nn.init.constant_(self.output_layer.weight, 0.0)
-        nn.init.constant_(self.output_layer.bias, 0.0)
         
     def forward(self, state: State, action: Action):
         stacked_input = np.append(state.state, action.action_index)
@@ -43,9 +38,12 @@ class Trace:
         return self.state.is_similar_to(state2)
     def is_similar_to_action(self, action2: Action):
         return self.action.action_type == action2.action_type
+    def __str__(self):
+        return f"Trace(state={self.state}, action={self.action}, value={self.value:.2f})"
     
 class QLambdaAgent:
-    def __init__(self):
+    def __init__(self, is_training = False):
+        self.is_training = is_training
         # Parameters from the paper
         self.epsilon = 0.1     # Greedy coeff from paper
         self.alpha = 0.2       # Learning rate from paper
@@ -90,15 +88,15 @@ class QLambdaAgent:
         """
         if random.random() < self.epsilon:  # exploration rate
             ## DELETE THIS LINE
-            print("random")
+            # print("random")
             return random.choice(all_actions)
         else:
             ## DELETE
-            valid_q_values = [q_values[i] for i in all_actions]
-            test_str = ""
-            for i in all_actions:
-                test_str += str(Actions[i]) + ": " + str(valid_q_values[i])
-            print(test_str)
+            # valid_q_values = [q_values[i] for i in all_actions]
+            # test_str = ""
+            # for i in all_actions:
+            #     test_str += str(Actions[i]) + ": " + str(valid_q_values[i])
+            # print(test_str)
             return self.find_action_with_max_value(q_values)
     
     def choose_action(self, state):

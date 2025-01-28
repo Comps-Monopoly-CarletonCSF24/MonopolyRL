@@ -54,6 +54,4 @@ def run_simulation(config):
     analysis.winning_rate()
     
 if __name__ == "__main__":
-
-    # multiprocessing.set_start_method("spawn")
     run_simulation(SimulationSettings)

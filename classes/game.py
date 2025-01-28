@@ -9,7 +9,7 @@ from classes.board import Board
 from classes.dice import Dice
 from classes.log import Log
 
-def monopoly_game(data_for_simulation, QLambdaAgent = None):
+def monopoly_game(data_for_simulation, qlambda_agent = None):
     ''' Simulation of one game.
     For convenience to set up a multi-thread,
     parameters are packed into a tuple: (game_number, game_seed):
@@ -46,7 +46,7 @@ def monopoly_game(data_for_simulation, QLambdaAgent = None):
         if player_type == "Fixed Policy":
             players.append(Fixed_Policy_Player(player_name, player_setting))
         elif player_type == "QLambda":
-            players.append(DQAPlayer(player_name, player_setting, QLambdaAgent))
+            players.append(DQAPlayer(player_name, player_setting, qlambda_agent))
         elif player_type == "BasicQ":
             players.append(BasicQPlayer(player_name, player_setting))
             
@@ -113,4 +113,4 @@ def monopoly_game(data_for_simulation, QLambdaAgent = None):
     datalog.save()
             
     # Useless return, but it is here to mark the end of the game
-    return players
+    return None
