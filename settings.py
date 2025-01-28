@@ -2,8 +2,8 @@
 '''
 class TrainingSettings():
     is_training = True
-    n_episodes = 100
-    n_games_per_episode = 25
+    n_episodes = 10
+    n_games_per_episode = 20
     n_moves = 1000
     multi_process = 1
 
@@ -70,7 +70,6 @@ class GameSettings():
     # Player Names, Player Type, and Player Settings
     # A Player can be 1 of "Fixed Policy", "QLambda", or "BasicQ"
     players_list = [
-        # ("QLambda Player", "QLambda", StandardPlayer),
         ("QLambda Player 1", "QLambda", ExperimentPlayer),
         ("Fixed Policy Player 2", "Fixed Policy", StandardPlayer),
         ("Fixed Policy Player 3", "Fixed Policy", StandardPlayer),

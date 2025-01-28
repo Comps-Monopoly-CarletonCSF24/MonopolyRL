@@ -325,10 +325,10 @@ class Fixed_Policy_Player(Player):
                 # TODO: Bank auctions the property
 
 class DQAPlayer(Player):
-    def __init__(self, name, settings):
+    def __init__(self, name, settings, qlambda_agent:QLambdaAgent):
         super().__init__(name, settings)
         self.action = Action("do_nothing")
-        self.agent = QLambdaAgent()
+        self.agent = qlambda_agent if qlambda_agent else QLambdaAgent()
         pass
     
     def handle_action(self, board: Board, players: List[Player], dice: Dice, log: Log):
@@ -336,6 +336,7 @@ class DQAPlayer(Player):
             if self.is_group_actionable(group_idx, board):
                 state, action = self.select_action(players)
                 if TrainingSettings.is_training:
+                    print("training")
                     self.train_agent_with_one_action(players, state, action)
                 self.execute_action(board, log, action, group_idx)
 
