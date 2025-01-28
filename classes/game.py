@@ -101,7 +101,7 @@ def monopoly_game(data_for_simulation):
             result = player.make_a_move(board, players, dice, log)
             # If player goes bankrupt, log it in the data log file
             if result == "bankrupt":
-                datalog.add(f"{game_number}\t{player}\t{turn_n}")
+                datalog.add(f"{game_number}\t{player.name}\t{turn_n}")
 
     # Last thing to log in the game log: the final state of the board
     board.log_current_map(log)

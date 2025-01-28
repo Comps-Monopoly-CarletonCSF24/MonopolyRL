@@ -52,7 +52,6 @@ class Property(Cell):
         "B2 Vermont Avenue", 100, 6, 50, (30, 90, 270, 400, 550), "Lightblue"
         '''
         super().__init__(name)
-
         # Initial parameters (usually found on a property card):
         # Cost to buy the property
         self.cost_base = cost_base

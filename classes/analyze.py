@@ -12,7 +12,6 @@ class Analyzer:
 
     def __init__(self):
         self.df = pd.read_csv(LogSettings.data_log_file, sep='\t')
-
     def remaining_players(self):
         ''' How many games had clear winner, how many players remain in the end
         '''
@@ -60,10 +59,10 @@ class Analyzer:
         ''' Display winning (survival) rate of players
         '''
         loses_counts = self.df.groupby('player').size().reset_index(name='count')
-
         # {player: games_survived}
         survival_rate = {row['player']: row['count']
                              for index, row in loses_counts.iterrows()}
+
         print("Players' survival rate:")
         for player in GameSettings.players_list:
             player_name = player[0]

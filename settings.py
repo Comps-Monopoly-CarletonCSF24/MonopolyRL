@@ -12,7 +12,7 @@ class SimulationSettings():
 
     # Number of games to simulate
     
-    n_games = 50
+    n_games = 5
     # Random seed to start simulation with
     seed = 0
 
@@ -43,7 +43,7 @@ class StandardPlayer:
     ignore_property_groups = {}
 
     # Willing to participate in trades
-    participates_in_trades = True
+    participates_in_trades = False
 
     # Only agree to trade if value difference is within these limits
     # (Absolute and relative)
@@ -63,7 +63,7 @@ class GameSettings():
 
     # Players and their behavior settings
     players_list = [
-        ("Approx_q_ Agent", "Approx_q_l", StandardPlayer),
+        ("Approx_q_Agent", "Approx_q_l", StandardPlayer),
         ("Fixed Policy Player", "Fixed Policy", StandardPlayer)
     ]
 

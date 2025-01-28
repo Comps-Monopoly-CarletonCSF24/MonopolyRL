@@ -1,5 +1,3 @@
-from classes.player_logistics import Player
-
 class Reward:
     def __init__(self):
         pass
@@ -12,7 +10,8 @@ class Reward:
 
     def get_reward(self, player, players):
         """
-        Compute the reward based on the player's net worth compared to opponents' net worth.
+        Compute the reward based on the player's net worth compared to opponents' net worth,
+        with an added bonus for owning houses.
         """
         player_networth = player.net_worth()
         alive_players = self.get_alive_players(players)
@@ -29,8 +28,14 @@ class Reward:
         net_worth_difference = player_networth - (all_players_worth - player_networth)
         player_finance_percent = (player_networth / all_players_worth) * 100
         
-        # Reward calculation
+        # Assume player.get_num_houses() returns the number of houses the player owns
+        houses_bonus = len(player.owned)*100  # Reward per house owned (this can be adjusted)
+        
+        # Reward calculation with house ownership bonus
         reward = ((net_worth_difference / num_players) * smoothing_factor) / \
                  (1 + abs((net_worth_difference / num_players) * smoothing_factor) - (1 / num_players) * player_finance_percent)
+        
+        # Add bonus for owning houses
+        reward += houses_bonus
         
         return reward

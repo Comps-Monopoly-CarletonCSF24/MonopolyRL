@@ -351,19 +351,21 @@ class Approx_q_agent(Player):
             log (_type_): _description_
         """
         
-        current_player = players[-1] 
-
+        current_player = self
         current_state = State(current_player=current_player, players= players)
-        action_index, action_index_list = self.agent.select_action(current_state)
-        self.action_index = action_index_list
-        next_state = self.agent.simulate_action(board, current_state, current_player, players, action_index)
+
+        action_index_in_small_list, action_index_in_bigger_list = self.agent.select_action(current_state)
+        self.action_idx = action_index_in_bigger_list
+        next_state = self.agent.simulate_action(board, current_state, current_player, players, action_index_in_bigger_list)
+        # If the action is not doable, you need to choose a different action and simulate that.
+        # In fact, choose the next best action and simulate that. 
 
         reward = Reward().get_reward(current_player, players)
-        # print ("agent ", reward)
-        # print ("player1 ", Reward().get_reward(players[0], players))
-        self.agent.update(current_state, action_index_list, reward, next_state)
+        self.agent.update(current_state, action_index_in_bigger_list, reward, next_state)
+        
+
         actions = self.action_object.actions
-        return actions[action_index]
+        return actions[action_index_in_small_list]
         
     def execute_action(self, board: Board, log: Log, action: Action, group_idx):
         """Executes the action on the given property for the specified player.
@@ -407,6 +409,8 @@ class Approx_q_agent(Player):
         
         def buy_property(property_to_buy):
             ''' Player buys the property'''
+            log.add(f"Agent bought property : {property_to_buy.name}")
+            
             property_to_buy.owner = self
             self.owned.append(property_to_buy)
             self.money -= property_to_buy.cost_base
@@ -497,7 +501,6 @@ class Approx_q_agent(Player):
             '''
             Wrote similar function to see if the player can seal a property
             '''
-
             if not isinstance(property_to_sell, Property):
                 return False
             if property_to_sell.owner != self:
@@ -507,7 +510,9 @@ class Approx_q_agent(Player):
             return True
             
         def sell_property(property_to_sell):
-            ''' Player sells the property'''
+            # ''' Player sells the property'''
+
+            # print (f"Property sold: {property_to_sell.name}")
 
             # you should not sell the property you landed on. I am sure that is not how it works
             sell_price = property_to_sell.cost_base // 2  # think this is standard for monopoly, if selling to bank not to person
@@ -568,11 +573,11 @@ class Approx_q_agent(Player):
         
         # If no buildings to sell, try to sell property
         
-        if self.action_idx != None:
-            property_index, _ = self.action_object.map_action_index(self.action_idx)
-            property_to_sell = board.get_property(property_idx=property_index)
-            if can_sell_property(property_to_sell):
-                return sell_property(property_to_sell)
+        # if self.action_idx != None:
+        property_index, _ = self.action_object.map_action_index(self.action_idx)
+        property_to_sell = board.get_property(property_idx=property_index)
+        if can_sell_property(property_to_sell):
+            return sell_property(property_to_sell)
             
         return False   
 
