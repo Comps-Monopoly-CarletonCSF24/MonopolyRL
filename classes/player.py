@@ -2,7 +2,7 @@ from typing import List
 from classes.board import Board, Property
 from classes.dice import Dice
 from classes.log import Log
-from settings import GameSettings, TrainingSettings
+from settings import GameSettings
 from classes.DQAgent_paper import QLambdaAgent
 from classes.action_paper import Action, Actions
 from classes.state import State, group_cell_indices
@@ -325,19 +325,25 @@ class Fixed_Policy_Player(Player):
                 # TODO: Bank auctions the property
 
 class DQAPlayer(Player):
-    def __init__(self, name, settings):
+    def __init__(self, name, settings, qlambda_agent:QLambdaAgent):
         super().__init__(name, settings)
         self.action = Action("do_nothing")
-        self.agent = QLambdaAgent()
+        self.agent = qlambda_agent if qlambda_agent else QLambdaAgent()
         pass
     
     def handle_action(self, board: Board, players: List[Player], dice: Dice, log: Log):
         for group_idx in range(len(group_cell_indices)):
             if self.is_group_actionable(group_idx, board):
                 state, action = self.select_action(players)
-                if TrainingSettings.is_training:
+                if not self.agent.is_training:
+                    print("not training")
+                else:
                     self.train_agent_with_one_action(players, state, action)
                 self.execute_action(board, log, action, group_idx)
+                ## DELETE
+                # print("traces after update:")
+                # for trace in self.agent.traces:
+                #     print(trace)
 
     def select_action(self, players: List[Player]):
         current_state = State(self, players)
@@ -509,7 +515,9 @@ class DQAPlayer(Player):
             '''
             for cell in cells_in_group:
                 if not isinstance(cell, Property):
+                if not isinstance(cell, Property):
                     continue
+                if cell.owner != self:
                 if cell.owner != self:
                     continue
                 if cell.has_houses > 0 or cell.has_hotel > 0:
@@ -576,6 +584,9 @@ class DQAPlayer(Player):
             return downgrade_property(cell_to_downgrade)
         
         # If no buildings to sell, try to sell property
+        cell = can_sell_property()
+        if cell:
+            return sell_property(cell)
         cell = can_sell_property()
         if cell:
             return sell_property(cell)
