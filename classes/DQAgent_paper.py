@@ -53,13 +53,17 @@ class QLambdaAgent:
         self.model = QNetwork()
         self.optimizer = optim.SGD(self.model.parameters(), lr = self.alpha)
         
-        # If there is a file to start with, continue to train on that
         if os.path.exists(model_param_path):
             checkpoint = torch.load(model_param_path, weights_only=True)
             self.model.load_state_dict(checkpoint['model_state_dict'])
             self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             
         # Initialize eligibility traces
+        self.traces = []
+        self.last_state = get_initial_state()
+        self.last_action = Action("do_nothing")
+    
+    def end_game(self):
         self.traces = []
         self.last_state = get_initial_state()
         self.last_action = Action("do_nothing")
