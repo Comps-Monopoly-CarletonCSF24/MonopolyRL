@@ -5,7 +5,7 @@ from classes.player_logistics import Player
 from classes.action import Action
 from classes.board import Property
 from classes.state import State
-
+import classes.simulate_actions as simulation
 class ApproxQLearningAgent(Player):
     def __init__(self, name, settings, alpha=0.1, gamma=0.9, epsilon=0.3, feature_size=200):
         super().__init__(name, settings)
@@ -64,7 +64,7 @@ class ApproxQLearningAgent(Player):
         # Select the next best action
         return q_values[current_index]
 
-    def simulate_action(self, board, state, player, players, action_index, max_attempts = 1):
+    def simulate_action(self, board, state, player, players, action_index, group_idx, max_attempts = 1):
         """
         Simulates the effect of an action on the state. If the intended action fails,
         attempts the next-best action based on Q-values.
@@ -81,40 +81,27 @@ class ApproxQLearningAgent(Player):
             np.ndarray: Next state vector after a valid action.
         """
         property_idx, action_type = self.action_handler.map_action_index(action_index)
+        
         q_values = self.get_q_values(state)
+
         if action_type == 'buy':
             the_property = board.cells[self.position]
-            if isinstance(the_property, Property):
-                property_price = the_property.cost_base
-                buying_status = state.update_after_purchase(player, players, the_property, property_price)
-            else:
-                buying_status = 0
-            
-            # if you could not buy the property
-            if isinstance(buying_status, int): 
-                if max_attempts < len(q_values):
-                    buying_action_index = np.where(q_values == self.select_next_best_q_value(state, max_attempts))[0]
-                    return self.simulate_action(board, state, player, players, buying_action_index, max_attempts+1)
-            else:
-                return buying_status  # Action succeeded
+            return simulation.update_state_after_spending(group_idx, board, player, the_property, players)
         
         elif action_type == 'sell':
-            the_property = board.get_property(property_idx)
-            sale_price = the_property.cost_base//2
-
-            selling_status = state.update_after_sale(player, players, the_property, sale_price)
-            if isinstance(selling_status, int):
+            updgraded_state = simulation.update_state_after_selling(group_idx, board, player, players)
+            if isinstance(updgraded_state, int):
                 if max_attempts < len(q_values):
-                    selling_action_index = np.where(q_values == self.select_next_best_q_value(state, max_attempts))[0]
-                    return self.simulate_action(board, state, player, players, selling_action_index, max_attempts+1)
-            else:
-                return selling_status
-        
+                    buying_action_index = np.where(q_values == self.select_next_best_q_value(state, max_attempts))[0]
+                    return self.simulate_action(board, state, player, players, buying_action_index,  group_idx, max_attempts+1)
+                return state
+            return updgraded_state
         elif action_type == "do_nothing":
+            return state
             if max_attempts < len(q_values):
                 buying_action_index = np.where(q_values == self.select_next_best_q_value(state, max_attempts))[0]
-                return self.simulate_action(board, state, player, players, buying_action_index, max_attempts+1)
-        return state 
+                return self.simulate_action(board, state, player, players, buying_action_index,  group_idx, max_attempts+1)
+            return state 
 
     def update(self, state, action_index, reward, next_state):
         features = self.extract_features(state, action_index)

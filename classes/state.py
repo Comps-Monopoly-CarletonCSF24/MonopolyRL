@@ -1,6 +1,5 @@
 from classes.player_logistics import Player
-from classes.board import Board, Property, Cell
-from classes.log import Log
+from classes.board import Property
 import numpy as np
 import copy
 

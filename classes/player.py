@@ -7,7 +7,6 @@ from settings import GameSettings
 from classes.state import State, group_cell_indices
 from classes.player_logistics import Player
 from classes.approx_ql import ApproxQLearningAgent
-from classes.state import State
 from classes.rewards import Reward
 
 class Fixed_Policy_Player(Player):
@@ -257,7 +256,7 @@ class Fixed_Policy_Player(Player):
                 board.available_houses -= 1
                 # Paying for the improvement
                 self.money -= cell_to_improve.cost_house
-                log.add(f"{self} built {ordinal[cell_to_improve.has_houses]} " +
+                log.add(f"{self.name} built {ordinal[cell_to_improve.has_houses]} " +
                         f"house on {cell_to_improve} for ${cell_to_improve.cost_house}")
 
             # Building a hotel
@@ -268,8 +267,7 @@ class Fixed_Policy_Player(Player):
                 board.available_hotels -= 1
                 # Paying for the improvement
                 self.money -= cell_to_improve.cost_house
-                log.add(f"{self} built a hotel on {cell_to_improve}")
-    
+                log.add(f"{self.name} built a hotel on {cell_to_improve}")
     def handle_buying_property(self, board, players, log):
         ''' Landing on property: either buy it or pay rent
         '''
@@ -336,11 +334,11 @@ class Approx_q_agent(Player):
     
     def handle_action(self, board: Board, players: List[Player], dice: Dice, log: Log):
         for group_idx in range(len(group_cell_indices)):
-            if self.is_group_actionable(group_idx, board):
-                action = self.take_one_action(board,players)
+            if True:
+                action = self.take_one_action(board,players, group_idx)
                 self.execute_action(board, log, action, group_idx)
 
-    def take_one_action(self, board: Board, players: List[Player]):
+    def take_one_action(self, board: Board, players: List[Player], group_idx):
         """Moved agent.take_turn to here. The agent takes a turn and performs 
         all possible actiosn according to the NN.
 
@@ -356,7 +354,8 @@ class Approx_q_agent(Player):
 
         action_index_in_small_list, action_index_in_bigger_list = self.agent.select_action(current_state)
         self.action_idx = action_index_in_bigger_list
-        next_state = self.agent.simulate_action(board, current_state, current_player, players, action_index_in_bigger_list)
+
+        next_state = self.agent.simulate_action(board, current_state, current_player, players, action_index_in_bigger_list, group_idx)
         # If the action is not doable, you need to choose a different action and simulate that.
         # In fact, choose the next best action and simulate that. 
 
@@ -376,7 +375,7 @@ class Approx_q_agent(Player):
             action (Action): _description_
             group_idx (_type_): _description_
         """
-        while self.unmortgage_a_property(board, log):
+        if self.unmortgage_a_property(board, log):
             pass
         if action == 'buy':
             self.buy_in_group(group_idx, board, log)
@@ -450,7 +449,7 @@ class Approx_q_agent(Player):
             return None
     
         def improve_property(cell_to_improve):
-            if not cell_to_improve:
+            if not cell_to_improve or cell_to_improve.owner != self:
                 return False
             
             improvement_cost = cell_to_improve.cost_house
@@ -462,67 +461,44 @@ class Approx_q_agent(Player):
             # Building a house
             ordinal = {1: "1st", 2: "2nd", 3: "3rd", 4:"4th"}
 
-            if cell_to_improve.has_houses != 4:
+            if cell_to_improve.has_houses != 4 and cell_to_improve.owner == self:
+                print (f"building a house:{cell_to_improve.owner} with {self.name}")
                 cell_to_improve.has_houses += 1
                 board.available_houses -= 1
                 # Paying for the improvement
                 self.money -= cell_to_improve.cost_house
-                log.add(f"{self} built {ordinal[cell_to_improve.has_houses]} " +
+                log.add(f"{self.name} built {ordinal[cell_to_improve.has_houses]} " +
                         f"house on {cell_to_improve} for ${cell_to_improve.cost_house}")
 
             # Building a hotel
-            elif cell_to_improve.has_houses == 4:
+            elif cell_to_improve.has_houses == 4 and cell_to_improve.owner == self:
+                print (f"building a hotel: {cell_to_improve.owner} with {self.name}")
                 cell_to_improve.has_houses = 0
                 cell_to_improve.has_hotel = 1
                 board.available_houses += 4
                 board.available_hotels -= 1
                 # Paying for the improvement
                 self.money -= cell_to_improve.cost_house
-                log.add(f"{self} built a hotel on {cell_to_improve}")
+                log.add(f"{self.name} built a hotel on {cell_to_improve}")
             return True
         
         # if landed on an unowned property: buy it
 
         property_to_buy = board.cells[self.position]
         if can_buy_property(property_to_buy):
-            return buy_property(property_to_buy)
+            buy_property(property_to_buy)
         
         while True:
-                cell_to_improve = get_next_property_to_improve()
-                if not improve_property(cell_to_improve):
-                    return False
+            cell_to_improve = get_next_property_to_improve()
+            if not improve_property(cell_to_improve):
+                return False
     
     def sell_in_group(self, group_idx: int, board: Board, log: Log):
         cells_in_group = []
         for cell_idx in group_cell_indices[group_idx]:
             cells_in_group.append(board.cells[cell_idx])
-            
-        def can_sell_property(property_to_sell):
-            '''
-            Wrote similar function to see if the player can seal a property
-            '''
-            if not isinstance(property_to_sell, Property):
-                return False
-            if property_to_sell.owner != self:
-                return False
-            if property_to_sell.has_houses > 0 or property_to_sell.has_hotel > 0:
-                return False
-            return True
-            
-        def sell_property(property_to_sell):
-            # ''' Player sells the property'''
 
-            # print (f"Property sold: {property_to_sell.name}")
-
-            # you should not sell the property you landed on. I am sure that is not how it works
-            sell_price = property_to_sell.cost_base // 2  # think this is standard for monopoly, if selling to bank not to person
-            property_to_sell.owner = None
-            self.owned.remove(property_to_sell)
-            self.money += sell_price
-            log.add(f"{self} sold {property_to_sell} for ${sell_price}")
-            return True
-            
-        def get_next_property_to_downgrade():
+        def get_next_property_to_downgrade(cells_in_group):
             ''' Decide what is the next property to downgrade:
             - start with most developed properties
             - must maintain even building
@@ -531,6 +507,7 @@ class Approx_q_agent(Player):
             for cell in cells_in_group:
                 if cell.owner == self:
                     if cell.has_hotel == 1 or cell.has_houses > 0:
+                        print ("now passing")
                         # Look at other cells in group to maintain even building
                         for other_cell in board.groups[cell.group]:
                             if other_cell.has_houses > cell.has_houses:
@@ -567,19 +544,13 @@ class Approx_q_agent(Player):
             return False
 
         # First try to sell buildings if any exist
-        cell_to_downgrade = get_next_property_to_downgrade()
+        cell_to_downgrade = get_next_property_to_downgrade(cells_in_group)
         if cell_to_downgrade:
             return downgrade_property(cell_to_downgrade)
         
         # If no buildings to sell, try to sell property
         
-        # if self.action_idx != None:
-        property_index, _ = self.action_object.map_action_index(self.action_idx)
-        property_to_sell = board.get_property(property_idx=property_index)
-        if can_sell_property(property_to_sell):
-            return sell_property(property_to_sell)
-            
-        return False   
+        return True  
 
     def is_group_actionable(self, group_idx: int, board: Board):
         cell_indices_in_group = group_cell_indices[group_idx]
