@@ -39,7 +39,9 @@ class State:
         finance_diff = abs(finance1 - finance2) <= 0.1
         position_same = pos1 == pos2
         return np.all(area_diff) and np.all(finance_diff) and position_same
-    
+    def __str__(self):
+        return str(self.state)
+
 def get_initial_state():
     state_init = State.__new__(State)
     state_init.area = np.zeros(20)

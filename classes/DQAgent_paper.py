@@ -10,23 +10,21 @@ from classes.state import State, State_Size, get_initial_state
 from classes.action_paper import Action, Action_Size, Total_Actions, Actions
 
 # in this case, there are only 3: buy, sell, do nothing
-all_actions = list(range(Total_Actions))
 model_param_path = "./model_parameters.pth"
 
 class QNetwork(nn.Module):
     def __init__(self):
-
         super(QNetwork, self).__init__()
         # Define layers
         self.input_layer = nn.Linear(State_Size + Action_Size, 150)  # Input layer to hidden layer
         self.activation = nn.Sigmoid()  # Sigmoid activation for the hidden layer
         self.output_layer = nn.Linear(150, 1)  # Hidden layer to output layer
 
-        # Match Java's weight initialization (they had 0.5 as weights)
-        nn.init.uniform_(self.input_layer.weight, -0.5, 0.5)
-        nn.init.uniform_(self.input_layer.bias, -0.5, 0.5)
-        nn.init.uniform_(self.output_layer.weight, -0.5, 0.5)
-        nn.init.uniform_(self.output_layer.bias, -0.5, 0.5)
+        # # Match Java's weight initialization (they had 0.5 as weights)
+        # nn.init.uniform_(self.input_layer.weight, -0.5, 0.5)
+        # nn.init.uniform_(self.input_layer.bias, -0.5, 0.5)
+        # nn.init.uniform_(self.output_layer.weight, -0.5, 0.5)
+        # nn.init.uniform_(self.output_layer.bias, -0.5, 0.5)
         
         
     def forward(self, state: State, action: Action):
@@ -35,7 +33,7 @@ class QNetwork(nn.Module):
         # Forward pass through the network
         output = self.input_layer(input)
         output = self.activation(output)
-        output = self.output_layer(output)
+        output = self.output_layer(output)           
         return output
 
 class Trace:
@@ -54,11 +52,10 @@ class QLambdaAgent:
     def __init__(self, is_training = False):
         self.is_training = is_training
         # Parameters from the paper
-        self.epsilon = 0.5     # Greedy coeff from paper
-        self.alpha = 0.2       # Learning rate from paper
+        self.epsilon = 0.5 if is_training else 0 # Greedy coeff from paper
+        self.alpha = 0.2      # Learning rate from paper
         self.gamma = 0.95      # Discount factor from paper
         self.lambda_param = 0.8  # Lambda parameter from paper
-        self.current_epoch = 1 
 
         # Initialize network and optimizer
         self.model = QNetwork()
@@ -120,11 +117,10 @@ class QLambdaAgent:
         q_values_state = self.calculate_all_q_values(state)
         return self.choose_action_helper(q_values_state)
     
-    def find_action_with_max_value(self, q_values: List[int]):
-        valid_q_values = [q_values[i] for i in all_actions]
-        max_q_value = max(valid_q_values)
-        # Break the tie randomly
-        max_q_indices = [i for i, x in enumerate(q_values) if math.isclose(x, max_q_value, rel_tol=1e-9)]
+    def find_action_with_max_value(self, q_values):
+        q_values_float = [q_values[i].item() for i in range(len(Actions))]
+        max_q_values = max(q_values_float)
+        max_q_indices = [i for i, x in enumerate(q_values) if math.isclose(x, max_q_values, rel_tol=1e-9)]
         return Action(Actions[random.choice(max_q_indices)])
     
     def calculate_all_q_values(self, state: State):
@@ -172,9 +168,6 @@ class QLambdaAgent:
         return state_action_exists
     
     def train_neural_network(self, input_state: State, input_action: Action, target_q_value: torch.Tensor):
-        #tracking epoch like java did 
-        self.current_epoch += 1
-
         criterion = nn.MSELoss()
         output_q_value = self.model(input_state, input_action)
         loss = criterion(output_q_value, target_q_value)
