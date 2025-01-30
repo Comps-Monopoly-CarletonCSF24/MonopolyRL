@@ -13,10 +13,10 @@ def buy_in_group_simulation(group_idx: int, board: Board, player:Player, propert
         def can_buy_property(property_to_buy):
             '''
             Check if the player can buy a property
-            '''
+            '''    
             if not isinstance(property_to_buy, Property):
                 return False
-            if property_to_buy.owner != None:
+            if property_to_buy.owner is not None:
                 return False
             if player.money - property_to_buy.cost_base < player.settings.unspendable_cash:
                 return False
@@ -54,7 +54,9 @@ def buy_in_group_simulation(group_idx: int, board: Board, player:Player, propert
                         # Make sure there are available houses/hotel for this improvement
                         if cell.has_houses != 4 and board.available_houses > 0 or \
                             cell.has_houses == 4 and board.available_hotels > 0:
-                            can_be_improved.append(cell)
+                            # print ("gone past this stage", cell.owner)
+                            if cell.owner and cell.owner.name == player.name:
+                                can_be_improved.append(cell)
             # Sort the list by the cost of house
             can_be_improved.sort(key = lambda x: x.cost_house)
             
@@ -76,45 +78,52 @@ def buy_in_group_simulation(group_idx: int, board: Board, player:Player, propert
             # Building a house
             ordinal = {1: "1st", 2: "2nd", 3: "3rd", 4:"4th"}
 
-            if cell_to_improve.has_houses != 4:
+            if cell_to_improve.has_houses != 4 and cell_to_improve.owner.name == player.name:
                 cell_to_improve.has_houses += 1
                 board.available_houses -= 1
                 # Paying for the improvement
                 player.money -= cell_to_improve.cost_house
+                return True
 
             # Building a hotel
-            elif cell_to_improve.has_houses == 4:
+            elif cell_to_improve.has_houses == 4 and cell_to_improve.name == player.name:
                 cell_to_improve.has_houses = 0
                 cell_to_improve.has_hotel = 1
                 board.available_houses += 4
                 board.available_hotels -= 1
                 # Paying for the improvement
                 player.money -= cell_to_improve.cost_house
-            return True
+                return True
         
         # if landed on an unowned property: buy it
+        bought_with_success = False
         
         if can_buy_property(property):
-            buy_property(property)
+            bought_with_success =buy_property(property)
+            board.recalculate_monopoly_coeffs(property)
         
+        improved = False
         while True:
-                cell_to_improve = get_next_property_to_improve()
-                status = improve_property(cell_to_improve)
-                if not status:
-                    break
-        return True
-
+            cell_to_improve = get_next_property_to_improve()
+            status = improve_property(cell_to_improve)
+            if status:
+                improved = True
+            if not status:
+                break
+        return (improved or bought_with_success)
 
 def update_state_after_spending (group_idx: int, original_board: Board, original_player:Player, original_property: Property, players):
     player = copy.deepcopy(original_player)
     property = copy.deepcopy(original_property)
     board = copy.deepcopy(original_board)
+
     actions_status = buy_in_group_simulation(group_idx, board, player, property, players)
     if actions_status:
         new_state = s.get_state(s.get_area(player, players), 
             s.get_position(player.position), 
             s.get_finance(player, players))
-    return new_state
+        return new_state
+    return 0
 
 
 def sell_in_group_simulation(group_idx: int, board: Board, player: Player):
@@ -131,11 +140,10 @@ def sell_in_group_simulation(group_idx: int, board: Board, player: Player):
         can_be_downgraded = []
         for cell in cells_in_group:
             if cell.owner and cell.owner.name == player.name:
-                if cell.has_hotel == 1 or cell.has_houses > 0:
-                    print ("passed this one")
-                    # Look at other cells in group to maintain even building
+                if cell.has_hotel  or cell.has_houses > 0:
                     for other_cell in board.groups[cell.group]:
-                        if other_cell.has_houses > cell.has_houses:
+                        if cell.has_hotel == 0 and (other_cell.has_houses > cell.has_houses or \
+                        other_cell.has_hotel > 0):
                             break
                     else:
                         can_be_downgraded.append(cell)
@@ -145,26 +153,31 @@ def sell_in_group_simulation(group_idx: int, board: Board, player: Player):
         return can_be_downgraded[0] if can_be_downgraded else None
     
     def downgrade_property(cell_to_downgrade):
-        if not cell_to_downgrade:
+        if not cell_to_downgrade or cell_to_downgrade.owner.name != player.name:
             return False
-            
-        if cell_to_downgrade.has_hotel == 1:
-            # Convert hotel back to 4 houses if possible
+
+        if cell_to_downgrade.has_hotel:
+            # Convert hotel back to 4 houses if enough houses are available
             if board.available_houses >= 4:
-                cell_to_downgrade.has_hotel = 0
+                cell_to_downgrade.has_hotel = False
                 cell_to_downgrade.has_houses = 4
                 board.available_hotels += 1
                 board.available_houses -= 4
                 sell_price = cell_to_downgrade.cost_house // 2
                 player.money += sell_price
                 return True
-            
+            return False  # Not enough houses to downgrade the hotel
+
         elif cell_to_downgrade.has_houses > 0:
+            if any(prop.has_houses > cell_to_downgrade.has_houses for prop in cells_in_group):
+                return False  # Prevent unbalanced house selling
+
             cell_to_downgrade.has_houses -= 1
             board.available_houses += 1
             sell_price = cell_to_downgrade.cost_house // 2
             player.money += sell_price
             return True
+
         return False
 
     # First try to sell buildings if any exist
@@ -175,8 +188,8 @@ def sell_in_group_simulation(group_idx: int, board: Board, player: Player):
 
 def update_state_after_selling (group_idx: int, original_board: Board, original_player:Player, players):
     player = copy.deepcopy(original_player)
-    # board = copy.deepcopy(original_board)
-    actions_status = sell_in_group_simulation(group_idx, original_board, player)
+    copy_board = copy.deepcopy(original_board)
+    actions_status = sell_in_group_simulation(group_idx, copy_board, player)
     if actions_status:
         print ("Selling went okay")
         new_state = s.get_state(s.get_area(player, players), 

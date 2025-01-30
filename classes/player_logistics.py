@@ -178,8 +178,8 @@ class Player:
         else:
             self.had_doubles = 0
     
-    def handle_action(self, board, players, dice, log):
-        pass
+    # def handle_action(self, board, players, dice, log):
+    #     pass
 
     def handle_salary(self, board, log):
         ''' Adding Salary to the player's money, according to the game's settings

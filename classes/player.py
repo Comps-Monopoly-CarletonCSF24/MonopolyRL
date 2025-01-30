@@ -268,6 +268,7 @@ class Fixed_Policy_Player(Player):
                 # Paying for the improvement
                 self.money -= cell_to_improve.cost_house
                 log.add(f"{self.name} built a hotel on {cell_to_improve}")
+
     def handle_buying_property(self, board, players, log):
         ''' Landing on property: either buy it or pay rent
         '''
@@ -329,14 +330,13 @@ class Approx_q_agent(Player):
         super().__init__(name, settings)
         self.action_object = Action()
         self.agent = ApproxQLearningAgent(name = name, settings=GameSettings, feature_size=150) 
-        self.action_idx = None
         pass
     
     def handle_action(self, board: Board, players: List[Player], dice: Dice, log: Log):
         for group_idx in range(len(group_cell_indices)):
-            if True:
-                action = self.take_one_action(board,players, group_idx)
-                self.execute_action(board, log, action, group_idx)
+            action = self.take_one_action(board,players, group_idx)
+            self.execute_action(board, log, action, group_idx)
+        # self.agent.plot_q_values()
 
     def take_one_action(self, board: Board, players: List[Player], group_idx):
         """Moved agent.take_turn to here. The agent takes a turn and performs 
@@ -351,9 +351,7 @@ class Approx_q_agent(Player):
         
         current_player = self
         current_state = State(current_player=current_player, players= players)
-
         action_index_in_small_list, action_index_in_bigger_list = self.agent.select_action(current_state)
-        self.action_idx = action_index_in_bigger_list
 
         next_state = self.agent.simulate_action(board, current_state, current_player, players, action_index_in_bigger_list, group_idx)
         # If the action is not doable, you need to choose a different action and simulate that.
@@ -361,8 +359,6 @@ class Approx_q_agent(Player):
 
         reward = Reward().get_reward(current_player, players)
         self.agent.update(current_state, action_index_in_bigger_list, reward, next_state)
-        
-
         actions = self.action_object.actions
         return actions[action_index_in_small_list]
         
@@ -375,8 +371,6 @@ class Approx_q_agent(Player):
             action (Action): _description_
             group_idx (_type_): _description_
         """
-        if self.unmortgage_a_property(board, log):
-            pass
         if action == 'buy':
             self.buy_in_group(group_idx, board, log)
             pass
@@ -390,6 +384,7 @@ class Approx_q_agent(Player):
     
     def buy_in_group(self, group_idx: int, board: Board, log: Log):
 
+        self.unmortgage_a_property(board, log)
         cells_in_group = []
         for cell_idx in group_cell_indices[group_idx]:
             cells_in_group.append(board.cells[cell_idx])
@@ -409,7 +404,6 @@ class Approx_q_agent(Player):
         def buy_property(property_to_buy):
             ''' Player buys the property'''
             log.add(f"Agent bought property : {property_to_buy.name}")
-            
             property_to_buy.owner = self
             self.owned.append(property_to_buy)
             self.money -= property_to_buy.cost_base
@@ -439,7 +433,8 @@ class Approx_q_agent(Player):
                         # Make sure there are available houses/hotel for this improvement
                         if cell.has_houses != 4 and board.available_houses > 0 or \
                             cell.has_houses == 4 and board.available_hotels > 0:
-                            can_be_improved.append(cell)
+                            if cell.owner.name == self.name:
+                                can_be_improved.append(cell)
             # Sort the list by the cost of house
             can_be_improved.sort(key = lambda x: x.cost_house)
             
@@ -461,8 +456,7 @@ class Approx_q_agent(Player):
             # Building a house
             ordinal = {1: "1st", 2: "2nd", 3: "3rd", 4:"4th"}
 
-            if cell_to_improve.has_houses != 4 and cell_to_improve.owner == self:
-                print (f"building a house:{cell_to_improve.owner} with {self.name}")
+            if cell_to_improve.has_houses != 4 and cell_to_improve.owner.name == self.name:
                 cell_to_improve.has_houses += 1
                 board.available_houses -= 1
                 # Paying for the improvement
@@ -487,11 +481,13 @@ class Approx_q_agent(Player):
         property_to_buy = board.cells[self.position]
         if can_buy_property(property_to_buy):
             buy_property(property_to_buy)
+            board.recalculate_monopoly_coeffs(property_to_buy)
         
         while True:
+           
             cell_to_improve = get_next_property_to_improve()
             if not improve_property(cell_to_improve):
-                return False
+                break
     
     def sell_in_group(self, group_idx: int, board: Board, log: Log):
         cells_in_group = []
@@ -506,11 +502,10 @@ class Approx_q_agent(Player):
             can_be_downgraded = []
             for cell in cells_in_group:
                 if cell.owner == self:
-                    if cell.has_hotel == 1 or cell.has_houses > 0:
-                        print ("now passing")
-                        # Look at other cells in group to maintain even building
+                    if cell.has_hotel > 0 or cell.has_houses > 0:
                         for other_cell in board.groups[cell.group]:
-                            if other_cell.has_houses > cell.has_houses:
+                            if cell.has_hotel == 0 and (other_cell.has_houses > cell.has_houses or \
+                            other_cell.has_hotel > 0):
                                 break
                         else:
                             can_be_downgraded.append(cell)
@@ -520,26 +515,29 @@ class Approx_q_agent(Player):
             return can_be_downgraded[0] if can_be_downgraded else None
         
         def downgrade_property(cell_to_downgrade):
-            if not cell_to_downgrade:
+            if not cell_to_downgrade or cell_to_downgrade.owner != self:
                 return False
-                
-            if cell_to_downgrade.has_hotel == 1:
-                # Convert hotel back to 4 houses if possible
+
+            if cell_to_downgrade.has_hotel:
+                # Convert hotel back to 4 houses if enough houses are available
                 if board.available_houses >= 4:
-                    cell_to_downgrade.has_hotel = 0
+                    cell_to_downgrade.has_hotel = False
                     cell_to_downgrade.has_houses = 4
                     board.available_hotels += 1
                     board.available_houses -= 4
                     sell_price = cell_to_downgrade.cost_house // 2
                     self.money += sell_price
-                    log.add(f"{self} downgraded hotel to houses on {cell_to_downgrade} for ${sell_price}")
                     return True
+                return False  # Not enough houses to downgrade the hotel
+
             elif cell_to_downgrade.has_houses > 0:
+                if any(prop.has_houses > cell_to_downgrade.has_houses for prop in cells_in_group):
+                    return False  # Prevent unbalanced house selling
+
                 cell_to_downgrade.has_houses -= 1
                 board.available_houses += 1
                 sell_price = cell_to_downgrade.cost_house // 2
                 self.money += sell_price
-                log.add(f"{self} sold house on {cell_to_downgrade} for ${sell_price}")
                 return True
             return False
 

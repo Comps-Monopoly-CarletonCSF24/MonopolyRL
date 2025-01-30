@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import matplotlib.pyplot as plt
 
 from classes.player_logistics import Player
 from classes.action import Action
@@ -16,6 +17,7 @@ class ApproxQLearningAgent(Player):
         self.action_handler = Action()
         self.total_actions = self.action_handler.total_actions
         self.name = name
+        self.q_value_log = []
 
         self.weights = np.random.randn(feature_size, self.total_actions)/np.sqrt(feature_size)
 
@@ -80,27 +82,31 @@ class ApproxQLearningAgent(Player):
         Returns:
             np.ndarray: Next state vector after a valid action.
         """
-        property_idx, action_type = self.action_handler.map_action_index(action_index)
-        
-        q_values = self.get_q_values(state)
+        # return state
 
+        _, action_type = self.action_handler.map_action_index(action_index)
+        q_values = self.get_q_values(state)
+        # print (q_values )
         if action_type == 'buy':
-            the_property = board.cells[self.position]
-            return simulation.update_state_after_spending(group_idx, board, player, the_property, players)
-        
+            the_property = board.cells[player.position]
+            updgraded_buying_state =  simulation.update_state_after_spending(group_idx, board, player, the_property, players)
+            if isinstance(updgraded_buying_state, int):
+                if max_attempts < len(q_values):
+                    buying_action_index = np.where(q_values == self.select_next_best_q_value(state, max_attempts))[0][0]
+                    return self.simulate_action(board, state, player, players, buying_action_index,  group_idx, max_attempts+1)
+                return state
+            return updgraded_buying_state
+    
         elif action_type == 'sell':
             updgraded_state = simulation.update_state_after_selling(group_idx, board, player, players)
             if isinstance(updgraded_state, int):
                 if max_attempts < len(q_values):
-                    buying_action_index = np.where(q_values == self.select_next_best_q_value(state, max_attempts))[0]
-                    return self.simulate_action(board, state, player, players, buying_action_index,  group_idx, max_attempts+1)
-                return state
+                    selling_action_index = np.where(q_values == self.select_next_best_q_value(state, max_attempts))[0][0]
+                    return self.simulate_action(board, state, player, players, selling_action_index,  group_idx, max_attempts+1)
+                # return state
             return updgraded_state
+        
         elif action_type == "do_nothing":
-            return state
-            if max_attempts < len(q_values):
-                buying_action_index = np.where(q_values == self.select_next_best_q_value(state, max_attempts))[0]
-                return self.simulate_action(board, state, player, players, buying_action_index,  group_idx, max_attempts+1)
             return state 
 
     def update(self, state, action_index, reward, next_state):
@@ -114,3 +120,12 @@ class ApproxQLearningAgent(Player):
 
         td_error = target - q_value
         self.weights[:, action_index] += self.alpha * td_error * features
+        self.q_value_log.append(q_value)
+
+    def plot_q_values(self):
+        """Plot the Q-values over time."""
+        plt.plot(self.q_value_log)
+        plt.xlabel("Update Step")
+        plt.ylabel("Q-value")
+        plt.title("Q-value Progression Over Time")
+        plt.show()

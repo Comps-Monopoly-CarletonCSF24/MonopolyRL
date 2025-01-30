@@ -29,7 +29,7 @@ class Reward:
         player_finance_percent = (player_networth / all_players_worth) * 100
         
         # Assume player.get_num_houses() returns the number of houses the player owns
-        houses_bonus = len(player.owned)*100 # Reward per house owned (this can be adjusted)
+        houses_bonus = len(player.owned)*float('-inf') # Reward per house owned (this can be adjusted)
         
         # Reward calculation with house ownership bonus
         reward = ((net_worth_difference / num_players) * smoothing_factor) / \

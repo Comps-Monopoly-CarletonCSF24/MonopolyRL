@@ -17,28 +17,6 @@ Num_Total_Cells = 40
 group_cell_indices = [[1, 3], [5, 15, 25, 35], [6,8,9], [11,13,14], [12,28], [16,18,19], [21,23,24], [26,27,29], [31,32,34], [37, 39]]
 Total_Property_Points = 17
 
-def copy_property(property):
-    property_copy = Property(property.name, property.cost_base, property.rent_base, property.cost_house, property.rent_house, property.group)
-    property_copy.owner = property.owner
-    property_copy.is_mortgaged = property.is_mortgaged
-    property_copy.monopoly_coef = property.monopoly_coef
-    property_copy.has_hotel = property.has_hotel
-    property_copy.has_houses = property.has_houses
-    return property_copy
-
-def copy_player (current_player):
-    player = Player(current_player.name, current_player.settings)
-    player.money = current_player.money
-    player.position = current_player.position
-    player.in_jail = current_player.in_jail
-    player.get_out_of_jail_chance = current_player.get_out_of_jail_chance
-    player.get_out_of_jail_comm_chest = current_player.get_out_of_jail_comm_chest
-    player.wants_to_sell = current_player.wants_to_sell
-    player.wants_to_buy = current_player.wants_to_buy
-    player.other_notes = current_player.other_notes
-    player.owned = copy.deepcopy(current_player.owned)
-    return player
-
 class State:
     state = None
     area = None
@@ -50,46 +28,6 @@ class State:
         self.position = get_position(current_player.position)
         self.finance = get_finance(current_player, players)
         self.state = get_state(self.area, self.position, self.finance)
-
-    def update_after_purchase(self, current_player: Player, players: list, property: Property, property_cost: int):
-        """ Updates the state after a player buys a property. """
-        property_copy = copy_property(property)
-        player = copy_player(current_player)
-        if property_copy.owner == None and player.money >= property_copy.cost_base:
-            # Update the player's finance (subtract the property cost)
-            player.money -= property_cost
-            property_copy.owner = player
-            player.owned.append(property_copy)
-            
-            # Recalculate the player's area, finance, and other attributes after the purchase
-            new_state = get_state(get_area(player, players), 
-                                        get_position(player.position), 
-                                        get_finance(player, players))
-            return new_state
-        return 0
-
-    def update_after_sale(self, current_player: Player, players: list, property: Property, sale_price: int):
-        """ Updates the state after a player sells a property. """
-
-        property_copy = copy_property(property)
-        player = copy_player(current_player)
-        
-        def remove_property_by_name(player, property_name):
-            for property in player.owned:
-                if property.name == property_name:
-                    player.owned.remove(property)
-                    break
-        
-        if property_copy.owner != None and property_copy.owner.name == player.name and player.name == "Approx_q_Agent":
-
-            player.money += sale_price
-            remove_property_by_name(player, property_copy.name)
-            property_copy.owner = None
-            new_state = get_state(get_area(player, players), 
-                                        get_position(player.position), 
-                                        get_finance(player, players))
-            return new_state
-        return 0
        
 def get_area(current_player: Player, players: Player) -> np.ndarray:
     """ returns the area vector describing property owning percentage for each color
