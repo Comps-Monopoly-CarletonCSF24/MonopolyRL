@@ -6,7 +6,7 @@ import numpy as np
 import random
 import math
 from typing import List
-from classes.state import State, State_Size, get_initial_state
+from classes.state import State, State_Size, get_initial_state, get_test_state
 from classes.action_paper import Action, Action_Size, Total_Actions, Actions
 
 # in this case, there are only 3: buy, sell, do nothing
@@ -25,7 +25,10 @@ class QNetwork(nn.Module):
         # nn.init.uniform_(self.input_layer.bias, -0.5, 0.5)
         # nn.init.uniform_(self.output_layer.weight, -0.5, 0.5)
         # nn.init.uniform_(self.output_layer.bias, -0.5, 0.5)
-        
+        nn.init.constant_(self.input_layer.weight, 0)
+        nn.init.constant_(self.input_layer.bias, 0)
+        nn.init.constant_(self.output_layer.weight, 0)
+        nn.init.constant_(self.output_layer.bias, 0)
         
     def forward(self, state: State, action: Action):
         stacked_input = np.append(state.state, action.action_index)
@@ -69,14 +72,24 @@ class QLambdaAgent:
         # Initialize eligibility traces
         self.traces = []
         self.last_state = get_initial_state()
-        self.last_action = Action("do_nothing")
+        q_values_init = self.calculate_all_q_values(self.last_state)
+        self.last_action = self.find_action_with_max_value(q_values_init)
     
     def end_game(self):
         self.traces = []
         self.last_state = get_initial_state()
-        self.last_action = Action("do_nothing")
+        q_values_init = self.calculate_all_q_values(self.last_state)
+        self.last_action = self.find_action_with_max_value(q_values_init)
         self.epsilon *= 0.99
         self.alpha *= 0.99
+        
+        # DELETE
+        test_state = get_test_state() 
+        q_values = self.calculate_all_q_values(test_state )
+        test_str = ""
+        for i in range(len(q_values)):
+            test_str += str(Actions[i]) + ": " + str(q_values[i].item()) + "    "
+        print(test_str)
     
     def save_nn(self):
         checkpoint = {
@@ -106,10 +119,9 @@ class QLambdaAgent:
             return Action(random.choice(Actions))
         else:
             ## DELETE
-            # valid_q_values = [q_values[i] for i in all_actions]
             # test_str = ""
-            # for i in all_actions:
-            #     test_str += str(Actions[i]) + ": " + str(valid_q_values[i])
+            # for i in range(len(q_values)):
+            #     test_str += str(Actions[i]) + ": " + str(q_values[i])
             # print(test_str)
             return self.find_action_with_max_value(q_values)
     

@@ -357,6 +357,7 @@ class DQAPlayer(Player):
         """
         self.agent.update_trace(current_state, current_action)
         reward = self.agent.get_reward(self, players)
+        # print(f"State: {current_state}\nAction: {current_action}\nReward: {reward}")
         self.agent.train_nn_with_trace(current_state, current_action, reward)
         q_value = self.agent.q_learning(current_state, current_action, reward)
         self.agent.train_neural_network(self.agent.last_state, self.agent.last_action, q_value)
