@@ -8,6 +8,8 @@ from classes.player_logistics import Player
 from classes.board import Board
 from classes.dice import Dice
 from classes.log import Log
+from classes.board_visualization import MonopolyBoard
+import tkinter as tk
 
 def monopoly_game(data_for_simulation):
     ''' Simulation of one game.
@@ -29,7 +31,11 @@ def monopoly_game(data_for_simulation):
     datalog = Log(LogSettings.data_log_file)
 
     # Initialize the board (plots, chance, community chest etc)
+
     board = Board(GameSettings)
+    root = tk.Tk()
+    board_visualization = MonopolyBoard(root, board)
+    root.update()
 
     # Set up dice (it creates a separate random generator with initial "game_seed",
     # to have thread-safe shuffling and dice throws)
@@ -80,8 +86,11 @@ def monopoly_game(data_for_simulation):
                 log.add(f"- Player '{player.name}': " +
                         f"${int(player.money)} (net ${player.net_worth()}), " +
                         f"at {player.position} ({board.cells[player.position].name})")
+                board_visualization.draw_board(player.position, player_name= player.name)
+                root.update()
             else:
                 log.add(f"- Player {player_n}, '{player.name}': Bankrupt")
+        
 
         # Log the number of available Houses/Hotels etc
         board.log_board_state(log)

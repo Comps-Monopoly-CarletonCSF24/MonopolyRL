@@ -12,12 +12,12 @@ class SimulationSettings():
 
     # Number of games to simulate
     
-    n_games = 100
+    n_games = 1
     # Random seed to start simulation with
     seed = 0
 
     # Number of parallel processes to use in the simulation
-    multi_process = 2
+    multi_process = 1
 
 class LogSettings:
     ''' Settings for logging
@@ -63,8 +63,9 @@ class GameSettings():
 
     # Players and their behavior settings
     players_list = [
-        ("Approx_q_Agent", "Approx_q_l", StandardPlayer),
-        ("Fixed Policy Player", "Fixed Policy", StandardPlayer)
+        # ("Approx_q_Agent", "Approx_q_l", StandardPlayer),
+        ("Fixed Policy Player", "Fixed Policy", StandardPlayer),
+        ("Fixed Policy Player 2", "Fixed Policy", StandardPlayer)
     ]
 
     # Randomly shuffle order of players each game

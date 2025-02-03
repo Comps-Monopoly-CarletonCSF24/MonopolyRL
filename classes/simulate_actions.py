@@ -191,7 +191,6 @@ def update_state_after_selling (group_idx: int, original_board: Board, original_
     copy_board = copy.deepcopy(original_board)
     actions_status = sell_in_group_simulation(group_idx, copy_board, player)
     if actions_status:
-        print ("Selling went okay")
         new_state = s.get_state(s.get_area(player, players), 
             s.get_position(player.position), 
             s.get_finance(player, players))

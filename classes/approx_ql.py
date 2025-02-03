@@ -7,8 +7,11 @@ from classes.action import Action
 from classes.board import Property
 from classes.state import State
 import classes.simulate_actions as simulation
+import pickle
+import os
+
 class ApproxQLearningAgent(Player):
-    def __init__(self, name, settings, alpha=0.1, gamma=0.9, epsilon=0.3, feature_size=200):
+    def __init__(self, name, settings, alpha=0.05, gamma=0.9, epsilon=0.05, feature_size=200):
         super().__init__(name, settings)
         self.alpha = alpha
         self.gamma = gamma
@@ -122,10 +125,17 @@ class ApproxQLearningAgent(Player):
         self.weights[:, action_index] += self.alpha * td_error * features
         self.q_value_log.append(q_value)
 
-    def plot_q_values(self):
-        """Plot the Q-values over time."""
-        plt.plot(self.q_value_log)
-        plt.xlabel("Update Step")
-        plt.ylabel("Q-value")
-        plt.title("Q-value Progression Over Time")
-        plt.show()
+    def save_q_values(self):
+        """Append new Q-values to the existing file."""
+        if os.path.exists("q_values.pkl"):
+            with open("q_values.pkl", "rb") as f:
+                existing_q_values = pickle.load(f)
+        else:
+            existing_q_values = []
+
+        # Append new Q-values and save
+        updated_q_values = existing_q_values + self.q_value_log
+        with open("q_values.pkl", "wb") as f:
+            pickle.dump(updated_q_values, f)
+
+        self.q_value_log = []

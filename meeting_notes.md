@@ -88,4 +88,18 @@ Note: the short paper chose all actions in a loop until no possible actions. The
 TODO:
 - Normalize action to 0-1 or -1-1
 - after each game, reduce values in trace[]
-- endgame rewards for winner and loser
+- endgame rewards for winner and loser\
+
+
+Meet notes last part
+____________________
+
+Needs to be done: Connecting to the Engine
+
+  1) Create new state, new action
+  2) need new player class to list all the players: everyone puts in their agents
+  3) need new player logistics
+  4) 
+
+For me: I need to save the weights and values for later use in the javascript engine
+        Implement the approximate q-learning agent

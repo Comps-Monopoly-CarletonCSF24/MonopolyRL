@@ -1,10 +1,5 @@
-''' Main file to run monopoly simulation
-'''
-
 import random
 import concurrent.futures
-
-from tqdm import tqdm
 
 from settings import SimulationSettings, LogSettings
 
@@ -40,7 +35,7 @@ def run_simulation(config):
 
     # Simulate each game with multi-processing
     with concurrent.futures.ProcessPoolExecutor(max_workers=config.multi_process) as executor:
-        list(tqdm(executor.map(monopoly_game, data_for_simulation), total=len(data_for_simulation)))
+        list(executor.map(monopoly_game, data_for_simulation))  # Removed tqdm
 
     # Print analysis of the simulation (data is read from datalog file)
     analysis = Analyzer()

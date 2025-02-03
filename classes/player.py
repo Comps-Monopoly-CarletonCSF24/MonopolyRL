@@ -336,8 +336,8 @@ class Approx_q_agent(Player):
         for group_idx in range(len(group_cell_indices)):
             action = self.take_one_action(board,players, group_idx)
             self.execute_action(board, log, action, group_idx)
-        # self.agent.plot_q_values()
-
+        self.agent.save_q_values()
+        
     def take_one_action(self, board: Board, players: List[Player], group_idx):
         """Moved agent.take_turn to here. The agent takes a turn and performs 
         all possible actiosn according to the NN.
@@ -466,7 +466,6 @@ class Approx_q_agent(Player):
 
             # Building a hotel
             elif cell_to_improve.has_houses == 4 and cell_to_improve.owner == self:
-                print (f"building a hotel: {cell_to_improve.owner} with {self.name}")
                 cell_to_improve.has_houses = 0
                 cell_to_improve.has_hotel = 1
                 board.available_houses += 4
