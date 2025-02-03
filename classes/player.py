@@ -5,7 +5,7 @@ from classes.board import Board, Property
 from classes.dice import Dice
 from classes.log import Log
 from classes.action import Action
-from settings import GameSettings
+from settings import GameSettings, StandardPlayer
 from classes.state import State
 from classes.player_logistics import Player
 
@@ -90,13 +90,13 @@ class Fixed_Policy_Player(Player):
                     get_price_difference(player_gives, player_receives)
 
                 # This player gives too much
-                if diff_abs > self.settings.trade_max_diff_abs or \
-                diff_giver > self.settings.trade_max_diff_rel:
+                if diff_abs > StandardPlayer.trade_max_diff_abs or \
+                diff_giver > StandardPlayer.trade_max_diff_rel:
                     player_gives.pop()
                     continue
                 # Other player gives too much
-                if -diff_abs > other_player.settings.trade_max_diff_abs or \
-                diff_receiver > other_player.settings.trade_max_diff_rel:
+                if -diff_abs > StandardPlayer.trade_max_diff_abs or \
+                diff_receiver > StandardPlayer.trade_max_diff_rel:
                     player_receives.pop()
                     continue
                 break
@@ -135,7 +135,7 @@ class Fixed_Policy_Player(Player):
                     if price_difference < 0:
                         # This player can't pay
                         if self.money - abs(price_difference) < \
-                           self.settings.unspendable_cash:
+                           StandardPlayer.unspendable_cash:
                             return False
                         other_player.money += abs(price_difference)
                         self.money -= abs(price_difference)
@@ -188,7 +188,7 @@ class Fixed_Policy_Player(Player):
                 cost_to_unmortgage = \
                     cell.cost_base * GameSettings.mortgage_value + \
                     cell.cost_base * GameSettings.mortgage_fee
-                if self.money - cost_to_unmortgage >= self.settings.unspendable_cash:
+                if self.money - cost_to_unmortgage >= StandardPlayer.unspendable_cash:
                     log.add(f"{self} unmortgages {cell} for ${cost_to_unmortgage}")
                     self.money -= cost_to_unmortgage
                     cell.is_mortgaged = False
@@ -277,7 +277,7 @@ class Fixed_Policy_Player(Player):
             ''' Check if the player is willing to buy an unowned property
             '''
             # Player has money lower than unspendable minimum
-            if self.money - property_to_buy.cost_base < self.settings.unspendable_cash:
+            if self.money - property_to_buy.cost_base < StandardPlayer.unspendable_cash:
                 return False
 
             # Player does not have enough money
@@ -287,7 +287,7 @@ class Fixed_Policy_Player(Player):
                 return False
 
             # Property is in one of the groups, player chose to ignore
-            if property_to_buy.group in self.settings.ignore_property_groups:
+            if property_to_buy.group in StandardPlayer.ignore_property_groups:
                 return False
 
             # Nothing stops the player from making a purchase

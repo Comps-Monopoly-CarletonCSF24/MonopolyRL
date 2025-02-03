@@ -6,7 +6,7 @@ TODO: Clear Jail, WanttoBuy out of this.
 
 from classes.board import Property, GoToJail, LuxuryTax, IncomeTax
 from classes.board import FreeParking, Chance, CommunityChest
-from settings import GameSettings
+from settings import GameSettings, StandardPlayer
 
 
 class Player:
@@ -666,7 +666,7 @@ class Player:
         # If player is not willing to trade, he would
         # have not declare his offered and desired properties,
         # thus stopping any trade with them
-        if not self.settings.participates_in_trades:
+        if not StandardPlayer.participates_in_trades:
             return
 
         # Reset the lists
