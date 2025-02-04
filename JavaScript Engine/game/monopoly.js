@@ -86,6 +86,9 @@ export function setup() {
 		} else if (document.getElementById("player" + i + "ai").value === "1") {
 			p.human = false;
 			p.AI = new AITest(p);
+		} else if (document.getElementById("player" + i + "ai").value === "2") {
+			p.human = false;
+			p.AI = new BasicQAgent(p); // add basic q agent here
 		}
 	}
 

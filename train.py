@@ -76,11 +76,28 @@ class MonopolyTrainer:
             self.win_history.append(1 if won else 0)
 
             #save Q-table periodically
-            if episode % 100 == 0:
+            if episode % 10 == 0:
                 q_player.log_q_table()
-        #self.plot_training_results()
-    
-    
+
+                #add debug printing of q table size and sample entries
+                num_entries = len(q_player.qTable)
+                print(f"\nEpisode {episode}")
+                print(f"Q-table size: {num_entries}")
+                print(f"Current epsilon: {q_player.epsilon: .3f}")
+                print(f"Last reward:{final_reward:.2f}")
+
+                #print a few sample q-values if they exist
+                if num_entries >0:
+                    print("\nSample Q-values:")
+                    sample_states = list(q_player.qTable.items())[:5]
+                    for state_action, q_value in sample_states:
+                        print(f"{state_action}: {q_value:.2f}")
+                print("-"*50)
+            if episode %100 == 0:
+                self.plot_training_results()
+                
+        self.plot_training_results()
+
     def plot_training_results(self):
         """plot training metrics"""
         plt.figure(figsize=(12,5))
