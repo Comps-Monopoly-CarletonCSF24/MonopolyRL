@@ -1,9 +1,7 @@
 from typing import List
 import random
 import numpy as np
-from classes.board import Board, Property
-from classes.dice import Dice
-from classes.log import Log
+from classes.board import Property
 from classes.action import Action
 from settings import GameSettings, StandardPlayer
 from classes.state import State
@@ -126,7 +124,7 @@ class Fixed_Policy_Player(Player):
                     if price_difference > 0:
                         # Other guy can't pay
                         if other_player.money - price_difference < \
-                           other_player.settings.unspendable_cash:
+                           StandardPlayer.unspendable_cash:
                             return False
                         other_player.money -= price_difference
                         self.money += price_difference
@@ -245,7 +243,7 @@ class Fixed_Policy_Player(Player):
             improvement_cost = cell_to_improve.cost_house
 
             # Don't do it if you don't have money to spend
-            if self.money - improvement_cost < self.settings.unspendable_cash:
+            if self.money - improvement_cost < StandardPlayer.unspendable_cash:
                 break
 
             # Building a house
@@ -331,7 +329,7 @@ class BasicQPlayer(Player):
     def __init__(self, name, settings, position=0, money=1500):
         super().__init__(name, settings)
         self.qTable = {}
-        self.alpha = 0.4  # increase
+        self.alpha = 0.1  
         self.gamma = 0.9  # Discount factor
         self.epsilon = 0.4  # increased
         self.previous_state = None
@@ -346,22 +344,64 @@ class BasicQPlayer(Player):
     def get_state(self, board, players):
         """gets the state of the player
         """
-    
         current_property = board.cells[self.position]
-
+        #property feature
         is_property = isinstance(current_property, Property)
         can_afford = is_property and self.money >= current_property.cost_base
-        property_value = current_property.cost_base if is_property else 0
+       
+        #financial state
         money_ratio = min(self.money / 2000, 1.0)
 
-        #count properties owned in the same color group
-        same_color_properties = 0
+        #property portfolio feature
+        owned_properties_ratio = len(self.owned) / 28.0
+        #monopoly progress - an improved state space but might not make huge difference
+        monopoly_progress = 0.0
         if is_property and hasattr(current_property, 'color'):
-            for prop in self.owned:
-                if hasattr(prop, 'color') and prop.color == current_property.color:
-                    same_color_properties += 1
-        return (float(same_color_properties), float(can_afford), round(money_ratio,2), same_color_properties)
+            color = current_property.color
+            same_color_props = sum(1 for prop in self.owned if hasattr(prop, 'color') and prop.color == color)
+            total_in_color = sum(1 for prop in board.properties if hasattr(prop, 'color') and prop.color == color)
+            monopoly_progress = same_color_props / total_in_color if total_in_color > 0 else 0.0
+
+        #opponent feature, also might not make huge difference
+        try:
+            opponent = [p for p in players if p!= self and not p.is_bankrupt][0]
+        except IndexError:
+            # Handle case where all other players are bankrupt
+            # Return a default state or end game state
+            return (0.0, 0.0, 0.75, 0.0, 0.0, 0.0, 0.0)
+        relative_money = (self.money - opponent.money) / 2000.0 #normalized money difference 
+        relative_properties = (len(self.owned) - len(opponent.owned)) /28.0 #property difference
+
+        #combine all features into a state
+        state = (
+            float(is_property),
+            float(can_afford),
+            round(money_ratio,2),
+            round(owned_properties_ratio,2),
+            round(monopoly_progress,2),
+            round(relative_money,2),
+            round(relative_properties,2)
+        )
+
+        return state
     
+    def would_complete_monopoly(self, property):
+        '''
+        checks if the property would complete a monopoly
+        '''
+        if not hasattr(property, 'color'):
+            return False
+        color = property.color
+        same_color_props = sum(1 for prop in self.owned if hasattr(prop, 'color') and prop.color == color)
+        total_in_color = sum(1 for prop in board.properties if hasattr(prop, 'color') and prop.color == color)
+        
+        return len(same_color_props) == total_in_color - 1
+    
+    def can_afford(self, property):
+        '''
+        checks if the player can afford the property
+        '''
+        return self.money >= property.cost_base + 200
     
     def choose_action(self, board,state, available_actions):
         '''
@@ -371,21 +411,37 @@ class BasicQPlayer(Player):
             return None
         current_property = board.cells[self.position]
         is_property = isinstance(current_property, Property)
-        # Always try to buy if:
-        # 1. It's a property
-        # 2. We can afford it
-        # 3. We have more than minimum cash reserve
-        if (is_property and 
-            current_property.owner is None and 
-            self.money >= current_property.cost_base + self.min_money):
+        
+        if is_property and current_property.owner is None:
             
             buy_actions = [a for a in available_actions 
                           if self.action_obj.actions[a % len(self.action_obj.actions)] == 'buy']
+            
             if buy_actions:
-                return buy_actions[0]
-        
+                #always buy if it completes a monopoly
+                if (
+                    self.would_complete_monopoly(current_property) or 
+
+
+                
+                #always buy railraods or utilities of affordable
+                    current_property.group in ['Railroads', 'Utilities'] and self.can_afford(current_property) or
+                #property is relatively cheap to our money
+                current_property.cost_base <= self.money * 0.2 or
+                #buy if we have properties of the same color
+                    (hasattr(current_property, 'color') and 
+                    any(prop.color == current_property.color for prop in self.owned))
+                ):
+                    return buy_actions[0]
+                
+
         # Normal exploration/exploitation for other cases
         if np.random.rand() < self.epsilon:
+            if np.random.rand() < 0.8:
+                buy_actions = [a for a in available_actions 
+                               if self.action_obj.actions[a % len(self.action_obj.actions)] == 'buy']
+                if buy_actions:
+                    return np.random.choice(buy_actions)
             return np.random.choice(available_actions)
         else:
             q_values = [self.get_q_value(state, action) for action in available_actions]
@@ -434,28 +490,55 @@ class BasicQPlayer(Player):
         reward = 0
         #reward for money
         reward += self.money * 0.01
-
-        
+        #reward for properties owned
+        reward += len(self.owned) * 200 #increased base property reward
+        #extra reward for properies in same color groups
+        color_groups = {}
         for prop in self.owned:
-            #reward for properties owned
-            reward += len(self.owned) * 0.5
             if hasattr(prop, 'color'):  # Only count colored properties
-                same_color_count = sum(
-                    1 for other_prop in self.owned
-                    if hasattr(other_prop, 'color') and other_prop.color == prop.color
-                )
-                reward += same_color_count * 100
-                reward += 50 #immediate reward for owning a property        
+                if prop.color not in color_groups:
+                    color_groups[prop.color] = 0
+                color_groups[prop.color] += 1
+
+                #progressive rewards for more properties in the same color
+                reward += (color_groups[prop.color] **2 ) * 300
+        
         # Huge reward for monopolies
         for group in board.groups.values():
             if all(prop.owner == self for prop in group):
-                reward += 1000  # Increased from 50
-                
-        # Penalty for having very low cash reserves
-        #if self.money < 100:  # Add penalty if cash is too low
-           #reward -= 200
-            
+                reward += 2000
+
+        #extra reward for developed monopolies
+            if hasattr(group[0], 'houses'):
+                houses = sum(prop.houses for prop in group)
+                reward += houses * 500        
+        #strategic positioning rewards
+        try:
+            opponent = [p for p in players if p!= self and not p.is_bankrupt][0]
+        except IndexError:
+            # Handle case where all other players are bankrupt
+            # Return a default state or end game state
+            return (0.0, 0.0, 0.75, 0.0, 0.0, 0.0, 0.0)
+        #reward for having more properties than opponent
+        prop_difference = len(self.owned) - len(opponent.owned)
+        reward += prop_difference * 300
+
+        #penalty for having fewer properties than opponent
+        if len(self.owned) < len(opponent.owned):
+            reward -= 500
+
         return reward
+        
+        
+        
+        
+        return reward
+    
+    
+    
+    
+    
+    
     def calculate_max_bid(self, property_to_auction, current_bid):
         #more conservative for basic q-learning player
         return min(self.money * 0.5, property_to_auction.cost_base)

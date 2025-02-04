@@ -80,7 +80,7 @@ class MonopolyTrainer:
                 q_player.log_q_table()
         #self.plot_training_results()
     
-    '''
+    
     def plot_training_results(self):
         """plot training metrics"""
         plt.figure(figsize=(12,5))
@@ -106,7 +106,7 @@ class MonopolyTrainer:
         plt.tight_layout()
         plt.savefig('training_results.png')
         plt.close()
-        '''
+        
 
 if __name__=="__main__":
     trainer = MonopolyTrainer(num_episodes=1000)

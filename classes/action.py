@@ -74,11 +74,6 @@ class Action:
                 player.money >= current_property.cost_base):    
                 
                 player.buy_property(current_property, log)
-                log.add(f"{player.name} bought {current_property.name} for ${current_property.cost_base}")
-                return True
-            
-            else:
-                log.add(f"DEBUG: Buy action failed for {current_property.name}")
 
 
         elif action_type == 'do_nothing':
@@ -86,5 +81,3 @@ class Action:
                 log.add(f">>> {player.name} chose not to buy {current_property.name} (${current_property.cost_base})")
                 #trigger auction
                 player.auction_property(current_property, players, log)
-            else:
-                log.add(f"DEBUG: {player.name} did nothing for {current_property.name}")
