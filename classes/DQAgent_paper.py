@@ -56,7 +56,7 @@ class QLambdaAgent:
         self.is_training = is_training
         # Parameters from the paper
         self.epsilon = 0.5 if is_training else 0 # Greedy coeff from paper
-        self.alpha = 0.2      # Learning rate from paper
+        self.alpha = 0.4     # Learning rate from paper
         self.gamma = 0.95      # Discount factor from paper
         self.lambda_param = 0.8  # Lambda parameter from paper
 
@@ -68,7 +68,9 @@ class QLambdaAgent:
             checkpoint = torch.load(model_param_path, weights_only=True)
             self.model.load_state_dict(checkpoint['model_state_dict'])
             self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            
+            # if is_training:
+            #     self.alpha = checkpoint['alpha']
+            #     self.epsilon = checkpoint['epsilon']
         # Initialize eligibility traces
         self.traces = []
         self.last_state = get_initial_state()
@@ -82,19 +84,13 @@ class QLambdaAgent:
         self.last_action = self.find_action_with_max_value(q_values_init)
         self.epsilon *= 0.99
         self.alpha *= 0.99
-        
-        # DELETE
-        test_state = get_test_state() 
-        q_values = self.calculate_all_q_values(test_state )
-        test_str = ""
-        for i in range(len(q_values)):
-            test_str += str(Actions[i]) + ": " + str(q_values[i].item()) + "    "
-        print(test_str)
     
     def save_nn(self):
         checkpoint = {
             'model_state_dict': self.model.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict(),
+            'alpha': self.alpha,
+            'epsilon': self.epsilon
         }
         torch.save(checkpoint, model_param_path)
         
