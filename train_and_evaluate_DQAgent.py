@@ -35,7 +35,7 @@ def test_before_each_game(qlambda_agent):
     test_str = ""
     for i in range(len(q_values)):
         test_str += str(Actions[i]) + ": " + str(q_values[i].item()) + "    "
-    print(test_str)
+    # print(test_str)
     
 if __name__ == "__main__":
     qlambda_agent = QLambdaAgent(is_training = True)
