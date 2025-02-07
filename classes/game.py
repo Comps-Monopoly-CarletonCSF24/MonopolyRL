@@ -4,12 +4,12 @@ from setting up boards, players etc to making moves by all players
 
 from settings import SimulationSettings, GameSettings, LogSettings
 
-from classes.player import Player
+from classes.player import Fixed_Policy_Player, DQAPlayer, BasicQPlayer
 from classes.board import Board
 from classes.dice import Dice
 from classes.log import Log
 
-def monopoly_game(data_for_simulation):
+def monopoly_game(data_for_simulation, qlambda_agent = None):
     ''' Simulation of one game.
     For convenience to set up a multi-thread,
     parameters are packed into a tuple: (game_number, game_seed):
@@ -40,10 +40,16 @@ def monopoly_game(data_for_simulation):
     dice.shuffle(board.chance.cards)
     dice.shuffle(board.chest.cards)
 
+    players = []
     # Set up players with their behavior settings
-    players = [Player(player_name, player_setting)
-               for player_name, player_setting in GameSettings.players_list]
-
+    for player_name, player_type, player_setting in GameSettings.players_list:
+        if player_type == "Fixed Policy":
+            players.append(Fixed_Policy_Player(player_name, player_setting))
+        elif player_type == "QLambda":
+            players.append(DQAPlayer(player_name, player_setting, qlambda_agent))
+        elif player_type == "BasicQ":
+            players.append(BasicQPlayer(player_name, player_setting))
+            
     if GameSettings.shuffle_players:
         # dice has a thread-safe copy of random.shuffle
         dice.shuffle(players)
@@ -60,7 +66,6 @@ def monopoly_game(data_for_simulation):
 
     # Play for the required number of turns
     for turn_n in range(1, SimulationSettings.n_moves + 1):
-
         # Start a turn. Log turn's number
         log.add(f"\n== GAME {game_number} Turn {turn_n} ===")
 
@@ -136,10 +141,10 @@ def monopoly_game(data_for_simulation):
 
     # Last thing to log in the game log: the final state of the board
     board.log_current_map(log)
-
+            
     # Save the logs
     log.save()
     datalog.save()
-
+            
     # Useless return, but it is here to mark the end of the game
     return None

@@ -1,5 +1,10 @@
 ''' Main file to run monopoly simulation
 '''
+import multiprocessing
+import os
+
+# Allow duplicate OpenMP runtime libraries to load
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 import random
 import concurrent.futures

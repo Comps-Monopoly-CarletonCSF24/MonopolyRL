@@ -1,7 +1,5 @@
 ''' Config file for monopoly simulation
 '''
-class TrainingSettings():
-    n_games = 100
 
 class SimulationSettings():
     ''' Simulation settings
@@ -10,16 +8,17 @@ class SimulationSettings():
     # Number of moves to simulate
     # (if there are more than one player alive after then,
     # the game is considered to have no winner)
-    n_moves = 100
+    n_moves = 5000
 
     # Number of games to simulate
+    
     n_games = 1000
 
     # Random seed to start simulation with
     seed = 0
 
     # Number of parallel processes to use in the simulation
-    multi_process = 2
+    multi_process = 4
 
 class LogSettings:
     ''' Settings for logging
@@ -55,7 +54,7 @@ class StandardPlayer:
 class ExperimentPlayer(StandardPlayer):
     ''' Changed settings for the Experiment Player
     '''
-    
+
 class GameSettings():
     ''' Setting for the game (rules + player list)
     '''
@@ -66,7 +65,8 @@ class GameSettings():
     # Player Names, Player Type, and Player Settings
     # A Player can be 1 of "Fixed Policy", "QLambda", or "BasicQ"
     players_list = [
-        ("QLambda Player 1", "QLambda", ExperimentPlayer),
+        # ("QLambda Player", "QLambda", StandardPlayer),
+        ("Fixed Policy Player 1", "Fixed Policy", StandardPlayer),
         ("Fixed Policy Player 2", "Fixed Policy", StandardPlayer),
         ("Fixed Policy Player 3", "Fixed Policy", StandardPlayer),
         ("Fixed Policy Player 4", "Fixed Policy", StandardPlayer)

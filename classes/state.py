@@ -1,12 +1,16 @@
-from classes.player import Player
-from classes.board import Board, Property, Cell
-from classes.log import Log
+from classes.player_logistics import Player
 import numpy as np
+from settings import GameSettings
 
 # the number of properties on the board in each group
-num_property_per_group = {'Brown': 2, 'Railroads': 4, 'Lightblue': 3, 'Pink': 3, 'Utilities': 4, 'Orange': 3, 'Red': 3, 'Yellow': 3, 'Green': 3, 'Indigo': 2}
+num_property_per_group = {'Brown': 2, 'Railroads': 4, 'Lightblue': 3, 'Pink': 3, 'Utilities': 2, 'Orange': 3, 'Red': 3, 'Yellow': 3, 'Green': 3, 'Indigo': 2}
 # tn arbitrary index for groups between 1 - 9
 group_indices = {'Brown': 0, 'Railroads': 1, 'Lightblue': 2, 'Pink': 3, 'Utilities': 4, 'Orange': 5, 'Red': 6, 'Yellow': 7, 'Green': 8, 'Indigo': 9}
+# the cells in each group, indexed by the indices above
+group_cell_indices = [[1, 3], [5, 15, 25, 35], [6,8,9], [11,13,14], [12,28], [16,18,19], [21,23,24], [26,27,29], [31,32,34], [37, 39]]
+
+# dimensions that a state vector has
+State_Size = 23
 # number of groups ob the board
 Num_Groups = 10
 # least common multiple for the number of property per group on the board
@@ -20,14 +24,41 @@ class State:
     area = None
     position = None
     finance = None
-    
-    def __init__(self, current_player: Player, players: list):
+    def __init__(self, current_player: "Player", players: list["Player"]):
         self.area = get_area(current_player, players)
         self.position = get_position(current_player.position)
         self.finance = get_finance(current_player, players)
         self.state = get_state(self.area, self.position, self.finance)
-        
-def get_area(current_player: Player, players: Player) -> np.ndarray:
+    def is_similar_to(self, s2):
+        """Implement state similarity metric from paper"""
+        # Extract area, finance, and position from states
+        area1, finance1, pos1 = self.area, self.finance, self.position
+        area2, finance2, pos2 = s2.area, s2.finance, s2.position
+        # Check conditions from paper
+        area_diff = sum(abs(a1 - a2) for a1, a2 in zip(area1, area2)) <= 0.1
+        finance_diff = abs(finance1 - finance2) <= 0.1
+        position_same = pos1 == pos2
+        return np.all(area_diff) and np.all(finance_diff) and position_same
+    def __str__(self):
+        return str(self.state)
+
+def get_initial_state():
+    state_init = State.__new__(State)
+    state_init.area = np.zeros(20)
+    state_init.position = 0
+    state_init.finance = np.array([0, sigmoid_money(GameSettings.starting_money)])
+    state_init.state = get_state(state_init.area, state_init.position, state_init.finance)
+    return state_init
+
+def get_test_state():
+    state_test = State.__new__(State)
+    state_test.area = np.zeros(20)
+    state_test.position = get_position(1)
+    state_test.finance = np.array([0, sigmoid_money(GameSettings.starting_money)])
+    state_test.state = get_state(state_test.area, state_test.position, state_test.finance)
+    return state_test
+
+def get_area(current_player: "Player", players: list["Player"]) -> np.ndarray:
     """ returns the area vector describing property owning percentage for each color
     Args:
         board (Board): _description_
@@ -44,7 +75,7 @@ def get_area(current_player: Player, players: Player) -> np.ndarray:
     area = np.vstack((self_property_points, others_property_points)) / Total_Property_Points
     return area
 
-def get_property_points_by_group(player:Player) -> np.ndarray:
+def get_property_points_by_group(player:"Player") -> np.ndarray:
     """Gets the number of property of each group that a player has
 
     Args:
@@ -81,7 +112,7 @@ def get_position(position_int : int) -> float:
     position_float = (position_int) / (Num_Total_Cells - 1)
     return position_float
     
-def get_finance(current_player: Player, players: list) -> np.ndarray:
+def get_finance(current_player: "Player", players: list["Player"]) -> np.ndarray:
     """Gets the finance state vector from the player's money and properties
 
     Args:
@@ -105,7 +136,7 @@ def get_finance(current_player: Player, players: list) -> np.ndarray:
     finance = np.array([property_ratio, money_normalized])
     return finance
 
-def get_num_property(player: Player, houses = False) -> int:
+def get_num_property(player: "Player", houses = False) -> int:
     """returns the number of properties a player has
 
     Args:
