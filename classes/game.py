@@ -91,7 +91,7 @@ def monopoly_game(data_for_simulation, qlambda_agent = None):
             import random
             import numpy as np
             from classes.state import State
-            from classes.rewards import Reward
+            from classes.archive.rewards import Reward
             
             current_player = players[-1]
             agent = ApproxQLearningAgent(name = current_player.name, settings=GameSettings, feature_size=33)  

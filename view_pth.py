@@ -1,5 +1,5 @@
 import torch
-from classes.DQAgent_paper import model_param_path
+from classes.DQAgent import model_param_path
 # Load the .pth file
 checkpoint = torch.load(model_param_path)
 
