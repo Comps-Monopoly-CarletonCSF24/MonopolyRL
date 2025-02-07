@@ -2,7 +2,7 @@ import random
 from classes.log import Log
 from classes.game import monopoly_game, Board, Dice
 from classes.player import BasicQPlayer, Fixed_Policy_Player
-from settings import GameSettings
+from settings import GameSettings, SimulationSettings
 from monopoly_simulator import run_simulation
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,9 +19,8 @@ class MonopolyTrainer:
         """create a new game instance with players"""
         board = Board(self.settings)
         log = Log()
-        dice = Dice(self.settings, 2, 6, log)
-        
-
+        dice = Dice(random.random(), 2, 6, log)
+    
         #create players
         q_player = BasicQPlayer("Q-Learning Player", self.settings)
         fixed_players = [
@@ -47,9 +46,12 @@ class MonopolyTrainer:
 
             #decreasd exploration rate over time
             q_player.epsilon = max(0.01, q_player.epsilon * 0.995)
-
+            num_moves = 0
             #play one full game
             while not game_over:
+                if num_moves > SimulationSettings.n_moves:
+                    game_over = True
+                num_moves += 1
                 for player in players:
                     if player.is_bankrupt:
                         continue
@@ -84,7 +86,7 @@ class MonopolyTrainer:
                 print(f"\nEpisode {episode}")
                 print(f"Q-table size: {num_entries}")
                 print(f"Current epsilon: {q_player.epsilon: .3f}")
-                print(f"Last reward:{final_reward:.2f}")
+                print(f"Last reward:{final_reward}")
 
                 #print a few sample q-values if they exist
                 if num_entries >0:
@@ -93,11 +95,11 @@ class MonopolyTrainer:
                     for state_action, q_value in sample_states:
                         print(f"{state_action}: {q_value:.2f}")
                 print("-"*50)
-            if episode %100 == 0:
-                self.plot_training_results()
+            #if episode %100 == 0:
+                #self.plot_training_results()
                 
-        self.plot_training_results()
-
+        #self.plot_training_results()
+'''
     def plot_training_results(self):
         """plot training metrics"""
         plt.figure(figsize=(12,5))
@@ -123,7 +125,7 @@ class MonopolyTrainer:
         plt.tight_layout()
         plt.savefig('training_results.png')
         plt.close()
-        
+        '''
 
 if __name__=="__main__":
     trainer = MonopolyTrainer(num_episodes=1000)

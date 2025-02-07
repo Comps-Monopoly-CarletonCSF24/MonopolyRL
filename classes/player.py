@@ -463,7 +463,6 @@ class BasicQPlayer(Player):
         updates the qtable by adding better qvalues depending on the most recent move, 
         if it had a better reward than the previous one
         '''
-        
         #convert state and nextState to tuples if they are not already
         if not next_available_actions:
             next_max_q = 0
@@ -557,7 +556,7 @@ class BasicQPlayer(Player):
         action_obj = Action()
         available_actions = []
 
-        for action_idx in range(len(action_obj.actions)):
+        for action_idx in range(action_obj.total_actions):
             property_idx, action_type = action_obj.map_action_index(action_idx)
             if action_obj.is_excutable(self, board, property_idx, action_type):
                 available_actions.append(action_idx)
