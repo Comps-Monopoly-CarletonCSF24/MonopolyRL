@@ -85,36 +85,6 @@ def monopoly_game(data_for_simulation, qlambda_agent = None):
             else:
                 log.add(f"- Player {player_n}, '{player.name}': Bankrupt")
 
-
-            '''---------------------------------------------------------------------------------------------'''
-            from classes.approx_ql import ApproxQLearningAgent
-            import random
-            import numpy as np
-            from classes.state import State
-            from classes.archive.rewards import Reward
-            
-            current_player = players[-1]
-            agent = ApproxQLearningAgent(name = current_player.name, settings=GameSettings, feature_size=33)  
-
-            current_state = State(current_player=current_player, players= players)
-            action = agent.select_action(current_state)
-            next_state = agent.simulate_action(current_state, action)
-
-            Reward = Reward()
-            # Simulate a reward
-            reward = Reward.get_reward(current_player, players)
-            print ("agent ", reward)
-            print ("player1 ", Reward.get_reward(players[0], players))
-            # print ("player2 ", Reward.get_reward(players[1], players))
-            # print ("player3 ", Reward.get_reward(players[2], players))
-
-
-
-            # print (f"action: {action}, rewar: {reward}")
-            # Update the agent
-            agent.update(current_state, action, reward, next_state)
-            # print (action)
-
         # Log the number of available Houses/Hotels etc
         board.log_board_state(log)
         # Add an empty line before players' moves
@@ -128,11 +98,7 @@ def monopoly_game(data_for_simulation, qlambda_agent = None):
             break
 
         # Players make their moves
-        result1 = current_player.make_a_move(board, players, dice, log, action)
-        if result1 == "bankrupt":
-                datalog.add(f"{game_number}\t{player}\t{turn_n}")
-
-        for player in players[:1]:
+        for player in players:
             # result will be "bankrupt" if player goes bankrupt
             result = player.make_a_move(board, players, dice, log)
             # If player goes bankrupt, log it in the data log file

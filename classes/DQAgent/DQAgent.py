@@ -7,7 +7,7 @@ import random
 import math
 from typing import List
 from classes.state import State, State_Size, get_initial_state, get_test_state
-from classes.action_DQAgent import Action, Action_Size, Total_Actions, Actions
+from classes.DQAgent.action import Action, Action_Size, Total_Actions, Actions
 
 # in this case, there are only 3: buy, sell, do nothing
 model_param_path = "./model_parameters.pth"

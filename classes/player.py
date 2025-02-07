@@ -3,8 +3,8 @@ from classes.board import Board, Property
 from classes.dice import Dice
 from classes.log import Log
 from settings import GameSettings
-from classes.DQAgent import QLambdaAgent
-from classes.action_DQAgent import Action, Actions
+from classes.DQAgent.DQAgent import QLambdaAgent
+from classes.DQAgent.action import Action, Actions
 from classes.state import State, group_cell_indices
 from classes.player_logistics import Player
 

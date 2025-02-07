@@ -3,11 +3,11 @@ from tqdm import tqdm
 from settings import TrainingSettings, LogSettings
 from classes.log import Log
 from classes.game import monopoly_game
-from classes.DQAgent import QLambdaAgent
+from classes.DQAgent.DQAgent import QLambdaAgent
 from settings import TrainingSettings, SimulationSettings
 from monopoly_simulator import run_simulation
 from classes.state import get_test_state
-from classes.action_DQAgent import Actions
+from classes.DQAgent.action import Actions
 def train_model(config: TrainingSettings, qlambda_agent):
     ''' Run the simulation
     In: Simulation parameters (number of games, seed etc)
