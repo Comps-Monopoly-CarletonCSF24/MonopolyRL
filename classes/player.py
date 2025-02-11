@@ -327,11 +327,11 @@ class Fixed_Policy_Player(Player):
                 # TODO: Bank auctions the property
 
 class Approx_q_agent(Player):
-    def __init__(self, name, settings):
+    def __init__(self, name, settings, episode):
         super().__init__(name, settings)
         self.action_object = Action()
         self.agent = ApproxQLearningAgent(name = name, settings=GameSettings, feature_size=150) 
-        self.episode = 0
+        self.episode = episode
         pass
 
     def save_model(self, filename="q_learning_model.pkl"):
@@ -350,7 +350,6 @@ class Approx_q_agent(Player):
         for group_idx in range(len(group_cell_indices)):
             action = self.take_one_action(board,players, group_idx)
             self.execute_action(board, log, action, group_idx)
-            self.episode += 1
         # self.agent.save_q_values()
         
     def take_one_action(self, board: Board, players: List[Player], group_idx):
@@ -365,6 +364,7 @@ class Approx_q_agent(Player):
         """
         
         current_player = self
+        print (self.episode)
         current_state = State(current_player=current_player, players= players)
         action_index_in_small_list, action_index_in_bigger_list = self.agent.select_action(current_state, self.episode)
 

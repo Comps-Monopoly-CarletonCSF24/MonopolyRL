@@ -52,7 +52,7 @@ def monopoly_game(data_for_simulation):
         if player_type == "Fixed Policy":
             players.append(Fixed_Policy_Player(player_name, player_setting))
         elif player_type == "Approx_q_l":
-            players.append(Approx_q_agent(player_name, player_setting))
+            players.append(Approx_q_agent(player_name, player_setting, game_number))
 
     if GameSettings.shuffle_players:
         # dice has a thread-safe copy of random.shuffle

@@ -12,7 +12,7 @@ class SimulationSettings():
 
     # Number of games to simulate
     
-    n_games = 1
+    n_games = 10
     # Random seed to start simulation with
     seed = 0
 
@@ -63,9 +63,9 @@ class GameSettings():
 
     # Players and their behavior settings
     players_list = [
-        # ("Approx_q_Agent", "Approx_q_l", StandardPlayer),
-        ("Fixed Policy Player", "Fixed Policy", StandardPlayer),
-        ("Fixed Policy Player 2", "Fixed Policy", StandardPlayer)
+        ("Approx_q_Agent", "Approx_q_l", StandardPlayer),
+        ("Fixed Policy Player", "Fixed Policy", StandardPlayer)
+        # ("Fixed Policy Player 2", "Fixed Policy", StandardPlayer)
     ]
 
     # Randomly shuffle order of players each game
