@@ -8,6 +8,7 @@ from classes.state import State, group_cell_indices
 from classes.player_logistics import Player
 from classes.approx_ql import ApproxQLearningAgent
 from classes.rewards import Reward
+import pickle
 
 class Fixed_Policy_Player(Player):
     def handle_action(self, board, players, dice, log):
@@ -330,13 +331,27 @@ class Approx_q_agent(Player):
         super().__init__(name, settings)
         self.action_object = Action()
         self.agent = ApproxQLearningAgent(name = name, settings=GameSettings, feature_size=150) 
+        self.episode = 0
         pass
-    
+
+    def save_model(self, filename="q_learning_model.pkl"):
+        data = {
+            "weights": self.agent.weights,
+            "epsilon": self.agent.epsilon,
+            "alpha": self.agent.alpha,
+            "gamma": self.agent.gamma,
+            "state_action_counts": self.agent.state_action_counts
+        }
+        with open(filename, "wb") as f:
+            pickle.dump(data, f)
+        print(f"Model saved to {filename}")
+
     def handle_action(self, board: Board, players: List[Player], dice: Dice, log: Log):
         for group_idx in range(len(group_cell_indices)):
             action = self.take_one_action(board,players, group_idx)
             self.execute_action(board, log, action, group_idx)
-        self.agent.save_q_values()
+            self.episode += 1
+        # self.agent.save_q_values()
         
     def take_one_action(self, board: Board, players: List[Player], group_idx):
         """Moved agent.take_turn to here. The agent takes a turn and performs 
@@ -351,16 +366,17 @@ class Approx_q_agent(Player):
         
         current_player = self
         current_state = State(current_player=current_player, players= players)
-        action_index_in_small_list, action_index_in_bigger_list = self.agent.select_action(current_state)
+        action_index_in_small_list, action_index_in_bigger_list = self.agent.select_action(current_state, self.episode)
 
         next_state = self.agent.simulate_action(board, current_state, current_player, players, action_index_in_bigger_list, group_idx)
         # If the action is not doable, you need to choose a different action and simulate that.
         # In fact, choose the next best action and simulate that. 
 
         reward = Reward().get_reward(current_player, players)
-        self.agent.update(current_state, action_index_in_bigger_list, reward, next_state)
         actions = self.action_object.actions
-        return actions[action_index_in_small_list]
+        action = actions[action_index_in_small_list]
+        self.agent.update(current_state, action_index_in_bigger_list, reward, next_state, self.episode, action)
+        return action
         
     def execute_action(self, board: Board, log: Log, action: Action, group_idx):
         """Executes the action on the given property for the specified player.

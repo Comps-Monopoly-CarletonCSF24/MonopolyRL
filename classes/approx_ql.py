@@ -11,7 +11,7 @@ import pickle
 import os
 
 class ApproxQLearningAgent(Player):
-    def __init__(self, name, settings, alpha=0.05, gamma=0.9, epsilon=0.05, feature_size=200):
+    def __init__(self, name, settings, alpha=0.1, gamma=0.9, epsilon=0.05, feature_size=200, decay_rate=0.01):
         super().__init__(name, settings)
         self.alpha = alpha
         self.gamma = gamma
@@ -21,9 +21,44 @@ class ApproxQLearningAgent(Player):
         self.total_actions = self.action_handler.total_actions
         self.name = name
         self.q_value_log = []
-
+        self.decay_rate = decay_rate 
+        self.state_action_counts = {}
+        self.epsilon_min = 0.01
         self.weights = np.random.randn(feature_size, self.total_actions)/np.sqrt(feature_size)
 
+        self.load_model()
+        
+    def load_model(self, filename="q_learning_model.pkl"):
+        if os.path.exists(filename):
+            with open(filename, "rb") as f:
+                data = pickle.load(f)
+            self.weights = data["weights"]
+            self.epsilon = data["epsilon"]
+            self.alpha = data["alpha"]
+            self.gamma = data["gamma"]
+            self.state_action_counts = data["state_action_counts"]
+            print(f"Model loaded from {filename}")
+        else:
+            print("No saved model found. Starting fresh.")
+
+    def get_alpha(self, state, action, episode):
+        """Adaptive learning rate that decays over time or by visit count"""
+        key = (state, action)
+        if key not in self.state_action_counts:
+            self.state_action_counts[key] = 1
+        else:
+            self.state_action_counts[key] += 1
+        
+        return self.alpha / (1 + self.decay_rate * episode)  # Time-based decay
+
+    def get_gamma(self, episode):
+        """Increase gamma over time to favor long-term rewards"""
+        return min(1.0, self.gamma + (0.1 * episode / 1000))
+    
+    def get_epsilon(self, episode):
+        """Exponential decay"""
+        return max(self.epsilon_min, self.epsilon * np.exp(-self.decay_rate * episode))
+    
     def extract_features(self, state, action_index):
         if isinstance(state, State):
             state = state.state
@@ -40,9 +75,9 @@ class ApproxQLearningAgent(Player):
             q_values.append(np.dot(features, self.weights[:, action_index])) # find the q_values by doing the dot product between features and  and weights
         return np.array(q_values)
 
-    def select_action(self, state):
-        
-        if random.random() < self.epsilon:
+    def select_action(self, state, episode):
+        epsilon_t = self.get_epsilon(episode)
+        if random.random() < epsilon_t:
             action_index = random.randint(0, self.total_actions - 1)
         else:
             q_values = self.get_q_values(state)
@@ -112,7 +147,10 @@ class ApproxQLearningAgent(Player):
         elif action_type == "do_nothing":
             return state 
 
-    def update(self, state, action_index, reward, next_state):
+    def update(self, state, action_index, reward, next_state, episode, action):
+        alpha_t = self.get_alpha(state, action, episode)
+        gamma_t = self.get_gamma(episode)
+
         features = self.extract_features(state, action_index)
         q_value = np.dot(features, self.weights[:, action_index])
 
@@ -122,20 +160,20 @@ class ApproxQLearningAgent(Player):
         target = reward + self.gamma * max_next_q_value
 
         td_error = target - q_value
-        self.weights[:, action_index] += self.alpha * td_error * features
+        self.weights[:, action_index] += alpha_t * td_error * features
         self.q_value_log.append(q_value)
 
-    def save_q_values(self):
-        """Append new Q-values to the existing file."""
-        if os.path.exists("q_values.pkl"):
-            with open("q_values.pkl", "rb") as f:
-                existing_q_values = pickle.load(f)
-        else:
-            existing_q_values = []
+    # def save_q_values(self):
+    #     """Append new Q-values to the existing file."""
+    #     if os.path.exists("q_values.pkl"):
+    #         with open("q_values.pkl", "rb") as f:
+    #             existing_q_values = pickle.load(f)
+    #     else:
+    #         existing_q_values = []
 
-        # Append new Q-values and save
-        updated_q_values = existing_q_values + self.q_value_log
-        with open("q_values.pkl", "wb") as f:
-            pickle.dump(updated_q_values, f)
+    #     # Append new Q-values and save
+    #     updated_q_values = existing_q_values + self.q_value_log
+    #     with open("q_values.pkl", "wb") as f:
+    #         pickle.dump(updated_q_values, f)
 
-        self.q_value_log = []
+    #     self.q_value_log = []
