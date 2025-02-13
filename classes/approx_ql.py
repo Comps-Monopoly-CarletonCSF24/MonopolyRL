@@ -11,7 +11,7 @@ import pickle
 import os
 
 class ApproxQLearningAgent(Player):
-    def __init__(self, name, settings, alpha=0.1, gamma=0.9, epsilon=0.05, feature_size=200, decay_rate=0.01):
+    def __init__(self, name, settings, alpha=0.1, gamma=0.9, epsilon=1, feature_size=200, decay_rate=0.01):
         super().__init__(name, settings)
         self.alpha = alpha
         self.gamma = gamma
@@ -78,8 +78,10 @@ class ApproxQLearningAgent(Player):
     def select_action(self, state, episode):
         epsilon_t = self.get_epsilon(episode)
         if random.random() < epsilon_t:
+            print ("E_X_P_L_O_R_I_N_G")
             action_index = random.randint(0, self.total_actions - 1)
         else:
+            print ("EXPLOITING")
             q_values = self.get_q_values(state)
             action_index = np.argmax(q_values)
         _,action_type = self.action_handler.map_action_index(action_index)

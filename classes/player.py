@@ -364,7 +364,6 @@ class Approx_q_agent(Player):
         """
         
         current_player = self
-        print (self.episode)
         current_state = State(current_player=current_player, players= players)
         action_index_in_small_list, action_index_in_bigger_list = self.agent.select_action(current_state, self.episode)
 
