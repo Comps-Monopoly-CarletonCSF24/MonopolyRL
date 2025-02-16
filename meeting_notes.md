@@ -89,3 +89,11 @@ TODO:
 - Normalize action to 0-1 or -1-1
 - after each game, reduce values in trace[]
 - endgame rewards for winner and loser
+## 1/31/2025
+### Connecting to JavaScript Agent
+Replicate State, Action 
+ApproxQ: Save weights & biases, and then call in JS - Paul
+Basic Q: Save Q table, call in JS - Xiaoying
+NN: Import .pth in JS, run nn for each step (replicate take_one_step()): Albert
+Confirming that the NN is training, plot win rate growth: Dake
+Replicate Player_Logistics, Replicate each player class

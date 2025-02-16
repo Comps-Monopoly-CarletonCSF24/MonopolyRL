@@ -3,8 +3,8 @@ from classes.board import Board, Property
 from classes.dice import Dice
 from classes.log import Log
 from settings import GameSettings
-from classes.DQAgent_paper import QLambdaAgent
-from classes.action_paper import Action, Actions
+from classes.DQAgent.DQAgent import QLambdaAgent
+from classes.DQAgent.action import Action, Actions
 from classes.state import State, group_cell_indices
 from classes.player_logistics import Player
 
@@ -357,7 +357,6 @@ class DQAPlayer(Player):
         """
         self.agent.update_trace(current_state, current_action)
         reward = self.agent.get_reward(self, players)
-        # print(f"State: {current_state}\nAction: {current_action}\nReward: {reward}")
         self.agent.train_nn_with_trace(current_state, current_action, reward)
         q_value = self.agent.q_learning(current_state, current_action, reward)
         self.agent.train_neural_network(self.agent.last_state, self.agent.last_action, q_value)
