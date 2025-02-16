@@ -77,7 +77,6 @@ export class DQAPlayer extends Player {
     }
 
     async chooseAction(state) {
-        // Use the model to predict the best action
         const allActions = new Array(84).fill(0).map((_, i) => ({
             actionIndex: i,
             actionType: this.mapActionIndexToType(i)
