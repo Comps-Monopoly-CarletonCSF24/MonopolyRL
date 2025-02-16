@@ -4,12 +4,12 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 import random
+import math
 from typing import List
-from classes.state import State, State_Size, get_initial_state
+from classes.state import State, State_Size, get_initial_state, get_test_state
 from classes.action_paper import Action, Action_Size, Total_Actions, Actions
 
 # in this case, there are only 3: buy, sell, do nothing
-all_actions = list(range(Total_Actions))
 model_param_path = "./model_parameters.pth"
 
 class QNetwork(nn.Module):
@@ -19,6 +19,16 @@ class QNetwork(nn.Module):
         self.input_layer = nn.Linear(State_Size + Action_Size, 150)  # Input layer to hidden layer
         self.activation = nn.Sigmoid()  # Sigmoid activation for the hidden layer
         self.output_layer = nn.Linear(150, 1)  # Hidden layer to output layer
+
+        # # Match Java's weight initialization (they had 0.5 as weights)
+        # nn.init.uniform_(self.input_layer.weight, -0.5, 0.5)
+        # nn.init.uniform_(self.input_layer.bias, -0.5, 0.5)
+        # nn.init.uniform_(self.output_layer.weight, -0.5, 0.5)
+        # nn.init.uniform_(self.output_layer.bias, -0.5, 0.5)
+        nn.init.constant_(self.input_layer.weight, 0)
+        nn.init.constant_(self.input_layer.bias, 0)
+        nn.init.constant_(self.output_layer.weight, 0)
+        nn.init.constant_(self.output_layer.bias, 0)
         
     def forward(self, state: State, action: Action):
         stacked_input = np.append(state.state, action.action_index)
@@ -26,7 +36,7 @@ class QNetwork(nn.Module):
         # Forward pass through the network
         output = self.input_layer(input)
         output = self.activation(output)
-        output = self.output_layer(output)
+        output = self.output_layer(output)           
         return output
 
 class Trace:
@@ -45,13 +55,15 @@ class QLambdaAgent:
     def __init__(self, is_training = False):
         self.is_training = is_training
         # Parameters from the paper
-        self.epsilon = 0.1     # Greedy coeff from paper
-        self.alpha = 0.2       # Learning rate from paper
+        self.epsilon = 0.5 if is_training else 0 # Greedy coeff from paper
+        self.alpha = 0.2      # Learning rate from paper
         self.gamma = 0.95      # Discount factor from paper
-        self.lambda_param = 0.85  # Lambda parameter from paper
+        self.lambda_param = 0.8  # Lambda parameter from paper
+
         # Initialize network and optimizer
         self.model = QNetwork()
         self.optimizer = optim.SGD(self.model.parameters(), lr = self.alpha)
+        
         # If there is a file to start with, continue to train on that
         if os.path.exists(model_param_path):
             checkpoint = torch.load(model_param_path, weights_only=True)
@@ -60,7 +72,24 @@ class QLambdaAgent:
         # Initialize eligibility traces
         self.traces = []
         self.last_state = get_initial_state()
-        self.last_action = Action("do_nothing")
+        q_values_init = self.calculate_all_q_values(self.last_state)
+        self.last_action = self.find_action_with_max_value(q_values_init)
+    
+    def end_game(self):
+        self.traces = []
+        self.last_state = get_initial_state()
+        q_values_init = self.calculate_all_q_values(self.last_state)
+        self.last_action = self.find_action_with_max_value(q_values_init)
+        self.epsilon *= 0.99
+        self.alpha *= 0.99
+        
+        # DELETE
+        test_state = get_test_state() 
+        q_values = self.calculate_all_q_values(test_state )
+        test_str = ""
+        for i in range(len(q_values)):
+            test_str += str(Actions[i]) + ": " + str(q_values[i].item()) + "    "
+        print(test_str)
     
     def save_nn(self):
         checkpoint = {
@@ -87,13 +116,12 @@ class QLambdaAgent:
         if random.random() < self.epsilon:  # exploration rate
             ## DELETE THIS LINE
             # print("random")
-            return random.choice(all_actions)
+            return Action(random.choice(Actions))
         else:
             ## DELETE
-            # valid_q_values = [q_values[i] for i in all_actions]
             # test_str = ""
-            # for i in all_actions:
-            #     test_str += str(Actions[i]) + ": " + str(valid_q_values[i])
+            # for i in range(len(q_values)):
+            #     test_str += str(Actions[i]) + ": " + str(q_values[i])
             # print(test_str)
             return self.find_action_with_max_value(q_values)
     
@@ -101,12 +129,11 @@ class QLambdaAgent:
         q_values_state = self.calculate_all_q_values(state)
         return self.choose_action_helper(q_values_state)
     
-    def find_action_with_max_value(self, q_values: List[int]):
-        valid_q_values = [q_values[i] for i in all_actions]
-        max_q_value = max(valid_q_values)
-        # Break the tie randomly
-        max_q_indices = [i for i, x in enumerate(q_values) if x == max_q_value]
-        return random.choice(max_q_indices)
+    def find_action_with_max_value(self, q_values):
+        q_values_float = [q_values[i].item() for i in range(len(Actions))]
+        max_q_values = max(q_values_float)
+        max_q_indices = [i for i, x in enumerate(q_values) if math.isclose(x, max_q_values, rel_tol=1e-9)]
+        return Action(Actions[random.choice(max_q_indices)])
     
     def calculate_all_q_values(self, state: State):
         """For all possible actions (0-2), generate a list of predicted q-values with the NN

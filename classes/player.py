@@ -329,6 +329,7 @@ class DQAPlayer(Player):
         super().__init__(name, settings)
         self.action = Action("do_nothing")
         self.agent = qlambda_agent if qlambda_agent else QLambdaAgent()
+        self.action_successful = False
         pass
     
     def handle_action(self, board: Board, players: List[Player], dice: Dice, log: Log):
@@ -337,16 +338,11 @@ class DQAPlayer(Player):
                 state, action = self.select_action(players)
                 if self.agent.is_training:
                     self.train_agent_with_one_action(players, state, action)
-                self.execute_action(board, log, action, group_idx)
-                ## DELETE
-                # print("traces after update:")
-                # for trace in self.agent.traces:
-                #     print(trace)
+                self.action_successsful = self.execute_action(board, players, log, action, group_idx)
 
     def select_action(self, players: List[Player]):
         current_state = State(self, players)
-        current_action_idx = self.agent.choose_action(current_state)
-        current_action = Action(Actions[current_action_idx])
+        current_action = self.agent.choose_action(current_state)
         return current_state, current_action
     
     def train_agent_with_one_action(self, players: List[Player], current_state, current_action):
@@ -361,12 +357,17 @@ class DQAPlayer(Player):
         """
         self.agent.update_trace(current_state, current_action)
         reward = self.agent.get_reward(self, players)
+        # print(f"State: {current_state}\nAction: {current_action}\nReward: {reward}")
+        self.agent.train_nn_with_trace(current_state, current_action, reward)
         q_value = self.agent.q_learning(current_state, current_action, reward)
         self.agent.train_neural_network(self.agent.last_state, self.agent.last_action, q_value)
         self.agent.last_state = current_state
-        self.agent.last_action = current_action
+        if self.action_successful:
+            self.agent.last_action = current_action
+        else:
+            self.agent.last_action = Action("do_nothing")
 
-    def execute_action(self, board: Board, log: Log, action: Action, group_idx):
+    def execute_action(self, board: Board, players: List[Player], log: Log, action: Action, group_idx):
         """Executes the action on the given property for the specified player.
 
         Args:
@@ -377,25 +378,45 @@ class DQAPlayer(Player):
         """
     
         if action.action_type == 'buy':
-            self.buy_in_group(group_idx, board, log)
-            pass
+            return self.buy_in_group(group_idx, board, players, log)
         elif action.action_type == 'sell':
-            self.sell_in_group(group_idx, board, log)
-            pass
+            return self.sell_in_group(group_idx, board, log)
         elif action.action_type == 'do_nothing':
-            pass
-        return
-    
-    def buy_in_group(self, group_idx: int, board: Board, log: Log):
+            return True
+
+    def buy_in_group(self, group_idx: int, board: Board, players: List[Player], log: Log):
         cells_in_group = []
         for cell_idx in group_cell_indices[group_idx]:
             cells_in_group.append(board.cells[cell_idx])
-            
+        
+        def get_next_property_to_unmortgage():
+            for cell in cells_in_group:
+                if not cell.is_mortgaged:
+                    continue
+                if not cell.owner == self:
+                    continue
+                cost_to_unmortgage = \
+                        cell.cost_base * GameSettings.mortgage_value + \
+                        cell.cost_base * GameSettings.mortgage_fee
+                if not self.money - cost_to_unmortgage >= self.settings.unspendable_cash:
+                    continue
+                return cell, cost_to_unmortgage
+            return None, None   
+        
+        def unmortgage_property(property_to_unmortgage, cost_to_unmortgage):
+            log.add(f"{self} unmortgages {property_to_unmortgage} for ${cost_to_unmortgage}")
+            self.money -= cost_to_unmortgage
+            property_to_unmortgage.is_mortgaged = False
+            self.update_lists_of_properties_to_trade(board)
+            return True
+
         def can_buy_property():
             '''
             Check if the player can buy a property
             '''
             property_to_buy = board.cells[self.position]
+            if not self.position in group_cell_indices[group_idx]:
+                return False
             if not isinstance(property_to_buy, Property):
                 return False
             if property_to_buy.owner != None:
@@ -412,6 +433,13 @@ class DQAPlayer(Player):
             self.money -= property_to_buy.cost_base
             log.add(f"Player {self.name} bought {property_to_buy} " +
                         f"for ${property_to_buy.cost_base}")
+                            # Recalculate all monopoly / can build flags
+            board.recalculate_monopoly_coeffs(property_to_buy)
+
+            # Recalculate who wants to buy what
+            # (for all players, it may affect their decisions too)
+            for player in players:
+                player.update_lists_of_properties_to_trade(board)
             return True
         
         def get_next_property_to_improve():
@@ -426,6 +454,8 @@ class DQAPlayer(Player):
                 # - not maxed out (no hotel)
                 # - not mortgaged
                 # - a part of monopoly, but not railway or utility (so the monopoly_coef is 2)
+                if cell.owner != self:
+                    return None
                 if cell.has_hotel == 0 and not cell.is_mortgaged and cell.monopoly_coef == 2 \
                     and not (cell.group == "Railroads" or cell.group == "Utilities") :
                     # Look at other cells in this group
@@ -473,19 +503,21 @@ class DQAPlayer(Player):
                 log.add(f"{self} built a hotel on {cell_to_improve}")
             return True
         
-        # if landed on an unowned property: buy it
-        if can_buy_property():
-            return buy_property()
-        else:
-            cell_to_improve = get_next_property_to_improve()
+        cell_to_improve = get_next_property_to_improve()
+        if cell_to_improve:
             return improve_property(cell_to_improve)    
+        cell_to_unmortgage, cost_to_unmortgate = get_next_property_to_unmortgage()
+        if cell_to_unmortgage:
+            return unmortgage_property(cell_to_unmortgage, cost_to_unmortgate)
+        if can_buy_property(): 
+            return buy_property()
 
     def sell_in_group(self, group_idx: int, board: Board, log: Log):
         cells_in_group = []
         for cell_idx in group_cell_indices[group_idx]:
             cells_in_group.append(board.cells[cell_idx])
             
-        def can_sell_property():
+        def get_next_property_to_sell():
             '''
             Wrote similar function to see if the player can seal a property
             '''
@@ -499,13 +531,11 @@ class DQAPlayer(Player):
                 return cell
             return None
         
-        def sell_property(property_to_sell):
+        def mortgage_property(property_to_sell):
             ''' Player sells the property'''
-            sell_price = property_to_sell.cost_base // 2  # think this is standard for monopoly, if selling to bank not to person
-            property_to_sell.owner = None
-            self.owned.remove(property_to_sell)
-            self.money += sell_price
-            log.add(f"{self} sold {property_to_sell} for ${sell_price}")
+            mortgage_price = cell.cost_base * GameSettings.mortgage_value
+            self.money += mortgage_price
+            log.add(f"{self} mortgages {property_to_sell}, raising ${mortgage_price}")
             return True
             
         def get_next_property_to_downgrade():
@@ -558,10 +588,13 @@ class DQAPlayer(Player):
             return downgrade_property(cell_to_downgrade)
         
         # If no buildings to sell, try to sell property
-        cell = can_sell_property()
+        cell = get_next_property_to_sell()
         if cell:
-            return sell_property(cell)
-            
+            return mortgage_property(cell)
+        cell = get_next_property_to_downgrade()
+        if cell:
+            return downgrade_property(cell)
+
         return False   
 
     def is_group_actionable(self, group_idx: int, board: Board):
@@ -580,4 +613,5 @@ class DQAPlayer(Player):
         return False
         
 class BasicQPlayer(Player):
+    
     pass

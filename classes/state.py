@@ -39,7 +39,9 @@ class State:
         finance_diff = abs(finance1 - finance2) <= 0.1
         position_same = pos1 == pos2
         return np.all(area_diff) and np.all(finance_diff) and position_same
-    
+    def __str__(self):
+        return str(self.state)
+
 def get_initial_state():
     state_init = State.__new__(State)
     state_init.area = np.zeros(20)
@@ -47,6 +49,14 @@ def get_initial_state():
     state_init.finance = np.array([0, sigmoid_money(GameSettings.starting_money)])
     state_init.state = get_state(state_init.area, state_init.position, state_init.finance)
     return state_init
+
+def get_test_state():
+    state_test = State.__new__(State)
+    state_test.area = np.zeros(20)
+    state_test.position = get_position(1)
+    state_test.finance = np.array([0, sigmoid_money(GameSettings.starting_money)])
+    state_test.state = get_state(state_test.area, state_test.position, state_test.finance)
+    return state_test
 
 def get_area(current_player: "Player", players: list["Player"]) -> np.ndarray:
     """ returns the area vector describing property owning percentage for each color
