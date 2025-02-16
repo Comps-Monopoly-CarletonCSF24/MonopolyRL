@@ -1,7 +1,7 @@
 ''' Config file for monopoly simulation
 '''
 class TrainingSettings():
-    n_games = 100
+    n_games = 10
 
 class SimulationSettings():
     ''' Simulation settings
@@ -13,7 +13,7 @@ class SimulationSettings():
     n_moves = 100
 
     # Number of games to simulate
-    n_games = 1000
+    n_games = 100
 
     # Random seed to start simulation with
     seed = 0
