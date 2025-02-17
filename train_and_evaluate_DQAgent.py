@@ -24,18 +24,26 @@ def train_model(config: TrainingSettings, qlambda_agent):
         (i + 1, random.random())
         for i in range(config.n_games)]
     for i in tqdm(range(config.n_games)):
-        test_before_each_game(qlambda_agent)
+        test_before_each_game(qlambda_agent, 1)
+        test_before_each_game(qlambda_agent, 2)
+        qlambda_agent.rewards.append([[],[],[]])
         monopoly_game(data_for_simulation[i], qlambda_agent = qlambda_agent)
         qlambda_agent.end_game()
-    qlambda_agent.save_nn()
+    qlambda_agent.save_nn() 
+    with open("rewards.txt", "w") as file:
+        for game in qlambda_agent.rewards:
+            buy = sum(game[0]) /len (game[0])
+            sell = sum(game[1]) /len (game[1])
+            do_nothing = sum(game[2]) /len (game[2])
+            print(f"Buy: {buy}; Sell: {sell}; Do Nothing: {do_nothing}", file= file)
 
-def test_before_each_game(qlambda_agent):  
-    test_state = get_test_state() 
+def test_before_each_game(qlambda_agent, test_position):  
+    test_state = get_test_state(test_position) 
     q_values = qlambda_agent.calculate_all_q_values(test_state)
     test_str = ""
     for i in range(len(q_values)):
         test_str += str(Actions[i]) + ": " + str(q_values[i].item()) + "    "
-    # print(test_str)
+    print(test_str)
     
 if __name__ == "__main__":
     qlambda_agent = QLambdaAgent(is_training = True)

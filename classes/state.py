@@ -50,10 +50,18 @@ def get_initial_state():
     state_init.state = get_state(state_init.area, state_init.position, state_init.finance)
     return state_init
 
-def get_test_state():
+def get_test_state(position):
+    """generates the state for an empty board with the agent on a certain position
+
+    Args:
+        position (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     state_test = State.__new__(State)
     state_test.area = np.zeros(20)
-    state_test.position = get_position(1)
+    state_test.position = get_position(position)
     state_test.finance = np.array([0, sigmoid_money(GameSettings.starting_money)])
     state_test.state = get_state(state_test.area, state_test.position, state_test.finance)
     return state_test

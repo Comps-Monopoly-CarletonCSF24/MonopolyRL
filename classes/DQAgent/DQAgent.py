@@ -8,6 +8,7 @@ import math
 from typing import List
 from classes.state import State, State_Size, get_initial_state, get_test_state
 from classes.DQAgent.action import Action, Action_Size, Total_Actions, Actions
+from classes.player_logistics import Player
 
 # in this case, there are only 3: buy, sell, do nothing
 model_param_path = "./model_parameters.pth"
@@ -21,23 +22,26 @@ class QNetwork(nn.Module):
         self.output_layer = nn.Linear(150, 1)  # Hidden layer to output layer
 
         # # Match Java's weight initialization (they had 0.5 as weights)
-        # nn.init.uniform_(self.input_layer.weight, -0.5, 0.5)
-        # nn.init.uniform_(self.input_layer.bias, -0.5, 0.5)
-        # nn.init.uniform_(self.output_layer.weight, -0.5, 0.5)
-        # nn.init.uniform_(self.output_layer.bias, -0.5, 0.5)
-        nn.init.constant_(self.input_layer.weight, 0)
-        nn.init.constant_(self.input_layer.bias, 0)
-        nn.init.constant_(self.output_layer.weight, 0)
-        nn.init.constant_(self.output_layer.bias, 0)
-        
-    def forward(self, state: State, action: Action):
-        stacked_input = np.append(state.state, action.action_index)
-        input = torch.tensor(stacked_input, dtype=torch.float32)
+        nn.init.uniform_(self.input_layer.weight, -0.5, 0.5)
+        nn.init.uniform_(self.input_layer.bias, -0.5, 0.5)
+        nn.init.uniform_(self.output_layer.weight, -0.5, 0.5)
+        nn.init.uniform_(self.output_layer.bias, -0.5, 0.5)
+        # nn.init.constant_(self.input_layer.weight, 0)
+        # nn.init.constant_(self.input_layer.bias, 0)
+        # nn.init.constant_(self.output_layer.weight, 0)
+        # nn.init.constant_(self.output_layer.bias, 0)
+    
+    def forward(self, input):
         # Forward pass through the network
         output = self.input_layer(input)
         output = self.activation(output)
         output = self.output_layer(output)           
         return output
+
+def create_nn_input(state: State, action: Action):
+    stacked_input = np.append(state.state, action.action_index)
+    input = torch.tensor(stacked_input, dtype=torch.float32)
+    return input
 
 class Trace:
     def __init__(self, state: State, action: Action, value: float):
@@ -50,29 +54,40 @@ class Trace:
         return self.action.action_type == action2.action_type
     def __str__(self):
         return f"Trace(state={self.state}, action={self.action}, value={self.value:.2f})"
-    
+
+class Training_Batch:
+    def __init__(self):
+        self.input = []
+        self.q_values = []
+    def append_datapoint(self, state, action, q_value):
+        self.input.append(create_nn_input(state, action))
+        self.q_values.append(q_value)
+    def clear(self):
+        self.input = []
+        self.q_values = []
+
 class QLambdaAgent:
     def __init__(self, is_training = False):
         self.is_training = is_training
         # Parameters from the paper
         self.epsilon = 0.5 if is_training else 0 # Greedy coeff from paper
-        self.alpha = 0.4     # Learning rate from paper
+        self.alpha = 0.2   # Learning rate from paper
         self.gamma = 0.95      # Discount factor from paper
         self.lambda_param = 0.8  # Lambda parameter from paper
-
         # Initialize network and optimizer
         self.model = QNetwork()
         self.optimizer = optim.SGD(self.model.parameters(), lr = self.alpha)
-        
+        self.rewards = []
         if os.path.exists(model_param_path):
             checkpoint = torch.load(model_param_path, weights_only=True)
             self.model.load_state_dict(checkpoint['model_state_dict'])
             self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            # if is_training:
-            #     self.alpha = checkpoint['alpha']
-            #     self.epsilon = checkpoint['epsilon']
+            if is_training:
+                self.alpha = checkpoint['alpha']
+                self.epsilon = checkpoint['epsilon']
         # Initialize eligibility traces
         self.traces = []
+        self.training_batch = Training_Batch()
         self.last_state = get_initial_state()
         q_values_init = self.calculate_all_q_values(self.last_state)
         self.last_action = self.find_action_with_max_value(q_values_init)
@@ -95,8 +110,8 @@ class QLambdaAgent:
         torch.save(checkpoint, model_param_path)
         
     def q_learning(self, state, action, reward):
-        last_q_value = self.model(self.last_state, self.last_action)
-        current_q_value = self.model(state, action)
+        last_q_value = self.model(create_nn_input(self.last_state, self.last_action))
+        current_q_value = self.model(create_nn_input(state, action))
         q_value = self.alpha * (reward + self.gamma * current_q_value - last_q_value)
         return q_value
             
@@ -110,17 +125,12 @@ class QLambdaAgent:
             _type_: _description_
         """
         if random.random() < self.epsilon:  # exploration rate
-            ## DELETE THIS LINE
-            # print("random")
             return Action(random.choice(Actions))
         else:
-            ## DELETE
-            # test_str = ""
-            # for i in range(len(q_values)):
-            #     test_str += str(Actions[i]) + ": " + str(q_values[i])
-            # print(test_str)
             return self.find_action_with_max_value(q_values)
-    
+    def find_action_with_distribution(q_values):
+        sum = 0
+
     def choose_action(self, state):
         q_values_state = self.calculate_all_q_values(state)
         return self.choose_action_helper(q_values_state)
@@ -140,7 +150,7 @@ class QLambdaAgent:
         q_values = []
         for action_index in range(Total_Actions):
             action = Action(Actions[action_index])
-            q_value = self.model(state, action)
+            q_value = self.model(create_nn_input(state, action))
             q_values.append(q_value)
         return q_values
     
@@ -175,44 +185,48 @@ class QLambdaAgent:
             self.traces.append(new_trace)
         return state_action_exists
     
-    def train_neural_network(self, input_state: State, input_action: Action, target_q_value: torch.Tensor):
+    def append_training_data(self, input_state: State, input_action: Action, target_q_value: torch.Tensor):
+        self.training_batch.append_datapoint(input_state, input_action, target_q_value)
+    
+    def train_neural_network(self):
+        if not self.training_batch.input:
+            return
+        input = torch.stack(self.training_batch.input)
+        output = torch.stack(self.training_batch.q_values)
         criterion = nn.MSELoss()
-        output_q_value = self.model(input_state, input_action)
-        loss = criterion(output_q_value, target_q_value)
-        # Backward pass
-        self.optimizer.zero_grad()
-        loss.backward()
-        # Update weights
-        self.optimizer.step()
-
-    def train_nn_with_trace(self, state, action, reward):
+    
+        self.optimizer.zero_grad()  # Zero gradients
+        outputs = self.model(input)  # Forward pass
+        loss = criterion(outputs, output)  # Compute loss
+        loss.backward()  # Backpropagation
+        self.optimizer.step()  # Update weights
+        self.training_batch.clear()
+        
+    def train_with_trace(self, state, action, reward):
         for trace in self.traces: 
             if trace.is_similar_to_state(state) and trace.is_similar_to_action(action):
                 continue
             else:
-                q_t = self.model(trace.state, trace.action)
-                
+                q_t = self.model(create_nn_input(trace.state, trace.action))
                 q_values_current_state = self.calculate_all_q_values(state)
                 predicted_action_current_state = self.find_action_with_max_value(q_values_current_state)
-                max_qt = self.model(state, predicted_action_current_state)
+                max_qt = self.model(create_nn_input(state, predicted_action_current_state))
                 
                 q_values_previous_state = self.calculate_all_q_values(self.last_state)
                 predicted_action_previous_state = self.find_action_with_max_value(q_values_previous_state)
-                max_q = self.model(self.last_state, predicted_action_previous_state)
+                max_q = self.model(create_nn_input(self.last_state, predicted_action_previous_state))
 
                 target_q_value = q_t + self.alpha * trace.value * (reward + self.gamma * max_qt - max_q)
                 
-                self.train_neural_network(trace.state, trace.action, target_q_value)
+                self.append_training_data(trace.state, trace.action, target_q_value)
 
-    def get_reward(self, player, players):
+    def get_reward(self, player: Player, players):
         """Implement reward function from paper"""
         # Calculate total assets value (v)
         # calculated using cost_base, may need to consider houses
-        player_assets = sum(property.cost_base for property in player.owned)
-        other_assets = sum(sum(property.cost_base for property in p.owned) for p in players if p != player)
-        
+        player_assets = player.net_worth() - player.money
+        other_assets = sum((p.net_worth() - p.money) for p in players if p != player)
         v = player_assets - other_assets
-        
         # Calculate money ratio (m)
         total_money = sum(p.money for p in players)
         m = player.money / total_money if total_money > 0 else 0
@@ -225,6 +239,5 @@ class QLambdaAgent:
         
         # Calculate reward using paper's formula
         reward = (v/p * c)/(1 + abs(v/p * c)) + (1/p * m)
-        return reward
+        return player_assets/(player_assets + 1)
     
-
