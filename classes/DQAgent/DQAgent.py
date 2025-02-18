@@ -11,7 +11,7 @@ from classes.DQAgent.action import Action, Action_Size, Total_Actions, Actions
 from classes.player_logistics import Player
 
 # in this case, there are only 3: buy, sell, do nothing
-model_param_path = "./model_parameters.pth"
+model_param_path = "./classes/DQAgent/model_parameters.pth"
 
 class QNetwork(nn.Module):
     def __init__(self):

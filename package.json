@@ -1,5 +1,8 @@
 {
   "dependencies": {
-    "onnxjs": "^0.1.8"
-  }
+    "onnxjs": "^0.1.8",
+    "onnxruntime-web": "^1.20.1"
+    
+  },
+  "type": "module"
 }

@@ -1,6 +1,5 @@
 var ToggleTraining = true;
 var Max_Num_Rounds = 100;
-var Total_Players_Training = 4
 var game;
 var player = [];
 var pcount;
