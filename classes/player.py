@@ -617,14 +617,14 @@ class BasicQPlayer(Player):
 
     def log_q_table(self):
         """log q table to a file"""
-        with open(f"idk_{self.name}.txt", "a") as f:
+        with open(f"FILE:qtable_{self.name}.txt", "w") as f:
             f.write(f"Q-table for {self.name}:\n\n")
             f.write("State-Action Pairs with non-zero Q-values:\n\n")
             
             # Sort Q-table by Q-value for better readability
-            sorted_q = sorted(self.qTable.items(), key=lambda x: x[1], reverse=True)
+            #sorted_q = sorted(self.qTable.items(), key=lambda x: x[1], reverse=True)
             
-            for (state, action), q_value in sorted_q:
+            for (state, action), q_value in self.qTable.items():
                 if q_value != 0:  # Only show non-zero Q-values
                     f.write(f"State: {state}\n")
                     property_idx = action // 3  # Assuming 3 actions per property
