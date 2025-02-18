@@ -1,7 +1,6 @@
 //import { Player } from './player.js';
-//import { State } from './model.js';
 //import { GameSettings } from './settings.js';
-
+import { State } from "./state.js";
 // Whether the trade function is allowed
 var ToggleTrade = false;
 
@@ -80,6 +79,8 @@ export function QLearning(p) {
     // Return: boolean: Must return true if and only if the AI proposed a trade. (does it participate in other trades too?)
     this.beforeTurn = function() {
         console.log("beforeTurn");
+        var state = new State()
+        console.log(state.state)
         var s;
         var allGroupOwned;
         var max;

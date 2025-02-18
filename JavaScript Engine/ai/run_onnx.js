@@ -1,8 +1,7 @@
 import * as ort from 'onnxruntime-web';
+const session = await ort.InferenceSession.create('./onnx_model.onnx');
 
-async function runModel(inputArray) {
-    const session = await ort.InferenceSession.create('./onnx_model.onnx');
-
+export async function runModel(inputArray) {
     const inputTensor = new ort.Tensor('float32', new Float32Array(inputArray), [24]);
     const feeds = { "state_action_input": inputTensor };
 
