@@ -4,7 +4,7 @@ import numpy as np
 from classes.board import Property
 from classes.action import Action
 from settings import GameSettings, StandardPlayer
-from classes.state import State
+from classes.state import get_state, is_property, has_monopoly, has_more_money
 from classes.player_logistics import Player
 
 class Fixed_Policy_Player(Player):
@@ -336,7 +336,7 @@ class BasicQPlayer(Player):
         self.previous_action = None
         self.previous_reward = 0
 
-        #desperate to get this working
+       
         self.is_willing_to_buy_property = True
         self.action_obj=Action() #create an action object
         self.min_money = 100 #set a lowest amount of money
@@ -346,49 +346,23 @@ class BasicQPlayer(Player):
         """
         current_property = board.cells[self.position]
         #property feature
-        is_property = isinstance(current_property, Property)
-        can_afford = is_property and self.money >= current_property.cost_base
-       
-        #financial state
-        money_ratio = min(self.money / 2000, 1.0)
+        is_property_val = is_property(self,current_property)
+        has_monopoly_val = has_monopoly(self,board, self.position)
+        has_more_money_val = has_more_money(self,players)
 
-        #property portfolio feature
-        owned_properties_ratio = len(self.owned) / 28.0
-        #monopoly progress - an improved state space but might not make huge difference
-        monopoly_progress = 0.0
-        if is_property and hasattr(current_property, 'color'):
-            color = current_property.color
-            same_color_props = sum(1 for prop in self.owned if hasattr(prop, 'color') and prop.color == color)
-            total_in_color = sum(1 for prop in board.properties if hasattr(prop, 'color') and prop.color == color)
-            monopoly_progress = same_color_props / total_in_color if total_in_color > 0 else 0.0
+        state = tuple(get_state(
+            has_monopoly = has_monopoly_val,
+            is_property = is_property_val,
+            has_more_money = has_more_money_val)
 
-        #opponent feature, also might not make huge difference
-        try:
-            opponent = [p for p in players if p!= self and not p.is_bankrupt][0]
-        except IndexError:
-            # Handle case where all other players are bankrupt
-            # Return a default state or end game state
-            return (0.0, 0.0, 0.75, 0.0, 0.0, 0.0, 0.0)
-        relative_money = (self.money - opponent.money) / 2000.0 #normalized money difference 
-        relative_properties = (len(self.owned) - len(opponent.owned)) /28.0 #property difference
-
-        #combine all features into a state
-        state = (
-            float(is_property),
-            float(can_afford),
-            round(money_ratio,2),
-            round(owned_properties_ratio,2),
-            round(monopoly_progress,2),
-            round(relative_money,2),
-            round(relative_properties,2)
         )
 
         return state
     
     def would_complete_monopoly(self, property):
-        '''
-        checks if the property would complete a monopoly
-        '''
+        
+        #checks if the property would complete a monopoly
+        
         if not hasattr(property, 'color'):
             return False
         color = property.color
@@ -527,11 +501,6 @@ class BasicQPlayer(Player):
             reward -= 500
 
         return reward
-        
-        
-        
-        
-        return reward
     
     
     
@@ -648,7 +617,7 @@ class BasicQPlayer(Player):
 
     def log_q_table(self):
         """log q table to a file"""
-        with open(f"qtable_{self.name}.txt", "w") as f:
+        with open(f"idk_{self.name}.txt", "a") as f:
             f.write(f"Q-table for {self.name}:\n\n")
             f.write("State-Action Pairs with non-zero Q-values:\n\n")
             
@@ -659,7 +628,7 @@ class BasicQPlayer(Player):
                 if q_value != 0:  # Only show non-zero Q-values
                     f.write(f"State: {state}\n")
                     property_idx = action // 3  # Assuming 3 actions per property
-                    action_type = ['buy', 'sell', 'do_nothing'][action % 3]
+                    action_type = ['buy', 'do_nothing'][action % 2]
                     f.write(f"Action: Property {property_idx}, {action_type}\n")
                     f.write(f"Q-value: {q_value:.2f}\n\n")
             

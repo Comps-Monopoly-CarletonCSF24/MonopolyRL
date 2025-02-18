@@ -49,11 +49,11 @@ def is_property(current_player: Player, position_int: int) -> bool:
         bool: true/false value that indicates if a certain position is a 
     
     """
-    if position_int in Player.owned:
+    if position_int in current_player.owned:
         return True
     return False
 
-def has_monopoly(player: Player, board: Board, current_position: int) -> bool:
+def has_monopoly(current_player: Player, board: Board, current_position: int) -> bool:
     """ Returns if the player has monopoly over the current property color they are on
     Args:
         board(Board): the game board
@@ -63,7 +63,7 @@ def has_monopoly(player: Player, board: Board, current_position: int) -> bool:
     Returns:
         A bool value indicating true/false indicating if the player has monopoly
     """
-    if not board.is_property(current_position): #check if the current position is a property
+    if not isinstance(current_position, Property): #check if the current position is a property
         return False
     
     current_color = board.get_property(current_position).color
@@ -71,7 +71,7 @@ def has_monopoly(player: Player, board: Board, current_position: int) -> bool:
                               if prop.color == current_color]
     
     for property in color_group_properties:
-        if property not in player.owned:
+        if property not in current_player.owned:
             return False
         
     return True
@@ -84,7 +84,7 @@ def has_more_money(current_player: Player, players: list) -> bool:
         players (list): a list of Player objects representing players that are alive
     Returns: 
         bool : a true/false value """
-    current_player_money = Player.money
+    current_player_money = current_player.money
     count = 0
     for player in players:
         if not player.is_bankrupt:
