@@ -2,9 +2,11 @@ from typing import List
 import random
 import numpy as np
 from classes.board import Board,Property
+from classes.dice import Dice
+from classes.log import Log
 from classes.action import Action
 from settings import GameSettings, StandardPlayer
-from classes.state import get_state, is_property, has_monopoly, has_more_money
+from classes.state import get_state, is_property, has_monopoly, has_more_money, State, group_cell_indices
 from classes.player_logistics import Player
 
 class Fixed_Policy_Player(Player):
@@ -339,6 +341,14 @@ class BasicQPlayer(Player):
         self.is_willing_to_buy_property = True
         self.action_obj=Action() #create an action object
         self.min_money = 100 #set a lowest amount of money
+    def handle_action(self, board: Board, players: List[Player], dice: Dice, log: Log):
+        for group_idx in range(len(group_cell_indices)):
+            if self.is_group_actionable(group_idx, board):
+                state, action = self.get_state(board, players), self.choose_action(board, state, self.action_obj.actions)
+                reward = self.calculate_reward(board, players)
+                next_state = self.get_state(board, players)
+                next_available_actions = self.action_obj.actions
+                self.update_q_value(state, action, reward, next_state, next_available_actions)
     
     def get_state(self, board, players):
         """gets the state of the player
@@ -499,7 +509,20 @@ class BasicQPlayer(Player):
     def sell_in_group(self, group_idx: int, board: Board, log: Log):
         pass
    
-    
+    def is_group_actionable(self, group_idx: int, board: Board):
+        cell_indices_in_group = group_cell_indices[group_idx]
+        for cell_idx in cell_indices_in_group:
+            cell = board.cells[cell_idx]
+            #can sell
+            if cell.owner == self:
+                return True
+            #call buy
+            if self.position == cell_idx and not cell.owner:
+                return True
+            #can improve
+            if cell.monopoly_coef == 2:
+                return True
+        return False
     def choose_action(self, board,state, available_actions):
         '''
         chooses an action from the available actions. Big pereference buying properties
@@ -515,7 +538,7 @@ class BasicQPlayer(Player):
             buy_actions = [a for a in available_actions 
                           if self.action_obj.actions[a % len(self.action_obj.actions)] == 'buy']
             
-            if buy_actions:
+            if buy_actions and self.can_afford(current_property):
                 #always buy if it completes a monopoly
                 if (
                     has_monopoly == 1.0 or has_more_money == 1.0 or 
