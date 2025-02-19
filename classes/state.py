@@ -46,7 +46,7 @@ def is_property(current_player: Player, position_int: int) -> bool:
         position_int(int): a number between 0 and 39 representing the players position
     
     Returns:
-        bool: true/false value that indicates if a certain position is a 
+        bool: true/false value that indicates if a certain position is a property
     
     """
     if position_int in current_player.owned:
@@ -76,7 +76,6 @@ def has_monopoly(current_player: Player, board: Board, current_position: int) ->
         
     return True
 
-# new get_finance function
 def has_more_money(current_player: Player, players: list) -> bool:
     """Determines if a player has more money than any other 2 players
     Args:
@@ -84,16 +83,29 @@ def has_more_money(current_player: Player, players: list) -> bool:
         players (list): a list of Player objects representing players that are alive
     Returns: 
         bool : a true/false value """
-    current_player_money = current_player.money
-    count = 0
-    for player in players:
-        if not player.is_bankrupt:
-            if current_player_money > player.money:
-                count +=1
-        if count >= 2:
-            return True
-    return False
 
+    # Get number of active players (not bankrupt)
+    active_players = [p for p in players if not p.is_bankrupt]
+    num_active_players = len(active_players)
+
+    if num_active_players <= 2:
+        #in 2 player games, just check if we have more money than the opponent
+        for player in active_players:
+            if player != current_player and not player.is_bankrupt:
+                return current_player.money > player.money
+
+        return False
+    else:
+        #case for 3+ alive players
+        current_player_money = current_player.money
+        count = 0
+        for player in active_players:
+            if not player.is_bankrupt:
+                if current_player_money > player.money:
+                    count += 1
+                if count >= 2:
+                    return True
+    return False
 
 def get_state(has_more_money: bool, has_monopoly:bool, is_property: bool) -> np.ndarray:
     """converts the 3 vectors/integers into a new one-dimensional vector

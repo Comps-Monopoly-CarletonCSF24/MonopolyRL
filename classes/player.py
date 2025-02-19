@@ -270,7 +270,6 @@ class Fixed_Policy_Player(Player):
     def handle_buying_property(self, board, players, log):
         ''' Landing on property: either buy it or pay rent
         '''
-
         def is_willing_to_buy_property(property_to_buy):
             ''' Check if the player is willing to buy an unowned property
             '''
@@ -303,7 +302,6 @@ class Fixed_Policy_Player(Player):
 
         # Property is not owned by anyone
         if landed_property.owner is None:
-            
             # Does the player want to buy it?
             if is_willing_to_buy_property(landed_property):
                 # Buy property
@@ -323,6 +321,7 @@ class Fixed_Policy_Player(Player):
                 log.add(f"Player {self.name} landed on a {landed_property}, he refuses to buy it")
                 # Trigger auction
                 self.auction_property(landed_property, players, log)
+                return "end turn"
 
 class BasicQPlayer(Player):
 
@@ -385,15 +384,18 @@ class BasicQPlayer(Player):
             return None
         current_property = board.cells[self.position]
         is_property = isinstance(current_property, Property)
+        has_monopoly, _, has_more_money = state
         
         if is_property and current_property.owner is None:
             
             buy_actions = [a for a in available_actions 
                           if self.action_obj.actions[a % len(self.action_obj.actions)] == 'buy']
             
-            if buy_actions:
+            if buy_actions and self.can_afford(current_property):
                 #always buy if it completes a monopoly
                 if (
+                    has_monopoly == 1.0 or has_more_money == 1.0 or 
+                    
                     self.would_complete_monopoly(current_property) or 
 
 
@@ -429,6 +431,9 @@ class BasicQPlayer(Player):
         '''
         gets the qvalues from the qtable
         '''
+        #if this is a buy action, start with a higher intial q value
+        if self.action_obj.actions[action % len(self.action_obj.actions)] == 'buy':
+            return self.qTable.get((state, action), 2000.0)
         
         return self.qTable.get((state,action), 0.0)
     
@@ -461,10 +466,26 @@ class BasicQPlayer(Player):
     def calculate_reward(self, board, players):
         """Calculate the reward based on the player's current state."""
         reward = 0
-        #reward for money
-        reward += self.money * 0.01
+        
+        current_state = self.get_state(board, players)
+        has_monopoly, is_property, has_more_money = current_state
+
+        #base reward 
+        reward += self.money * 0.001
+        reward += len(self.owned) * 20
+
+        current_property = board.cells[self.position]
+        if (isinstance(current_property, Property) and current_property.owner == None and 
+        self.can_afford(current_property)):
+            penalty = -300
+            if has_monopoly == 1.0:
+                penalty *= 2
+            if has_more_money == 1.0:
+                penalty *= 2
+            reward += penalty
+            
         #reward for properties owned
-        reward += len(self.owned) * 200 #increased base property reward
+        reward += len(self.owned) * 20 #increased base property reward
         #extra reward for properies in same color groups
         color_groups = {}
         for prop in self.owned:
@@ -474,17 +495,17 @@ class BasicQPlayer(Player):
                 color_groups[prop.color] += 1
 
                 #progressive rewards for more properties in the same color
-                reward += (color_groups[prop.color] **2 ) * 300
+                reward += (color_groups[prop.color] **2 ) * 30
         
         # Huge reward for monopolies
         for group in board.groups.values():
             if all(prop.owner == self for prop in group):
-                reward += 2000
+                reward += 200
 
         #extra reward for developed monopolies
             if hasattr(group[0], 'houses'):
                 houses = sum(prop.houses for prop in group)
-                reward += houses * 500        
+                reward += houses * 50        
         #strategic positioning rewards
         try:
             opponent = [p for p in players if p!= self and not p.is_bankrupt][0]
@@ -494,7 +515,7 @@ class BasicQPlayer(Player):
             return (0.0, 0.0, 0.75, 0.0, 0.0, 0.0, 0.0)
         #reward for having more properties than opponent
         prop_difference = len(self.owned) - len(opponent.owned)
-        reward += prop_difference * 300
+        reward += prop_difference * 30
 
         #penalty for having fewer properties than opponent
         if len(self.owned) < len(opponent.owned):
@@ -613,7 +634,7 @@ class BasicQPlayer(Player):
                 #player.update_lists_of_properties_to_trade(board)
         else:
             log.add(f"Player {self.name} landed on {property_to_buy}, but refuses to buy it")
-            # TODO: Bank auctions the property
+            self.auction_property(property_to_buy, players, log)
 
     def log_q_table(self):
         """log q table to a file"""
@@ -621,17 +642,28 @@ class BasicQPlayer(Player):
             f.write(f"Q-table for {self.name}:\n\n")
             f.write("State-Action Pairs with non-zero Q-values:\n\n")
             
-            # Sort Q-table by Q-value for better readability
-            #sorted_q = sorted(self.qTable.items(), key=lambda x: x[1], reverse=True)
+            #group q values by proeprty idx
+            property_groups = {}
+            for (state,action), q_value in self.qTable.items():
+                if q_value != 0:
+                    property_idx = action //3
+                    if property_idx not in property_groups:
+                        property_groups[property_idx] = []
+                    property_groups[property_idx].append((state, action, q_value))
+
+            #write q values sorted by property index
+            for property_idx in sorted(property_groups.keys()):
+                    f.write(f"Property index: Property {property_idx}\n")
+                    f.write("-" * 20 + "\n")
+
+                    #sort actions for this property by q value
+                    property_actions = sorted(property_groups[property_idx], key=lambda x: x[2], reverse=True)
             
-            for (state, action), q_value in self.qTable.items():
-                if q_value != 0:  # Only show non-zero Q-values
-                    f.write(f"State: {state}\n")
-                    property_idx = action // 3  # Assuming 3 actions per property
-                    action_type = ['buy', 'do_nothing'][action % 2]
-                    f.write(f"Action: Property {property_idx}, {action_type}\n")
-                    f.write(f"Q-value: {q_value:.2f}\n\n")
-            
+                    for state, action, q_value in property_actions:
+                        f.write(f"State: {state}\n")
+                        action_type = ['buy','sell', 'do_nothing'][action % 3]
+                        f.write(f"Action: {action_type}\n")
+                        f.write(f"Q-value: {q_value:.2f}\n\n")
 
 class DQAPlayer(Player):
     pass

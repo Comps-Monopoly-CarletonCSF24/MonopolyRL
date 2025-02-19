@@ -701,16 +701,22 @@ class Player:
     
     def handle_rent(self, board, dice, log):
         landed_property = board.cells[self.position]
+        if hasattr(landed_property, 'skip_rent_this_turn') and landed_property.skip_rent_this_turn:
+            log.add(f"Property was just auctioned, no rent charged")
+            landed_property.skip_rent_this_turn = False
+            return
         # It is mortgaged: no action
         if landed_property.is_mortgaged:
             log.add("Property is mortgaged, no rent")
+
         # It is player's own property
         elif landed_property.owner == self:
             log.add("Own property, no rent")
+
         # Handle rent payments
         elif landed_property.owner is not None:
-            log.add(f"Player {self.name} landed on a property, " +
-                    f"owned by {landed_property.owner}")
+            
+            
             rent_amount = landed_property.calculate_rent(dice)
             if self.other_notes == "double rent":
                 rent_amount *= 2
@@ -720,6 +726,8 @@ class Player:
                 # Multiply that by 10
                 rent_amount = rent_amount // landed_property.monopoly_coef * 10
                 log.add(f"Per Chance card, rent is 10x dice throw (${rent_amount}).")
+            log.add(f"Player {self.name} landed on {landed_property}, " +
+                    f"owned by {landed_property.owner}")
             self.pay_money(rent_amount, landed_property.owner, board, log)
             if not self.is_bankrupt:
                 log.add(f"{self} pays {landed_property.owner} rent ${rent_amount}")
@@ -731,43 +739,58 @@ class Player:
             players: the list of players
             log: the log object
         """
+        #log.add("DEBUG: Entering auction_property")
+    
         if property_to_auction.owner is not None:
+            log.add(f"DEBUG: Property already has owner, exiting auction")
             return
         
-        #start auction at half the property's base cost
+        #create a list of eligible bidders(excluding self and bankrupt players)
+        eligible_bidders = [p for p in players if p.name != self.name and not p.is_bankrupt]
         current_bid = property_to_auction.cost_base // 2
-        current_winner = None
 
-        log.add(f"\n===Auctioning {property_to_auction} starting at ${current_bid}===")
+        #log.add(f"DEBUG: Found {len(eligible_bidders)} eligible bidders, who is {[p.name for p in eligible_bidders]}")
 
-        #continue auction until no one wants to bid higher
-        while True:
-            #check if any player wants to bid higher
-            had_new_bid = False
-
-            #each player has a chance to bid
-            for player in players or player == self: #skip bankrupt players or the player who refuses to buy the property
-                if player.is_bankrupt:
-                    continue
-
-                #check if player wants to bid higher, player has enough money to bid at least $10 more to enter
-                if (player.money >  current_bid + 10 and 
+        if len(eligible_bidders) == 0:
+            log.add(f"No eligible bidders for {property_to_auction}")
+            return
+        elif len(eligible_bidders) == 1:
+            log.add(f"\n===Auctioning {property_to_auction} starting at ${current_bid}===")
+            #log.add(f"DEBUG: Only one eligible bidder, {eligible_bidders[0].name}, buying property")
+            property_to_auction.owner = eligible_bidders[0]
+            eligible_bidders[0].owned.append(property_to_auction)
+            eligible_bidders[0].money -= current_bid
+            current_winner = eligible_bidders[0]
+            property_to_auction.skip_rent_this_turn = True
+        
+        else:
+        #start auction at half the property's base cost
+            
+            current_winner = None
+            #continue auction until no one wants to bid higher
+            
+            #Each eligible bidder has a chance to bid
+            for player in range(len(eligible_bidders)): 
+                log.add(f"DEBUG: player: {eligible_bidders[player].name} is bidding")
+                
+                if (eligible_bidders[player].money >  current_bid + 10 and 
                     current_bid < property_to_auction.cost_base):
                     #use player's calculate_max_bid method to determine max bid for different player types
-                    max_bid=player.calculate_max_bid(property_to_auction, current_bid)  #don't bid above the property's base cost
-                
-                
-                
+                    max_bid=min(
+                        eligible_bidders[player].calculate_max_bid(property_to_auction, current_bid),
+                        base_price
+                      )
+                    log.add(f"DEBUG: max bid: {max_bid}")  #don't bid above the property's base cost
+                    
+                    
+                    
                     if current_bid < max_bid:
                         new_bid = min(current_bid + 10, max_bid) #increment bid by $10
                         current_bid = new_bid
-                        current_winner = player
-                        had_new_bid = True
-                        log.add(f"{player.name} bids ${new_bid}")
-
-
-            if not had_new_bid: #no one wants to bid higher
-                break
+                        current_winner = eligible_bidders[player]
+                        log.add(f"{eligible_bidders[player].name} bids ${new_bid}")
+                    else:
+                        log.add(f"{eligible_bidders[player].name} does not want to bid higher")
 
         #sell to highest bidder
         if current_winner is not None:
