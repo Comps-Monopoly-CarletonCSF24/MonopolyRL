@@ -370,11 +370,134 @@ class BasicQPlayer(Player):
         
         return len(same_color_props) == total_in_color - 1
     
-    def can_afford(self, property):
-        '''
-        checks if the player can afford the property
-        '''
-        return self.money >= property.cost_base + 200
+    def buy_in_group(self, group_idx: int, board: Board, players: List[Player], log: Log):
+        cells_in_group = []
+        for cell_idx in group_cell_indices[group_idx]:
+            cells_in_group.append(board.cells[cell_idx])
+        
+        def get_next_property_to_unmortgage():
+            for cell in cells_in_group:
+                if not cell.is_mortgaged:
+                    continue
+                if not cell.owner:
+                    continue
+                cost_to_unmortage = \
+                    cell.cost_base * GameSettings.mortgage_value + \
+                    cell.cost_base * GameSettings.mortgage_fee
+                if not self.money - cost_to_unmortage < self.settings.unspendable_cash:
+                    continue
+                return cell, cost_to_unmortage
+            return None, None
+        
+        def unmortgage_property(property_to_unmortgage, cost_to_unmortage):
+            log.add(f"{self.name} unmortgages {property_to_unmortgage} for ${cost_to_unmortage}")
+            self.money -= cost_to_unmortage
+            property_to_unmortgage.is_mortgaged = False
+            self.update_lists_of_properties_to_trade(board)
+            return True
+        
+        def can_buy_property():
+            '''check if the player can buy a property'''
+            property_to_buy = board.cells[self.position]
+            if not self.position in group_cell_indices[group_idx]:
+                return False
+            if not isinstance(property_to_buy, Property):
+                return False
+            if property_to_buy.owner != None:
+                return False
+            if self.money - property_to_buy.cost_base < self.settings.unspendable_cash:
+                return False
+            #if property_to_buy.group in self.settings.ignore_property_groups:
+                #return False
+            return True
+        
+        def buy_property(property_to_buy):
+            '''Player buys the property'''
+            property_to_buy = board.cells[self.position]
+            property_to_buy.owner = self
+            self.owned.append(property_to_buy)
+            self.money -= property_to_buy.cost_base
+            log.add(f"Player {self.name} bought {property_to_buy} " +
+                   f"for ${property_to_buy.cost_base}")
+            board.recalculate_monopoly_coeffs(property_to_buy)
+            #recalculate who wants to buy what
+            #(for all players, it may affect their decisions too)
+            for player in players:
+                player.update_lists_of_properties_to_trade(board)
+            return True
+        
+        def get_next_property_to_improve():
+            '''Decide what is the next property to improve:
+            - it should be eligible for improvement (is monopoly, not mortgaged,
+            has not more houses than other cells in the group)
+            - start with cheapest
+            '''
+            can_be_improved = []
+            for cell in self.owned:
+                #property has to be:
+                #- not maxed out (no hotel)
+                #- not mortgaged
+                #- a part of monopoly, but not railway or utility (so the monopoly_coef is 2)
+                if cell.owner != self:
+                    return None
+                if cell.has_hotel == 0 and not cell.is_mortgaged and cell.monopoly_coef == 2 \
+                    and not (cell.group == "Railroads" or cell.group == "Utilities"):
+                    #look at other cells in this group
+                    #if they have fewer houses, this cell can not be improved
+                    #if any cells in the group is mortgaged, this cell can not be improved
+                    for other_cell in board.groups[cell.group]:
+                        if other_cell.has_houses < cell.has_houses or other_cell.is_mortgaged:
+                            break
+                    else:
+                        #make sure there are available houses/hotel for this improvement
+                        if cell.has_houses != 4 and board.available_houses > 0 or \
+                           cell.has_houses == 4 and board.available_hotels > 0:
+                            can_be_improved.append(cell)
+            #sort the list by the cost of house
+            can_be_improved.sort(key = lambda x: x.cost_house)
+            #return first (the cheapest) property that can be improved  
+            if can_be_improved:
+                return can_be_improved[0]
+            return None
+        
+        def improve_property(cell_to_improve):
+            if not cell_to_improve:
+                return False
+            improvement_cost = cell_to_improve.cost_house
+            #don't do it if you don't have money to spend
+            if self.money - improvement_cost < self.settings.unspendable_cash:
+                return False
+            #building a house
+            ordinal = {1: "1st", 2: "2nd", 3: "3rd", 4:"4th"}
+            if cell_to_improve.has_houses != 4:
+                cell_to_improve.has_houses += 1
+                board.available_houses -= 1
+                #paying for the improvement
+                self.money -= cell_to_improve.cost_house
+                log.add(f"{self.name} built {ordinal[cell_to_improve.has_houses]} " +
+                       f"house on {cell_to_improve} for ${cell_to_improve.cost_house}")
+            #building a hotel
+            elif cell_to_improve.has_houses == 4:
+                cell_to_improve.has_houses = 0
+                cell_to_improve.has_hotel = 1
+                board.available_houses += 4
+                board.available_hotels -= 1
+                #paying for improvement
+                self.money -= cell_to_improve.cost_house
+                log.add(f"{self.name} built a hotel on {cell_to_improve}")
+            return True
+        
+        cell_to_improve = get_next_property_to_improve()
+        if cell_to_improve:
+            improve_property(cell_to_improve)
+        cell_to_unmortgage, cost_to_unmortgage = get_next_property_to_unmortgage()
+        if cell_to_unmortgage:
+            return unmortgage_property(cell_to_unmortgage, cost_to_unmortgage)
+        if can_buy_property():
+            return buy_property()
+            
+    def sell_in_group(self, group_idx: int, board: Board, log: Log):
+   
     
     def choose_action(self, board,state, available_actions):
         '''
