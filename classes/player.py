@@ -1,7 +1,7 @@
 from typing import List
 import random
 import numpy as np
-from classes.board import Property
+from classes.board import Board,Property
 from classes.action import Action
 from settings import GameSettings, StandardPlayer
 from classes.state import get_state, is_property, has_monopoly, has_more_money
@@ -497,6 +497,7 @@ class BasicQPlayer(Player):
             return buy_property()
             
     def sell_in_group(self, group_idx: int, board: Board, log: Log):
+        pass
    
     
     def choose_action(self, board,state, available_actions):
@@ -514,7 +515,7 @@ class BasicQPlayer(Player):
             buy_actions = [a for a in available_actions 
                           if self.action_obj.actions[a % len(self.action_obj.actions)] == 'buy']
             
-            if buy_actions and self.can_afford(current_property):
+            if buy_actions:
                 #always buy if it completes a monopoly
                 if (
                     has_monopoly == 1.0 or has_more_money == 1.0 or 
