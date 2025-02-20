@@ -36,8 +36,7 @@ class State:
         self.is_property = False
         self.has_more_money = False
         self.state = get_state(self.has_monopoly, self.is_property, self.has_more_money)
-        #every player needs to have update can_make_trade param, also 
-        #TODO: another function update lists of properties to trade that takes in self ,board
+        
 
 def is_property(current_player: Player, position_int: int) -> bool:
     """Determines if a position is/is not a player's property

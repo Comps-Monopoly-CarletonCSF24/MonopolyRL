@@ -8,11 +8,11 @@ class SimulationSettings():
     # Number of moves to simulate
     # (if there are more than one player alive after then,
     # the game is considered to have no winner)
-    n_moves = 1000
+    n_moves = 2000
 
     # Number of games to simulate
     
-    n_games = 100
+    n_games = 1000
 
     # Random seed to start simulation with
     seed = None
@@ -44,7 +44,7 @@ class StandardPlayer:
     ignore_property_groups = {}
 
     # Willing to participate in trades
-    participates_in_trades = True
+    participates_in_trades = False
 
     # Only agree to trade if value difference is within these limits
     # (Absolute and relative)

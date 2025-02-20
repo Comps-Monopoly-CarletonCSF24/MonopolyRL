@@ -79,7 +79,7 @@ class MonopolyTrainer:
 
             #save Q-table periodically
             if episode % 10 == 0:
-                q_player.log_q_table()
+                #q_player.log_q_table()
 
                 #add debug printing of q table size and sample entries
                 num_entries = len(q_player.qTable)

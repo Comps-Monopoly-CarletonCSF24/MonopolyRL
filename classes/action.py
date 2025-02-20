@@ -2,11 +2,12 @@ from classes.player_logistics import Player
 from classes.board import Board
 from classes.log import Log
 from classes.board import Property
+from classes.state import group_cell_indices
 import numpy as np
 
 class Action:
     def __init__(self):
-        self.properties = list(range(28))  # Property indices from 0 to 27
+        self.properties = list(range(28))
         self.actions = ['buy', 'do_nothing']  # Available actions for each property
         self.total_actions = len(self.properties) * len(self.actions)  # 1x84 action space
 
@@ -41,43 +42,28 @@ class Action:
         Checks if the player can take the action that they are attempting to take.
         Returns true of the player can and False otherwise. 
         """
-        property = board.get_property(property_idx)
-    
-        if action_idx == 0:  # buy
-            return property.owner == player
-        #elif action_idx == 0:  # buy
-           #return (property.owner is None and 
-                    #player.can_afford(property.cost_base))  # Changed price to cost_base
-        return True  # do_nothing is always executable
-    
-    def execute_action(self, player, board, property_idx, action_type, log, players):
-
-        """
-        Executes the action on the given property for the specified player.
-        Args:
-            player: the player who is taking the action
-            board: the board object
-            property_idx: the index of the property to be acted on
-            action_type: the type of action to be taken
-            log: the log object
-            players: the list of players (for auction)
-        """
-       
-        #property = board.get_property(property_idx)
-        current_property = board.cells[player.position]
-        
-        if action_type == 'buy':  # Changed from 'buy_all' to 'buy'
-
+        try:
+            #map the 0-27 index to actual board position
+            actual_positions = [idx for group in group_cell_indices for idx in group]
             
-            if (isinstance(current_property, Property) and 
-                current_property.owner is None and 
-                player.money >= current_property.cost_base):    
-                
-                player.buy_property(current_property, log)
-
-
-        elif action_type == 'do_nothing':
-            if isinstance(current_property, Property) and current_property.owner is None and player.money >= current_property.cost_base:
-                log.add(f">>> {player.name} chose not to buy {current_property.name} (${current_property.cost_base})")
-                #trigger auction
-                player.auction_property(current_property, players, log)
+            #check if property_idx is a valid index
+            if property_idx >= len(actual_positions):
+                return False
+            
+            #get the actual board position for this property
+            board_position = actual_positions[property_idx]
+            
+            if board_position != player.position:
+                #print(f"Cannot buy property at {board_position} when player is at position {player.position}")
+                return False
+            property = board.cells[board_position]
+            if not isinstance(property, Property):
+                return False
+            
+            if action_idx == 0: #buy
+                return (property.owner is None and 
+                        player.can_afford(property.cost_base))
+            return True #do_nothing is always executable
+        except Exception as e:
+            #print(f"Error in is_excutable: {e}")
+            return False

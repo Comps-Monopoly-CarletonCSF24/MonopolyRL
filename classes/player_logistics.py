@@ -739,7 +739,6 @@ class Player:
             players: the list of players
             log: the log object
         """
-        #log.add("DEBUG: Entering auction_property")
     
         if property_to_auction.owner is not None:
             log.add(f"DEBUG: Property already has owner, exiting auction")
