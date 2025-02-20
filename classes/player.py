@@ -341,15 +341,7 @@ class BasicQPlayer(Player):
         self.is_willing_to_buy_property = True
         self.action_obj=Action() #create an action object
         self.min_money = 100 #set a lowest amount of money
-    def handle_action(self, board: Board, players: List[Player], dice: Dice, log: Log):
-        for group_idx in range(len(group_cell_indices)):
-            if self.is_group_actionable(group_idx, board):
-                state, action = self.get_state(board, players), self.choose_action(board, state, self.action_obj.actions)
-                reward = self.calculate_reward(board, players)
-                next_state = self.get_state(board, players)
-                next_available_actions = self.action_obj.actions
-                self.update_q_value(state, action, reward, next_state, next_available_actions)
-    
+
     def get_state(self, board, players):
         """gets the state of the player
         """
@@ -368,6 +360,41 @@ class BasicQPlayer(Player):
 
         return state
     
+    def train_agent_with_one_action(self, board: Board, players: List[Player], current_state: State, current_action: Action):
+        """update q-value based on action results"""
+        #calculate reward for the action taken
+        reward = self.calculate_reward(board, players)
+        
+        #get next state and available actions for q-learning update
+        next_state = self.get_state(board, players)
+        next_available_actions = self.get_available_actions(board)
+        
+        #update Q-table if we have a previous state-action pair
+        if self.previous_state is not None:
+            self.update_q_value(
+                self.previous_state,
+                self.previous_action,
+                self.previous_reward,
+                current_state,
+                next_available_actions
+            )
+        
+        #store current state/action/reward for next iteration
+        self.previous_state = current_state
+        self.previous_action = current_action
+        self.previous_reward = reward
+
+    def get_available_actions(self, board: Board):
+        """get available actions for the current state"""
+        action_obj = Action()
+        available_actions = []
+
+        for action_idx in range(action_obj.total_actions):
+            property_idx, action_type = action_obj.map_action_index(action_idx)
+            if action_obj.is_excutable(self, board, property_idx, action_type):
+                available_actions.append(action_idx)
+        return available_actions
+            
     def would_complete_monopoly(self, property):
         
         #checks if the property would complete a monopoly
@@ -523,12 +550,21 @@ class BasicQPlayer(Player):
             if cell.monopoly_coef == 2:
                 return True
         return False
-    def choose_action(self, board,state, available_actions):
+    
+    def select_action(self, board: Board, players: List[Player]) -> tuple:
+        """high level method that gets state and selects an action"""
+        current_state = self.get_state(board, players)
+        available_actions = self.get_available_actions(board)
+        action = self._choose_action_strategy(board, current_state, available_actions)
+        return current_state, action
+    
+    def _choose_action_strategy(self, board, state, available_actions):
         '''
         chooses an action from the available actions. Big pereference buying properties
         '''
         if not available_actions:
             return None
+
         current_property = board.cells[self.position]
         is_property = isinstance(current_property, Property)
         has_monopoly, _, has_more_money = state
@@ -538,17 +574,15 @@ class BasicQPlayer(Player):
             buy_actions = [a for a in available_actions 
                           if self.action_obj.actions[a % len(self.action_obj.actions)] == 'buy']
             
-            if buy_actions and self.can_afford(current_property):
+            if buy_actions and self.money - current_property.cost_base < self.settings.unspendable_cash:
                 #always buy if it completes a monopoly
                 if (
                     has_monopoly == 1.0 or has_more_money == 1.0 or 
                     
                     self.would_complete_monopoly(current_property) or 
 
-
-                
                 #always buy railraods or utilities of affordable
-                    current_property.group in ['Railroads', 'Utilities'] and self.can_afford(current_property) or
+                    current_property.group in ['Railroads', 'Utilities'] and self.money - current_property.cost_base < self.settings.unspendable_cash or
                 #property is relatively cheap to our money
                 current_property.cost_base <= self.money * 0.2 or
                 #buy if we have properties of the same color
@@ -668,121 +702,47 @@ class BasicQPlayer(Player):
         if len(self.owned) < len(opponent.owned):
             reward -= 500
 
-        return reward
-    
-    
-    
-    
-    
+        return reward    
     
     def calculate_max_bid(self, property_to_auction, current_bid):
         #more conservative for basic q-learning player
         return min(self.money * 0.5, property_to_auction.cost_base)
-    
+    def execute_action(self, board, players, log, action_type, property_idx):
+        """executes a single action and returns success/failure"""
+        self.action_successful = True
+        try:
+            if action_type == 'buy':
+                return self.buy_in_group(property_idx, board, players, log)
+            elif action_type == 'sell':
+                return self.sell_in_group(property_idx, board, log)
+            elif action_type == 'do_nothing':
+                return True
+            return False
+
+        except Exception as e:
+            self.action_successful = False
+            log.add(f"{self.name} failed to execute action {action_type} on property {property_idx}: {e}")
+            return False
     def make_a_move(self, board, players, dice, log):
         #call parent's make_a_move to handle the dice roll
         result = super().make_a_move(board, players, dice, log)
         if result == "bankrupt" or result == "move is over":
             return result
-   
-        # Q learning execution
-        # Exploration: choose random action
-    
-        current_state = self.get_state(board, players)
-        #get available actions
-        action_obj = Action()
-        available_actions = []
-
-        for action_idx in range(action_obj.total_actions):
-            property_idx, action_type = action_obj.map_action_index(action_idx)
-            if action_obj.is_excutable(self, board, property_idx, action_type):
-                available_actions.append(action_idx)
         
-        #choose action
-        chosen_action = self.choose_action(board,current_state, available_actions)
+        # 1.get state and action using select_action
+        current_state, chosen_action = self.select_action(board, players)
+
+        # 2.execute action
+        property_idx, action_type = self.action_obj.map_action_index(chosen_action)
+        success = self.execute_action(board, players, log, property_idx, action_type)
+
+        # 3.train agent if action was successful
+        if success:
+            self.train_agent_with_one_action(board, players, current_state, chosen_action)
         
-        #execute action
-        property_idx, action_type = action_obj.map_action_index(chosen_action)
-        action_obj.execute_action(self, board, property_idx, action_type, log, players)
-
-        #calculate reward
-        reward = self.calculate_reward(board, players)
-
-       #update q-table if we have a previous state-action pair
-        if self.previous_state is not None:
-            self.update_q_value(
-                self.previous_state,
-                self.previous_action,
-                self.previous_reward,
-                current_state,
-                available_actions
-            )
-       
-
-       #store current state and action pair for next iteration
-        self.previous_state = current_state
-        self.previous_action = chosen_action
-        self.previous_reward = reward
-
         self.log_q_table()
-
         return "continue"
-
-    def should_buy_property(self, property, board):
-        """Determine if the agent should buy a property"""
-        if not property or not isinstance(property, Property):
-            return False
-            
-        if property.owner is not None:
-            return False
-            
-        if self.money < property.cost_base + self.min_cash_reserve:
-            return False
-            
-        # Count properties in same color group
-        same_color_count = 0
-        if hasattr(property, 'color'):
-            for prop in self.owned:
-                if hasattr(prop, 'color') and prop.color == property.color:
-                    same_color_count += 1
-                    
-        # More likely to buy if we have properties of same color
-        if same_color_count > 0:
-            return True
-            
-        # Always buy railroads and utilities
-        if property.group in ['Railroads', 'Utilities']:
-            return True
-            
-        # Buy if price is reasonable compared to our money
-        return property.cost_base <= self.money * 0.4
-    def buy_property(self, property_to_buy, log):
-        """Buy a property and update the game state
     
-    Args:
-        property_to_buy (Property): The property being purchased
-        log (Log): Game log instance
-    """
-        if self.is_willing_to_buy_property:
-            # Update property ownership
-            property_to_buy.owner = self
-            self.owned.append(property_to_buy)
-            self.money -= property_to_buy.cost_base
-            
-            # Log the purchase
-            log.add(f"Player {self.name} bought {property_to_buy} " +
-                        f"for ${property_to_buy.cost_base}")
-            
-            # Recalculate monopoly / can build flags
-            #board.recalculate_monopoly_coeffs(property_to_buy)
-
-            # Recalculate who wants to buy what
-            #for player in players:
-                #player.update_lists_of_properties_to_trade(board)
-        else:
-            log.add(f"Player {self.name} landed on {property_to_buy}, but refuses to buy it")
-            self.auction_property(property_to_buy, players, log)
-
     def log_q_table(self):
         """log q table to a file"""
         with open(f"FILE:qtable_{self.name}.txt", "w") as f:
