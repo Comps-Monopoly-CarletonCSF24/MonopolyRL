@@ -1,13 +1,14 @@
 //import { Player } from './player.js';
 //import { GameSettings } from './settings.js';
 import { State } from "./state.js";
+import { chooseAction  } from "./run_onnx.js";
 // Whether the trade function is allowed
 var ToggleTrade = false;
 
 // The purpose of this AI is not to be a relistic opponant, but to give an example of a vaild AI player.
 // This is an implementation of the fixed agent
 // The p is player
-export function QLearning(p) {
+export async function QLearning(p) {
     this.alertList = "";
     // This variable is static, it is not related to each instance.
     this.constructor.count++;
@@ -79,6 +80,7 @@ export function QLearning(p) {
     // Return: boolean: Must return true if and only if the AI proposed a trade. (does it participate in other trades too?)
     this.beforeTurn = function() {
         console.log("beforeTurn");
+        console.log(chooseAction())
         var state = new State()
         console.log(state.state)
         var s;

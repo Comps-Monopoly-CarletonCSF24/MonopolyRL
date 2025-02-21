@@ -20,18 +20,19 @@ def train_model(config: TrainingSettings, qlambda_agent):
     # Empty the data log (list of bankruptcy turns for each player)
     datalog = Log(LogSettings.data_log_file)
     datalog.reset("game_number\tplayer\tturn")
-    data_for_simulation = [
-        (i + 1, random.random())
-        for i in range(config.n_games)]
-    for i in tqdm(range(config.n_games)):
-        test_before_each_game(qlambda_agent, 1)
-        test_before_each_game(qlambda_agent, 2)
-        qlambda_agent.rewards.append([[],[],[]])
-        monopoly_game(data_for_simulation[i], qlambda_agent = qlambda_agent)
-        qlambda_agent.end_game()
-    qlambda_agent.save_nn() 
+    for i in tqdm(range(config.n_batches)):
+        data_for_simulation = [
+            (j + 1, random.random())
+            for j in range(config.n_games_per_batch)]
+        for j in tqdm(range(config.n_games_per_batch)):
+            qlambda_agent.rewards.append([[],[],[]])
+            monopoly_game(data_for_simulation[j], qlambda_agent = qlambda_agent)
+            qlambda_agent.end_game()
+        qlambda_agent.save_nn() 
+        run_simulation(SimulationSettings)
     with open("rewards.txt", "w") as file:
         for game in qlambda_agent.rewards:
+            if not game[0]: continue 
             buy = sum(game[0]) /len (game[0])
             sell = sum(game[1]) /len (game[1])
             do_nothing = sum(game[2]) /len (game[2])

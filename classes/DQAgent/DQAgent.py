@@ -22,14 +22,14 @@ class QNetwork(nn.Module):
         self.output_layer = nn.Linear(150, 1)  # Hidden layer to output layer
 
         # # Match Java's weight initialization (they had 0.5 as weights)
-        nn.init.uniform_(self.input_layer.weight, -0.5, 0.5)
-        nn.init.uniform_(self.input_layer.bias, -0.5, 0.5)
-        nn.init.uniform_(self.output_layer.weight, -0.5, 0.5)
-        nn.init.uniform_(self.output_layer.bias, -0.5, 0.5)
-        # nn.init.constant_(self.input_layer.weight, 0)
-        # nn.init.constant_(self.input_layer.bias, 0)
-        # nn.init.constant_(self.output_layer.weight, 0)
-        # nn.init.constant_(self.output_layer.bias, 0)
+        # nn.init.uniform_(self.input_layer.weight, -0.5, 0.5)
+        # nn.init.uniform_(self.input_layer.bias, -0.5, 0.5)
+        # nn.init.uniform_(self.output_layer.weight, -0.5, 0.5)
+        # nn.init.uniform_(self.output_layer.bias, -0.5, 0.5)
+        nn.init.constant_(self.input_layer.weight, 0)
+        nn.init.constant_(self.input_layer.bias, 0)
+        nn.init.constant_(self.output_layer.weight, 0)
+        nn.init.constant_(self.output_layer.bias, 0)
     
     def forward(self, input):
         # Forward pass through the network
@@ -39,7 +39,7 @@ class QNetwork(nn.Module):
         return output
 
 def create_nn_input(state: State, action: Action):
-    stacked_input = np.append(state.state, action.action_index)
+    stacked_input = np.append(state.state, action.action_index/Total_Actions)
     input = torch.tensor(stacked_input, dtype=torch.float32)
     return input
 
@@ -76,15 +76,15 @@ class QLambdaAgent:
         self.lambda_param = 0.8  # Lambda parameter from paper
         # Initialize network and optimizer
         self.model = QNetwork()
-        self.optimizer = optim.SGD(self.model.parameters(), lr = self.alpha)
         self.rewards = []
         if os.path.exists(model_param_path):
             checkpoint = torch.load(model_param_path, weights_only=True)
             self.model.load_state_dict(checkpoint['model_state_dict'])
-            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             if is_training:
                 self.alpha = checkpoint['alpha']
                 self.epsilon = checkpoint['epsilon']
+            self.model.eval()
+        self.optimizer = optim.SGD(self.model.parameters(), lr = self.alpha)
         # Initialize eligibility traces
         self.traces = []
         self.training_batch = Training_Batch()
@@ -103,7 +103,6 @@ class QLambdaAgent:
     def save_nn(self):
         checkpoint = {
             'model_state_dict': self.model.state_dict(),
-            'optimizer_state_dict': self.optimizer.state_dict(),
             'alpha': self.alpha,
             'epsilon': self.epsilon
         }
