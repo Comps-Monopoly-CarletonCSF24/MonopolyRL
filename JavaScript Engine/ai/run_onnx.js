@@ -1,8 +1,8 @@
-import * as ort from 'onnxruntime-web';
-const session = await ort.InferenceSession.create('./onnx_model.onnx');
+const session = new onnx.InferenceSession()
+await session.loadModel('./onnx_model.onnx');
 
 export async function runModel(inputArray) {
-    const inputTensor = new ort.Tensor('float32', new Float32Array(inputArray), [24]);
+    const inputTensor = new onnx.Tensor('float32', new Float32Array(inputArray), [24]);
     const feeds = { "state_action_input": inputTensor };
 
     const results = await session.run(feeds);
@@ -12,6 +12,18 @@ export async function runModel(inputArray) {
     return output
 }
 
-// for dummy data
-const testInput = Array(24).fill(0); // replace this part with the actual data
-runModel(testInput);
+function createModelInput(state, action){
+    return [...state.state, action.action_index/Total_Actions];
+}
+
+export async function chooseAction(){
+    let state = new State();
+    action_q_values = [];
+    for(i = 0 ; i < Total_Actions; i++){
+        action = new Action(Actions[i]);
+        model_input = createModelInput(state, action);
+        q_value = runModel(model_input)
+        action_q_values.push(q_value)
+    }
+    return action_q_values
+}
