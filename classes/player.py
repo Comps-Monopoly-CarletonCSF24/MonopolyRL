@@ -483,8 +483,63 @@ class BasicQPlayer(Player):
         return False
             
     def sell_in_group(self, group_idx: int, board: Board, log: Log):
-        pass
-   
+        cells_in_group = []
+        for cell_idx in group_cell_indices[group_idx]:
+            cells_in_group.append(board.cells[cell_idx])
+        
+        def get_next_property_to_sell():
+            """see if there is a property to sell"""
+            for cell in cells_in_group:
+                if not isinstance(cell, Property):
+                    continue
+                if cell.owner != self:
+                    continue
+                if cell.is_mortgaged:
+                    continue
+                return cell
+            return None
+        
+        def mortage_property(property_to_mortgage):
+            """mortage a property"""
+            mortage_price = property_to_mortgage.cost_base * GameSettings.mortgage_value
+            self.money += mortage_price
+            log.add(f"{self.name} mortages {property_to_mortgage}, raising ${mortage_price}")
+            return True
+        
+        def get_next_property_to_downgrade():
+            """decide what is the next property to downgrade:
+                - start with most developed properties
+                - must maintain even building"""
+            can_be_downgraded = []
+            for cell in cells_in_group:
+                if cell.ownder == self:
+                    if cell.has_hotel == 1 or cell.has_houses > 0:
+                        #look at other cells in the group to maintain even building
+                        for other_cell in board.groups[cell.group]:
+                            if other_cell.has_houses > cell.has_houses:
+                                break
+                        else:
+                            can_be_downgraded.append(cell)
+            #Sort by development level (hotel first, then most houses)
+            can_be_downgraded.sort(key = lambda x: (x.has_hotel * 5 + x.has_houses), reverse=True)
+            return can_be_downgraded[0] if can_be_downgraded else None
+        
+        def downgrade_property(property_to_downgrade):
+            if not property_to_downgrade:
+                return False
+            
+            if property_to_downgrade.has_hotel == 1:
+                #convert hotel back to 4 houses if possible
+                if board.available_houses >= 4:
+                    property_to_downgrade.has_hotel = 0
+                    property_to_downgrade.has_houses = 4
+                    board.available_hotels += 1
+                    board.available_houses -= 4
+                    sell_price = 
+    
+
+
+    
     def is_group_actionable(self, group_idx: int, board: Board):
         cell_indices_in_group = group_cell_indices[group_idx]
         for cell_idx in cell_indices_in_group:
