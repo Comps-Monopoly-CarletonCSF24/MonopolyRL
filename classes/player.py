@@ -1,13 +1,12 @@
 from typing import List
-import random
 import numpy as np
 from classes.board import Board,Property
-from classes.dice import Dice
 from classes.log import Log
 from classes.action import Action
 from settings import GameSettings, StandardPlayer
 from classes.state import get_state, is_property, has_monopoly, has_more_money, State, group_cell_indices
 from classes.player_logistics import Player
+from classes.q_table_utils import get_q_value, initialize_q_table, update_q_table, calculate_q_reward
 
 class Fixed_Policy_Player(Player):
     def handle_action(self, board, players, dice, log):
@@ -335,7 +334,7 @@ class BasicQPlayer(Player):
         self.epsilon = 0.4  # increased
         self.previous_state = None
         self.previous_action = None
-        self.previous_reward = 0
+        self.previous_reward = 0.0
 
        
         self.is_willing_to_buy_property = True
@@ -371,12 +370,16 @@ class BasicQPlayer(Player):
         
         #update Q-table if we have a previous state-action pair
         if self.previous_state is not None:
-            self.update_q_value(
-                self.previous_state,
-                self.previous_action,
-                self.previous_reward,
-                current_state,
-                next_available_actions
+            update_q_table(
+                filename = "Q table Basic Q player.txt",
+                state = self.previous_state,
+                action = self.previous_action,
+                reward = reward,
+                next_state = next_state,
+                next_available_actions=next_available_actions,
+                alpha = self.alpha,
+                gamma = self.gamma,
+                action_obj = self.action_obj
             )
         
         #store current state/action/reward for next iteration
@@ -704,108 +707,42 @@ class BasicQPlayer(Player):
                     return np.random.choice(buy_actions)
             return np.random.choice(available_actions)
         else:
-            q_values = [self.get_q_value(state, action) for action in available_actions]
+            q_values = [self.get_player_q_value(state, action) for action in available_actions]
             max_q = max(q_values)
             best_actions = [action for action, q in zip(available_actions, q_values) 
                           if q == max_q]
             return np.random.choice(best_actions)
     
     
-    def get_q_value(self, state, action):
+    def get_player_q_value(self, state, action):
         '''
         gets the qvalues from the qtable
         '''
-        #if this is a buy action, start with a higher intial q value
-        if self.action_obj.actions[action % len(self.action_obj.actions)] == 'buy':
-            return self.qTable.get((state, action), 2000.0)
-        
-        return self.qTable.get((state,action), 0.0)
+        return get_q_value(self.qTable, state, action, self.action_obj)
     
-    def update_q_value(self, state, action, reward, next_state, next_available_actions):
-        '''
-        updates the qtable by adding better qvalues depending on the most recent move, 
-        if it had a better reward than the previous one
-        '''
-        #convert state and nextState to tuples if they are not already
-        if not next_available_actions:
-            next_max_q = 0
-        else:
-            next_q_values = [self.get_q_value(next_state, next_action) for next_action in next_available_actions]
-            next_max_q = max(next_q_values) if next_q_values else 0
+    def update_player_q_value(self, state, action, reward, next_state, next_available_actions):
+        #ensure next_state is a tuple of floats
+        if not isinstance(next_state, tuple):
+            raise ValueError("next_state must be a tuple of floats, not a single integer.")
+        #ensure next_available_actions is iterable
+        if isinstance(next_available_actions, (int, np.integer)):
+            next_available_actions = [next_available_actions]
         
-        #q-learning update formula
-        old_q = self.get_q_value(state, action)
-
-        #if old_q is None, initialize it to 0
-        if old_q is None:
-            old_q = 0.0
-        reward = reward if reward is not None else 0.0
-        next_max_q = next_max_q if next_max_q is not None else 0.0
-        
-        if next_max_q is None or reward is None:
-            raise ValueError("next_max_q or reward must not be None")
-        new_q = old_q + self.alpha * (reward + self.gamma * next_max_q - old_q)
-        self.qTable[(state, action)] = new_q
-        
+        #call update_q_table
+        update_q_table(
+            filename = "Q table Basic Q player.txt",
+            state = state,
+            action = action,
+            reward = reward,
+            next_state = next_state,
+            next_available_actions = next_available_actions,
+            alpha = self.alpha,
+            gamma = self.gamma,
+            action_obj = self.action_obj
+        )
+    
     def calculate_reward(self, board, players):
-        """Calculate the reward based on the player's current state."""
-        reward = 0
-        
-        current_state = self.get_state(board, players)
-        has_monopoly, is_property, has_more_money = current_state
-
-        #base reward 
-        reward += self.money * 0.001
-        reward += len(self.owned) * 20
-
-        current_property = board.cells[self.position]
-        if (isinstance(current_property, Property) and current_property.owner == None and 
-        current_property.cost_base <= self.money - self.settings.unspendable_cash):
-            penalty = -300
-            if has_monopoly == 1.0:
-                penalty *= 2
-            if has_more_money == 1.0:
-                penalty *= 2
-            reward += penalty
-            
-        #reward for properties owned
-        reward += len(self.owned) * 20 #increased base property reward
-        #extra reward for properies in same color groups
-        color_groups = {}
-        for prop in self.owned:
-            if hasattr(prop, 'color'):  # Only count colored properties
-                if prop.color not in color_groups:
-                    color_groups[prop.color] = 0
-                color_groups[prop.color] += 1
-
-                #progressive rewards for more properties in the same color
-                reward += (color_groups[prop.color] **2 ) * 30
-        
-        # Huge reward for monopolies
-        for group in board.groups.values():
-            if all(prop.owner == self for prop in group):
-                reward += 200
-
-        #extra reward for developed monopolies
-            if hasattr(group[0], 'houses'):
-                houses = sum(prop.houses for prop in group)
-                reward += houses * 50        
-        #strategic positioning rewards
-        try:
-            opponent = [p for p in players if p!= self and not p.is_bankrupt][0]
-        except IndexError:
-            # Handle case where all other players are bankrupt
-            # Return a default state or end game state
-            return (0.0, 0.0, 0.75, 0.0, 0.0, 0.0, 0.0)
-        #reward for having more properties than opponent
-        prop_difference = len(self.owned) - len(opponent.owned)
-        reward += prop_difference * 30
-
-        #penalty for having fewer properties than opponent
-        if len(self.owned) < len(opponent.owned):
-            reward -= 500
-
-        return reward    
+        return calculate_q_reward(self, board, players)
     
     def calculate_max_bid(self, property_to_auction, current_bid):
         #more conservative for basic q-learning player
@@ -862,61 +799,39 @@ class BasicQPlayer(Player):
             self.action_successful = False
             log.add(f"{self.name} failed to execute action {action_type} on property {property_idx}: {e}")
             return False
+    
     def make_a_move(self, board, players, dice, log):
         # Call parent's make_a_move to handle the dice roll
         result = super().make_a_move(board, players, dice, log)
         
         if result == "bankrupt" or result == "move is over":
             return result
+       
         # Get state and action
         current_state, chosen_action = self.select_action(board, players)
         
         if chosen_action is None:
             return "continue"
             
-        # 2.execute action
+        # Execute action
         property_idx, action_type = self.action_obj.map_action_index(chosen_action)
         #print(f"called execute_action {property_idx} {action_type}")
         success = self.execute_action(board, players, log, property_idx, action_type)
 
-        # 3.train agent if action was successful
+        # Train agent if action was successful
         if success:
             #print(f"called train_agent_with_one_action {current_state} {chosen_action}")
             self.train_agent_with_one_action(board, players, current_state, chosen_action)
+        
         #attempt to improve properties after executing actions
         self.improve_properties(board, log)
         
-        self.log_q_table()
+        reward = self.calculate_reward(board, players)
+        next_state, next_available_actions = self.select_action(board, players)
+
+        self.update_player_q_value(current_state, chosen_action, reward, next_state, next_available_actions)
+        
         return "continue"
     
-    def log_q_table(self):
-        """log q table to a file"""
-        with open(f"FILE:qtable_{self.name}.txt", "w") as f:
-            f.write(f"Q-table for {self.name}:\n\n")
-            f.write("State-Action Pairs with non-zero Q-values:\n\n")
-            
-            #group q values by proeprty idx
-            property_groups = {}
-            for (state,action), q_value in self.qTable.items():
-                if q_value != 0:
-                    property_idx = action //3
-                    if property_idx not in property_groups:
-                        property_groups[property_idx] = []
-                    property_groups[property_idx].append((state, action, q_value))
-
-            #write q values sorted by property index
-            for property_idx in sorted(property_groups.keys()):
-                    f.write(f"Property index: Property {property_idx}\n")
-                    f.write("-" * 20 + "\n")
-
-                    #sort actions for this property by q value
-                    property_actions = sorted(property_groups[property_idx], key=lambda x: x[2], reverse=True)
-            
-                    for state, action, q_value in property_actions:
-                        f.write(f"State: {state}\n")
-                        action_type = ['buy','sell', 'do_nothing'][action % 3]
-                        f.write(f"Action: {action_type}\n")
-                        f.write(f"Q-value: {q_value:.2f}\n\n")
-
 class DQAPlayer(Player):
     pass

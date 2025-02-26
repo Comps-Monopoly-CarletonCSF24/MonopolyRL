@@ -8,7 +8,7 @@ from classes.player import Fixed_Policy_Player, DQAPlayer, BasicQPlayer
 from classes.board import Board
 from classes.dice import Dice
 from classes.log import Log
-
+from classes.q_table_utils import initialize_q_table
 def monopoly_game(data_for_simulation):
     ''' Simulation of one game.
     For convenience to set up a multi-thread,
@@ -99,6 +99,8 @@ def monopoly_game(data_for_simulation):
 
         # Players make their moves
         for player in players:
+            if isinstance(player, BasicQPlayer):
+                initialize_q_table("Q table Basic Q player.txt", 28,3)
             # result will be "bankrupt" if player goes bankrupt
             result = player.make_a_move(board, players, dice, log)
             # If player goes bankrupt, log it in the data log file

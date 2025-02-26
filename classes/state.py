@@ -120,49 +120,7 @@ def get_state(has_more_money: bool, has_monopoly:bool, is_property: bool) -> np.
     ], dtype = np.float64)
 
     return state
-'''
-def can_make_trade(current_player: Player, players: list) -> bool:
-    """Determines if the player has viable trading opportunities
-    
-    Args:
-        current_player (Player): The player whose trading opportunities we're checking
-        players (list): List of all players in the game
-    
-    Returns:
-        bool: True if there are viable trading opportunities
-    """
-    # Check if player participates in trades
-    if not current_player.settings.participates_in_trades:
-        return False
-        
-    for other_player in players:
-        if other_player == current_player or other_player.is_bankrupt:
-            continue
-            
-        # Need discussion: Are there matching trade desires by checking --
-        # 1. Properties current player wants to buy that other player wants to sell
-        # 2. Properties current player wants to sell that other player wants to buy
-        matching_buy_desires = current_player.wants_to_buy.intersection(other_player.wants_to_sell)
-        matching_sell_desires = current_player.wants_to_sell.intersection(other_player.wants_to_buy)
-        
-        if matching_buy_desires and matching_sell_desires:
-            # Found potential trade properties, now check if it's financially able
-            for prop_to_buy in matching_buy_desires:
-                for prop_to_give in matching_sell_desires:
-                    # Calculate price difference between properties
-                    price_diff = prop_to_buy.cost_base - prop_to_give.cost_base
-                    
-                    # Check if players can afford the price difference
-                    if price_diff > 0:  
-                        # Current player needs to pay extra
-                        if current_player.money - price_diff >= current_player.settings.unspendable_cash:
-                            return True
-                    else:  
-                        # Other player needs to pay extra
-                        if other_player.money - abs(price_diff) >= other_player.settings.unspendable_cash:
-                            return True
-    return False
-'''
+
 def get_state(has_monopoly: bool, is_property: bool, 
               has_more_money: bool) -> np.ndarray:
     """Converts the state booleans into a one-dimensional vector
@@ -178,52 +136,3 @@ def get_state(has_monopoly: bool, is_property: bool,
     ], dtype=np.float64)
     
     return state
-'''
-# Optional: Add more detailed trade state information
-def get_detailed_trade_state(current_player: Player, players: list) -> dict:
-    """Gets detailed information about trading possibilities
-    
-    Returns:
-        dict: Dictionary containing trade-related state information
-    """
-    trade_state = {
-        'can_trade': False,
-        'num_tradeable_properties': 0,
-        'potential_trades': [],
-        'best_trade_value_diff': 0
-    }
-    
-    if not current_player.settings.participates_in_trades:
-        return trade_state
-        
-    tradeable_properties = 0
-    best_value_diff = float('inf')
-    
-    for other_player in players:
-        if other_player == current_player or other_player.is_bankrupt:
-            continue
-            
-        buyable = current_player.wants_to_buy.intersection(other_player.wants_to_sell)
-        sellable = current_player.wants_to_sell.intersection(other_player.wants_to_buy)
-        
-        if buyable and sellable:
-            trade_state['can_trade'] = True
-            tradeable_properties += len(buyable) + len(sellable)
-            
-            # Find best value trade
-            for prop_to_buy in buyable:
-                for prop_to_give in sellable:
-                    value_diff = abs(prop_to_buy.cost_base - prop_to_give.cost_base)
-                    best_value_diff = min(best_value_diff, value_diff)
-                    
-                    trade_state['potential_trades'].append({
-                        'give': prop_to_give.name,
-                        'receive': prop_to_buy.name,
-                        'value_diff': value_diff
-                    })
-    
-    trade_state['num_tradeable_properties'] = tradeable_properties
-    trade_state['best_trade_value_diff'] = best_value_diff
-    
-    return trade_state
-    '''

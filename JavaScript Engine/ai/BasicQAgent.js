@@ -1,3 +1,5 @@
+import fs from 'fs';
+
 export function BasicQAgent(p) { // match the existing AI interface that game.js is expecting
     this.alertList = "";
     // q learning variables
@@ -10,14 +12,6 @@ export function BasicQAgent(p) { // match the existing AI interface that game.js
     // Required interface methods that game.js uses
     this.buyProperty = function(index) {
         // TODO:Q -learning logic for buying
-    };
-
-    this.acceptTrade = function(trade) {
-        // TODO:Q -learning logic for accepting
-    };
-
-    this.makeTrade = function(trade) {
-        // TODO: Q -learning logic for making
     };
 
     this.getQValue = function(state, action) {
@@ -39,18 +33,25 @@ export function BasicQAgent(p) { // match the existing AI interface that game.js
             ); // Exploit
         
     };
-}
+    this.loadQTableFromFile = function(filePath){
+        const data = fs.readFileSync(filePath, 'utf8');
+        const lines = data.split('\n');
+        let currentState = null;
+
+        lines.forEach(line => {
+            line = line.trim();
+            if (line.startsWith("State:")){
+                currentState = line.match(/\(([^)]+)\)/)[1];
+            }else if (line.startsWith("Action:") && currentState){
+                const action = line.split(':')[1];
+                const qValueLine = lines[lines.indexOf(line) + 1];
+                const qValue = parseFloat(qValueLine.split(':')[1]);
+                this.qTable[`${currentState}:${action}`] = qValue;
+            }
+        });
+    };
+}   
 
 // agent initialization
 const agent = new BasicQAgent();
-// Training loop
-// for (let episode = 0; episode < 1000; episode++) { // Run multiple episodes
-//     let state = game.reset(); // the ai does not know that the game is yet... we have to get it to learn that
-//     let done = false;
-//     while (!done) {
-//         const action = agent.chooseAction(state);
-//         const [nextState, reward] = game.step(action); // also have to define state so that we define rewards
-//         agent.updateQValue(state, action, reward, nextState);
-//         state = nextState;
-//     }
-// }
+agent.loadQTableFromFile('path/to/qtable_Basic Q agent 1.txt');
