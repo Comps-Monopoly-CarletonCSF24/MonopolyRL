@@ -1,23 +1,24 @@
 import { State } from "./state.js";
 import { Actions, Total_Actions, Action} from "./action.js"
-const session = new onnx.InferenceSession()
-await session.loadModel('./model.onnx');
 
 export async function runModel(inputArray) {
     console.log("testss");
-    const inputTensor = new onnx.Tensor('float32', new Float32Array(inputArray), [24]);
-    console.log(inputTensor.dims);
+    console.log(inputArray.length);
+
+    const inputTensor = new ort.Tensor('float32', new Float32Array(inputArray), [24]);
     const feeds = { "state_action_input": inputTensor };
 
     const results = await session.run(feeds);
+    const output = results.q_value_output.data[0]; // Adjust based on actual model output
 
-    const output = results.q_value_output.cpuData[0];
     console.log('Model Output:', output);
-    return output
+    document.getElementById("output").textContent = "Model Output: " + output;
+    return output;
 }
 
 function createModelInput(state, action){
-    return [...state.state, action.action_index/Total_Actions];
+    return new Array(24).fill(0);
+    //[...state.state, action.action_index/Total_Actions];
 }
 
 export async function chooseAction(){
