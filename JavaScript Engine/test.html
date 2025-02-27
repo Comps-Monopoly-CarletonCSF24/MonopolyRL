@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ONNX Model Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+</head>
+<body>
+    <h1>Test ONNX Model</h1>
+    <button onclick="testModel()">Run Model</button>
+    <p id="output">Model Output: </p>
+
+    <script>
+        let session;
+
+        async function loadModel() {
+            try {
+                session = await ort.InferenceSession.create('model.onnx'); // Ensure the model file is correctly placed
+                console.log('ONNX Model Loaded');
+            } catch (error) {
+                console.error("Error loading ONNX model:", error);
+            }
+        }
+
+        async function runModel(inputArray) {
+            if (!session) {
+                console.error("Model session is not initialized.");
+                return;
+            }
+
+            try {
+                const inputTensor = new ort.Tensor('float32', new Float32Array(inputArray), [24]);
+                const feeds = { "state_action_input": inputTensor };
+
+                const results = await session.run(feeds);
+                const output = results.q_value_output.data[0]; // Adjust based on actual model output
+
+                console.log('Model Output:', output);
+                document.getElementById("output").textContent = "Model Output: " + output;
+                return output;
+            } catch (error) {
+                console.error("Error running model:", error);
+            }
+        }
+
+        async function testModel() {
+            if (!session) {
+                console.log("Model not loaded yet.");
+                return;
+            }
+            const dummyInput = new Array(24).fill(0);
+            await runModel(dummyInput);
+        }
+
+        loadModel(); // Load the model when the page loads
+    </script>
+</body>
+</html>
