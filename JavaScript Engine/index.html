@@ -20,8 +20,9 @@
 		import {window_onload, setup} from"./game/monopoly.js"
 		window.onload = window_onload()	
 		var button = document.getElementById("startbutton");
-		button.addEventListener("click", () => {
-			setup();
+		button.addEventListener("click", async () => {
+    		await setup(); // Ensure setup() is awaited
+			console.log("setup complete")
 		});
 	</script>
 	<link rel="stylesheet" type="text/css" href="styles.css" />

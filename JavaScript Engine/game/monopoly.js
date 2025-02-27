@@ -89,7 +89,13 @@ export async function setup() {
 			p.AI = new AITest(p);
 		} else if (document.getElementById("player" + i + "ai").value === "2") {
 			p.human = false;
-			p.AI = await new QLearning(p);
+			console.log("qlearning")
+			try{
+				p.AI = await new QLearning(p);
+			} catch (error){
+				console.error(error)
+			}
+			console.log("qlearning")
 		}
 	}
 
@@ -108,7 +114,7 @@ export async function setup() {
 	play();
 }
 
-export async function window_onload() {
+export function window_onload() {
 	game = new Game();
 
 	reset_player()
