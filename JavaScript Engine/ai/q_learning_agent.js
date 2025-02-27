@@ -84,9 +84,8 @@ export class QLearning {
             // Return: boolean: Must return true if and only if the AI proposed a trade. (does it participate in other trades too?)
             this.beforeTurn = async function() {
                 console.log("beforeTurn");
-                console.log(chooseAction())
+                console.log(await chooseAction())
                 var state = new State()
-                console.log(state.state)
                 var s;
                 var allGroupOwned;
                 var max;
