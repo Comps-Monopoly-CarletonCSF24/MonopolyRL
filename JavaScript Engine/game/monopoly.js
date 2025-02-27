@@ -89,13 +89,11 @@ export async function setup() {
 			p.AI = new AITest(p);
 		} else if (document.getElementById("player" + i + "ai").value === "2") {
 			p.human = false;
-			console.log("qlearning")
 			try{
 				p.AI = await new QLearning(p);
 			} catch (error){
 				console.error(error)
 			}
-			console.log("qlearning")
 		}
 	}
 
