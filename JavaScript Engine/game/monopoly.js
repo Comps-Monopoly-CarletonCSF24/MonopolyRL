@@ -67,7 +67,7 @@ function init_random_cards(){
 	communityChestCards.deck.sort(function() {return Math.random() - 0.5;});
 }
 
-export function setup() {
+export async function setup() {
 	pcount = parseInt(document.getElementById("playernumber").value, 10);
 
 	var playerArray = new Array(pcount);
@@ -89,7 +89,7 @@ export function setup() {
 			p.AI = new AITest(p);
 		} else if (document.getElementById("player" + i + "ai").value === "2") {
 			p.human = false;
-			p.AI = new QLearning(p);
+			p.AI = await new QLearning(p);
 		}
 	}
 
@@ -108,7 +108,7 @@ export function setup() {
 	play();
 }
 
-export function window_onload() {
+export async function window_onload() {
 	game = new Game();
 
 	reset_player()

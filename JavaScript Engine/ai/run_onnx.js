@@ -1,5 +1,5 @@
 const session = new onnx.InferenceSession()
-await session.loadModel('./onnx_model.onnx');
+await session.loadModel('./model.onnx');
 
 export async function runModel(inputArray) {
     const inputTensor = new onnx.Tensor('float32', new Float32Array(inputArray), [24]);
