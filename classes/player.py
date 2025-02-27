@@ -1,4 +1,3 @@
-
 from typing import List
 from classes.board import Board, Property
 from classes.dice import Dice
@@ -338,6 +337,8 @@ class DQAPlayer(Player):
             if self.is_group_actionable(group_idx, board):
                 state, action = self.select_action(players)
                 if self.agent.is_training:
+                    ## DELETE LATER
+                    self.agent.choices[-1][action.action_index] += 1;
                     self.train_agent_with_one_action(players, state, action)
                 self.action_successful = self.execute_action(board, players, log, action, group_idx)
         if self.agent.is_training:
@@ -350,7 +351,7 @@ class DQAPlayer(Player):
     
     def train_agent_with_one_action(self, players: List[Player], current_state, current_action):
         """Moved agent.take_turn to here. The agent takes a turn and performs 
-        all possible actiosn according to the NN.
+        all possible actions according to the NN.
 
         Args:
             board (Board): _description_
@@ -360,6 +361,7 @@ class DQAPlayer(Player):
         """
         self.agent.update_trace(current_state, current_action)
         reward = self.agent.get_reward(self, players)
+        # DELETE LATER
         self.agent.rewards[-1][self.agent.last_action.action_index].append(reward)
         self.agent.train_with_trace(current_state, current_action, reward)
         q_value = self.agent.q_learning(current_state, current_action, reward)

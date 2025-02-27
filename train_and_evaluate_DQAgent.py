@@ -8,6 +8,7 @@ from settings import TrainingSettings, SimulationSettings
 from monopoly_simulator import run_simulation
 from classes.state import get_test_state
 from classes.DQAgent.action import Actions
+
 def train_model(config: TrainingSettings, qlambda_agent):
     ''' Run the simulation
     In: Simulation parameters (number of games, seed etc)
@@ -20,31 +21,39 @@ def train_model(config: TrainingSettings, qlambda_agent):
     # Empty the data log (list of bankruptcy turns for each player)
     datalog = Log(LogSettings.data_log_file)
     datalog.reset("game_number\tplayer\tturn")
+    pre_game_tests = []
+    data_for_simulation = [
+        (j + 1, random.random())
+        for j in range(config.n_games_per_batch * config.n_batches)]
     for i in tqdm(range(config.n_batches)):
-        data_for_simulation = [
-            (j + 1, random.random())
-            for j in range(config.n_games_per_batch)]
         for j in tqdm(range(config.n_games_per_batch)):
+            pre_game_tests.append(test_before_each_game(qlambda_agent, 0))
             qlambda_agent.rewards.append([[],[],[]])
-            monopoly_game(data_for_simulation[j], qlambda_agent = qlambda_agent)
+            qlambda_agent.choices.append([0,0,0,0])
+            data_number = i * config.n_games_per_batch + j
+            monopoly_game(data_for_simulation[data_number], qlambda_agent = qlambda_agent)
             qlambda_agent.end_game()
         qlambda_agent.save_nn() 
         run_simulation(SimulationSettings)
     with open("rewards.txt", "w") as file:
         for game in qlambda_agent.rewards:
-            if not game[0]: continue 
-            buy = sum(game[0]) /len (game[0])
-            sell = sum(game[1]) /len (game[1])
-            do_nothing = sum(game[2]) /len (game[2])
+            buy = sum(game[0]) /len (game[0]) if game[0] else 0
+            sell = sum(game[1]) /len (game[1]) if game[1] else 0
+            do_nothing = sum(game[2]) /len (game[2]) if game[2] else 0
             print(f"Buy: {buy}; Sell: {sell}; Do Nothing: {do_nothing}", file= file)
-
+    with open("choices.txt", "w") as file:
+        for i in range(len(qlambda_agent.choices)):
+            print(f"Game {i+1}: {qlambda_agent.choices[i]}", file = file)
+    with open("q_values.txt", "w") as file:
+        for i in range(len(pre_game_tests)):
+            print(f"Game {i+1}: {pre_game_tests[i]}", file = file)
 def test_before_each_game(qlambda_agent, test_position):  
     test_state = get_test_state(test_position) 
     q_values = qlambda_agent.calculate_all_q_values(test_state)
     test_str = ""
     for i in range(len(q_values)):
         test_str += str(Actions[i]) + ": " + str(q_values[i].item()) + "    "
-    print(test_str)
+    return test_str
     
 if __name__ == "__main__":
     qlambda_agent = QLambdaAgent(is_training = True)

@@ -22,14 +22,14 @@ class QNetwork(nn.Module):
         self.output_layer = nn.Linear(150, 1)  # Hidden layer to output layer
 
         # # Match Java's weight initialization (they had 0.5 as weights)
-        # nn.init.uniform_(self.input_layer.weight, -0.5, 0.5)
-        # nn.init.uniform_(self.input_layer.bias, -0.5, 0.5)
-        # nn.init.uniform_(self.output_layer.weight, -0.5, 0.5)
-        # nn.init.uniform_(self.output_layer.bias, -0.5, 0.5)
-        nn.init.constant_(self.input_layer.weight, 0)
-        nn.init.constant_(self.input_layer.bias, 0)
-        nn.init.constant_(self.output_layer.weight, 0)
-        nn.init.constant_(self.output_layer.bias, 0)
+        nn.init.uniform_(self.input_layer.weight, -0.5, 0.5)
+        nn.init.uniform_(self.input_layer.bias, -0.5, 0.5)
+        nn.init.uniform_(self.output_layer.weight, -0.5, 0.5)
+        nn.init.uniform_(self.output_layer.bias, -0.5, 0.5)
+        # nn.init.constant_(self.input_layer.weight, 0)
+        # nn.init.constant_(self.input_layer.bias, 0)
+        # nn.init.constant_(self.output_layer.weight, 0)
+        # nn.init.constant_(self.output_layer.bias, 0)
     
     def forward(self, input):
         # Forward pass through the network
@@ -76,7 +76,6 @@ class QLambdaAgent:
         self.lambda_param = 0.8  # Lambda parameter from paper
         # Initialize network and optimizer
         self.model = QNetwork()
-        self.rewards = []
         if os.path.exists(model_param_path):
             checkpoint = torch.load(model_param_path, weights_only=True)
             self.model.load_state_dict(checkpoint['model_state_dict'])
@@ -91,7 +90,9 @@ class QLambdaAgent:
         self.last_state = get_initial_state()
         q_values_init = self.calculate_all_q_values(self.last_state)
         self.last_action = self.find_action_with_max_value(q_values_init)
-    
+        # For debugging purposes
+        self.rewards = []
+        self.choices = []
     def end_game(self):
         self.traces = []
         self.last_state = get_initial_state()
@@ -115,21 +116,13 @@ class QLambdaAgent:
         return q_value
             
     def choose_action_helper(self, q_values: List[int]):
-        """_summary_
-        Args:
-            state (State): _description_
-            q_values (List[int]): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        if random.random() < self.epsilon:  # exploration rate
+        if random.random() < self.epsilon:  # exploration rate\
+            ## DELETE LATER
+            if self.is_training:
+                self.choices[-1][3] += 1
             return Action(random.choice(Actions))
         else:
             return self.find_action_with_max_value(q_values)
-    def find_action_with_distribution(q_values):
-        sum = 0
-
     def choose_action(self, state):
         q_values_state = self.calculate_all_q_values(state)
         return self.choose_action_helper(q_values_state)
@@ -234,9 +227,8 @@ class QLambdaAgent:
         p = len(players)
         
         # Smoothing factor (can be tuned)
-        c = 0.5
+        c = 4.0
         
         # Calculate reward using paper's formula
         reward = (v/p * c)/(1 + abs(v/p * c)) + (1/p * m)
-        return player_assets/(player_assets + 1)
-    
+        return reward
