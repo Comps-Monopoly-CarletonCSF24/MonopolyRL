@@ -5,7 +5,7 @@
 	<meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
 
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/onnxjs/dist/onnx.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 	<script type="text/javascript" src="./game/global_variables.js"></script>
 	<script type="text/javascript" src="./game/basic_operations.js"></script>
 	<script type="text/javascript" src="./board/classicedition.js"></script>
@@ -20,14 +20,28 @@
 		import {window_onload, setup} from"./game/monopoly.js"
 		window.onload = window_onload()	
 		var button = document.getElementById("startbutton");
-		button.addEventListener("click", () => {
-			setup();
+		button.addEventListener("click", async () => {
+    		await setup(); // Ensure setup() is awaited
+			console.log("setup complete")
 		});
+	</script>
+	<script>
+		let session;
+		async function loadModel() {
+			try {
+				session = await ort.InferenceSession.create('model.onnx'); // Ensure the model file is correctly placed
+				console.log('ONNX Model Loaded');
+			} catch (error) {
+				console.error("Error loading ONNX model:", error);
+			}
+		}
+		loadModel(); // Load the model when the page loads
 	</script>
 	<link rel="stylesheet" type="text/css" href="styles.css" />
 </head>
 
 <body>
+
 	<div id="popupbackground"></div>
 	<div id="popupwrap">
 		<div id="popup">

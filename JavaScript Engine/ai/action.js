@@ -1,8 +1,6 @@
-const Actions = ['buy', 'sell', 'do_nothing'];
-const Total_Actions = Actions.length;
-const Action_Size = 1;
-
-class Action {
+export const Actions = ['buy', 'sell', 'do_nothing'];
+export const Total_Actions = 3;
+export class Action {
     constructor(action_type) {
         if (!Actions.includes(action_type)) {
             throw new Error(`Invalid action type: ${action_type}`);
