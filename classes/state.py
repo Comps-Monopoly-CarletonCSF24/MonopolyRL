@@ -120,19 +120,3 @@ def get_state(has_more_money: bool, has_monopoly:bool, is_property: bool) -> np.
     ], dtype = np.float64)
 
     return state
-
-def get_state(has_monopoly: bool, is_property: bool, 
-              has_more_money: bool) -> np.ndarray:
-    """Converts the state booleans into a one-dimensional vector
-    
-    Returns:
-        state(np.ndarray): a 1 x 4 vector representing the state
-    """
-    state = np.array([
-        float(has_monopoly),
-        float(is_property),
-        float(has_more_money),
-       
-    ], dtype=np.float64)
-    
-    return state

@@ -373,7 +373,7 @@ class BasicQPlayer(Player):
             update_q_table(
                 filename = "Q table Basic Q player.txt",
                 state = self.previous_state,
-                action = self.previous_action,
+                action_idx = self.previous_action,
                 reward = reward,
                 next_state = next_state,
                 next_available_actions=next_available_actions,
@@ -720,7 +720,7 @@ class BasicQPlayer(Player):
         '''
         return get_q_value(self.qTable, state, action, self.action_obj)
     
-    def update_player_q_value(self, state, action, reward, next_state, next_available_actions):
+    def update_player_q_value(self, state, action_idx, reward, next_state, next_available_actions):
         #ensure next_state is a tuple of floats
         if not isinstance(next_state, tuple):
             raise ValueError("next_state must be a tuple of floats, not a single integer.")
@@ -732,7 +732,7 @@ class BasicQPlayer(Player):
         update_q_table(
             filename = "Q table Basic Q player.txt",
             state = state,
-            action = action,
+            action_idx = action_idx,
             reward = reward,
             next_state = next_state,
             next_available_actions = next_available_actions,
@@ -817,16 +817,23 @@ class BasicQPlayer(Player):
         property_idx, action_type = self.action_obj.map_action_index(chosen_action)
         #print(f"called execute_action {property_idx} {action_type}")
         success = self.execute_action(board, players, log, property_idx, action_type)
-
-        # Train agent if action was successful
+        
+        reward = self.calculate_reward(board,players)
+        #else:
+            #log.add(f"Action {action_type} at property {property_idx} failed for player {self.name}")
+            #assign zero reward for unusual actions
+            #reward =- 0
+        
+        #train agent if action was successful
         if success:
             #print(f"called train_agent_with_one_action {current_state} {chosen_action}")
+            #print(f"current_state is {current_state}, chosen_action is {chosen_action}")
             self.train_agent_with_one_action(board, players, current_state, chosen_action)
-        
+        else:
+            pass
         #attempt to improve properties after executing actions
         self.improve_properties(board, log)
         
-        reward = self.calculate_reward(board, players)
         next_state, next_available_actions = self.select_action(board, players)
 
         self.update_player_q_value(current_state, chosen_action, reward, next_state, next_available_actions)

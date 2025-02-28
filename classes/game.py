@@ -1,7 +1,7 @@
 ''' Function, that wraps one game of monopoly:
 from setting up boards, players etc to making moves by all players
 '''
-
+import os
 from settings import SimulationSettings, GameSettings, LogSettings
 
 from classes.player import Fixed_Policy_Player, DQAPlayer, BasicQPlayer
@@ -100,7 +100,10 @@ def monopoly_game(data_for_simulation):
         # Players make their moves
         for player in players:
             if isinstance(player, BasicQPlayer):
-                initialize_q_table("Q table Basic Q player.txt", 28,3)
+                actions = ['buy', 'sell', 'do_nothing']
+                #check if the Q-table file already exists
+                if not os.path.exists("Q table Basic Q player.txt"):
+                    initialize_q_table("Q table Basic Q player.txt", actions)
             # result will be "bankrupt" if player goes bankrupt
             result = player.make_a_move(board, players, dice, log)
             # If player goes bankrupt, log it in the data log file

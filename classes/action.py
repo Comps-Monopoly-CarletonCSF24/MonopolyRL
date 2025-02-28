@@ -3,6 +3,7 @@ from classes.board import Board
 from classes.log import Log
 from classes.board import Property
 from classes.state import group_cell_indices
+
 import numpy as np
 
 class Action:
