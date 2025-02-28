@@ -740,7 +740,9 @@ export class QLearning {
             // Before turn actions - refactored to use handleAction
             this.beforeTurn = async function() {
                 console.log("beforeTurn function called");
-                return await this.handleAction();
+                //return await this.handleAction();
+                //the beforeturn function always returns false
+                return false
             }
             
             // Buy properties in a group - similar to Python's buy_in_group
@@ -965,7 +967,8 @@ export class QLearning {
             // Actions when landing on a square - simplified to use handleAction
             this.onLand = async function() {
                 console.log("onLand function called");
-                return await this.handleAction();
+                await this.handleAction();
+                return false;
             }
 
             // Decide whether to post bail

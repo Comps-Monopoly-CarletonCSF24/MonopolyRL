@@ -18,7 +18,7 @@
 	<script type="module" src="./game/monopoly.js"></script>
 	<script type="module">
 		import {window_onload, setup} from"./game/monopoly.js"
-		window.onload = window_onload()	
+		window.onload = await window_onload()	
 		var button = document.getElementById("startbutton");
 		button.addEventListener("click", async () => {
     		await setup(); // Ensure setup() is awaited

@@ -112,8 +112,8 @@ export async function setup() {
 	play();
 }
 
-export function window_onload() {
-	game = new Game();
+export async function window_onload() {
+	game = await new Game();
 
 	reset_player()
 	init_groups()
