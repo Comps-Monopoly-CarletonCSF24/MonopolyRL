@@ -616,6 +616,9 @@ class DQAPlayer(Player):
             if cell.monopoly_coef == 2:
                 return True
         return False
+    
+    def agent_brankrupt(self):
+        self.agent.survived_last_game = False
         
 class BasicQPlayer(Player):
     

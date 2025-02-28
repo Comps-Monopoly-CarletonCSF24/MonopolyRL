@@ -35,18 +35,19 @@ def train_model(config: TrainingSettings, qlambda_agent):
             qlambda_agent.end_game()
         qlambda_agent.save_nn() 
         run_simulation(SimulationSettings)
-    with open("rewards.txt", "w") as file:
-        for game in qlambda_agent.rewards:
-            buy = sum(game[0]) /len (game[0]) if game[0] else 0
-            sell = sum(game[1]) /len (game[1]) if game[1] else 0
-            do_nothing = sum(game[2]) /len (game[2]) if game[2] else 0
-            print(f"Buy: {buy}; Sell: {sell}; Do Nothing: {do_nothing}", file= file)
-    with open("choices.txt", "w") as file:
-        for i in range(len(qlambda_agent.choices)):
-            print(f"Game {i+1}: {qlambda_agent.choices[i]}", file = file)
-    with open("q_values.txt", "w") as file:
-        for i in range(len(pre_game_tests)):
-            print(f"Game {i+1}: {pre_game_tests[i]}", file = file)
+        print(f"End of batch {i}: Epsilon: {qlambda_agent.epsilon}, Alpha: {qlambda_agent.alpha}\n")
+        with open("rewards.txt", "w") as file:
+            for game in qlambda_agent.rewards:
+                buy = sum(game[0]) /len (game[0]) if game[0] else 0
+                sell = sum(game[1]) /len (game[1]) if game[1] else 0
+                do_nothing = sum(game[2]) /len (game[2]) if game[2] else 0
+                print(f"Buy: {buy}; Sell: {sell}; Do Nothing: {do_nothing}", file= file)
+        with open("choices.txt", "w") as file:
+            for i in range(len(qlambda_agent.choices)):
+                print(f"Game {i+1}: {qlambda_agent.choices[i]}", file = file)
+        with open("q_values.txt", "w") as file:
+            for i in range(len(pre_game_tests)):
+                print(f"Game {i+1}: {pre_game_tests[i]}", file = file)
 def test_before_each_game(qlambda_agent, test_position):  
     test_state = get_test_state(test_position) 
     q_values = qlambda_agent.calculate_all_q_values(test_state)

@@ -13,6 +13,8 @@ from classes.player_logistics import Player
 # in this case, there are only 3: buy, sell, do nothing
 model_param_path = "./classes/DQAgent/model_parameters.pth"
 
+win_game_reward = 10
+lose_game_reward = -10
 class QNetwork(nn.Module):
     def __init__(self):
         super(QNetwork, self).__init__()
@@ -21,15 +23,12 @@ class QNetwork(nn.Module):
         self.activation = nn.Sigmoid()  # Sigmoid activation for the hidden layer
         self.output_layer = nn.Linear(150, 1)  # Hidden layer to output layer
 
-        # # Match Java's weight initialization (they had 0.5 as weights)
-        nn.init.uniform_(self.input_layer.weight, -0.5, 0.5)
-        nn.init.uniform_(self.input_layer.bias, -0.5, 0.5)
-        nn.init.uniform_(self.output_layer.weight, -0.5, 0.5)
-        nn.init.uniform_(self.output_layer.bias, -0.5, 0.5)
-        # nn.init.constant_(self.input_layer.weight, 0)
-        # nn.init.constant_(self.input_layer.bias, 0)
-        # nn.init.constant_(self.output_layer.weight, 0)
-        # nn.init.constant_(self.output_layer.bias, 0)
+        # Initialize weights and biases to 0
+        nn.init.xavier_uniform_(self.input_layer.weight)
+        nn.init.constant_(self.input_layer.bias, 0)
+        nn.init.xavier_uniform_(self.output_layer.weight)
+        nn.init.constant_(self.output_layer.bias, 0)
+
     
     def forward(self, input):
         # Forward pass through the network
@@ -70,8 +69,8 @@ class QLambdaAgent:
     def __init__(self, is_training = False):
         self.is_training = is_training
         # Parameters from the paper
-        self.epsilon = 0.5 if is_training else 0 # Greedy coeff from paper
-        self.alpha = 0.2   # Learning rate from paper
+        self.epsilon = 1 if is_training else 0 # Greedy coeff from paper
+        self.alpha = 0.001 # Learning rate
         self.gamma = 0.95      # Discount factor from paper
         self.lambda_param = 0.8  # Lambda parameter from paper
         # Initialize network and optimizer
@@ -79,9 +78,6 @@ class QLambdaAgent:
         if os.path.exists(model_param_path):
             checkpoint = torch.load(model_param_path, weights_only=True)
             self.model.load_state_dict(checkpoint['model_state_dict'])
-            if is_training:
-                self.alpha = checkpoint['alpha']
-                self.epsilon = checkpoint['epsilon']
             self.model.eval()
         self.optimizer = optim.SGD(self.model.parameters(), lr = self.alpha)
         # Initialize eligibility traces
@@ -90,22 +86,26 @@ class QLambdaAgent:
         self.last_state = get_initial_state()
         q_values_init = self.calculate_all_q_values(self.last_state)
         self.last_action = self.find_action_with_max_value(q_values_init)
+        self.survived_last_game = True   
         # For debugging purposes
         self.rewards = []
         self.choices = []
+    
     def end_game(self):
+        endgame_reward = win_game_reward if self.survived_last_game else lose_game_reward
+        self.train_with_trace(self.last_state, self.last_action, endgame_reward)
+        self.train_neural_network()
+        self.survived_last_game = True
         self.traces = []
         self.last_state = get_initial_state()
         q_values_init = self.calculate_all_q_values(self.last_state)
         self.last_action = self.find_action_with_max_value(q_values_init)
         self.epsilon *= 0.99
-        self.alpha *= 0.99
+        # self.alpha *= 0.99
     
     def save_nn(self):
         checkpoint = {
-            'model_state_dict': self.model.state_dict(),
-            'alpha': self.alpha,
-            'epsilon': self.epsilon
+            'model_state_dict': self.model.state_dict()
         }
         torch.save(checkpoint, model_param_path)
         
@@ -227,7 +227,7 @@ class QLambdaAgent:
         p = len(players)
         
         # Smoothing factor (can be tuned)
-        c = 4.0
+        c = 3.0
         
         # Calculate reward using paper's formula
         reward = (v/p * c)/(1 + abs(v/p * c)) + (1/p * m)
