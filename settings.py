@@ -2,7 +2,7 @@
 '''
 class TrainingSettings():
     n_batches = 10
-    n_games_per_batch = 100
+    n_games_per_batch = 10
 
 class SimulationSettings():
     ''' Simulation settings
@@ -20,7 +20,7 @@ class SimulationSettings():
     seed = 0
 
     # Number of parallel processes to use in the simulation
-    multi_process = 4
+    multi_process = 8
 
 class LogSettings:
     ''' Settings for logging
@@ -70,7 +70,7 @@ class GameSettings():
         ("QLambda Player 1", "QLambda", ExperimentPlayer),
         ("Fixed Policy Player 2", "Fixed Policy", StandardPlayer),
         ("Fixed Policy Player 3", "Fixed Policy", StandardPlayer),
-        ("Fixed Policy Player 4", "Fixed Policy", StandardPlayer)
+        ("Fixed Policy Player 4", "Fixed Policy", StandardPlayer),
     ]
 
     # Randomly shuffle order of players each game
