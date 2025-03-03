@@ -1,6 +1,5 @@
 import numpy as np
 import random
-import matplotlib.pyplot as plt
 
 from classes.player_logistics import Player
 from classes.action import Action
@@ -11,7 +10,7 @@ import pickle
 import os
 
 class ApproxQLearningAgent(Player):
-    def __init__(self, name, settings, alpha=0.1, gamma=0.9, epsilon=1, feature_size=200, decay_rate=0.01):
+    def __init__(self, name, settings, alpha=0.5, gamma=0.9, epsilon=1, feature_size=200, decay_rate=0.001):
         super().__init__(name, settings)
         self.alpha = alpha
         self.gamma = gamma
@@ -20,36 +19,36 @@ class ApproxQLearningAgent(Player):
         self.action_handler = Action()
         self.total_actions = self.action_handler.total_actions
         self.name = name
-        self.q_value_log = []
+        # self.q_value_log = []
         self.decay_rate = decay_rate 
-        self.state_action_counts = {}
-        self.epsilon_min = 0.01
+        self.epsilon_min = 0.1
+        self.new_epsilon = epsilon
+        self.new_alpha = alpha
         self.weights = np.random.randn(feature_size, self.total_actions)/np.sqrt(feature_size)
 
         self.load_model()
-        
     def load_model(self, filename="q_learning_model.pkl"):
         if os.path.exists(filename):
-            with open(filename, "rb") as f:
-                data = pickle.load(f)
-            self.weights = data["weights"]
-            self.epsilon = data["epsilon"]
-            self.alpha = data["alpha"]
-            self.gamma = data["gamma"]
-            self.state_action_counts = data["state_action_counts"]
-            print(f"Model loaded from {filename}")
+            try:
+                # Open in binary read mode and use a with statement for safety
+                with open(filename, "rb") as f:
+                    data = pickle.load(f)
+                
+                self.weights = data["weights"]
+                self.epsilon = data["epsilon"]
+                self.alpha = data["alpha"]
+                self.gamma = data["gamma"]
+                
+                print(f"Model loaded safely from {filename}")
+            except (pickle.UnpicklingError, EOFError, ValueError) as e:
+                print(f"Error loading model: {e}")
+                print("The file may be corrupted. Starting fresh.")
         else:
             print("No saved model found. Starting fresh.")
 
     def get_alpha(self, state, action, episode):
         """Adaptive learning rate that decays over time or by visit count"""
-        key = (state, action)
-        if key not in self.state_action_counts:
-            self.state_action_counts[key] = 1
-        else:
-            self.state_action_counts[key] += 1
-        
-        return self.alpha / (1 + self.decay_rate * episode)  # Time-based decay
+        return max(0.01, self.alpha / (1 + self.decay_rate * episode/100))  # Time-based decay
 
     def get_gamma(self, episode):
         """Increase gamma over time to favor long-term rewards"""
@@ -57,7 +56,7 @@ class ApproxQLearningAgent(Player):
     
     def get_epsilon(self, episode):
         """Exponential decay"""
-        return max(self.epsilon_min, self.epsilon * np.exp(-self.decay_rate * episode))
+        return max(self.epsilon_min, self.epsilon * np.exp(-self.decay_rate * episode/10))
     
     def extract_features(self, state, action_index):
         if isinstance(state, State):
@@ -77,11 +76,12 @@ class ApproxQLearningAgent(Player):
 
     def select_action(self, state, episode):
         epsilon_t = self.get_epsilon(episode)
+        self.new_epsilon = epsilon_t
         if random.random() < epsilon_t:
-            print ("E_X_P_L_O_R_I_N_G")
+            print (f"E_X_P_L_O_R_I_N_G with Espsilon {epsilon_t} and alpha {self.new_alpha}")
             action_index = random.randint(0, self.total_actions - 1)
         else:
-            print ("EXPLOITING")
+            print (f"EXPLOITING with Espsilon {epsilon_t} and alpha {self.new_alpha}")
             q_values = self.get_q_values(state)
             action_index = np.argmax(q_values)
         _,action_type = self.action_handler.map_action_index(action_index)
@@ -92,18 +92,14 @@ class ApproxQLearningAgent(Player):
 
     def select_next_best_q_value(self, state, current_index):
         """
-        Select the next best action, excluding the action that failed.
-        
         Args:
             state (np.ndarray): Current state vector.
             excluded_action_index (int): Action index to exclude.
-
         Returns:
             int: Next best action index.
         """
         q_values = np.sort(self.get_q_values(state))
-        
-        # Select the next best action
+
         return q_values[current_index]
 
     def simulate_action(self, board, state, player, players, action_index, group_idx, max_attempts = 1):
@@ -126,24 +122,31 @@ class ApproxQLearningAgent(Player):
 
         _, action_type = self.action_handler.map_action_index(action_index)
         q_values = self.get_q_values(state)
-        # print (q_values )
         if action_type == 'buy':
             the_property = board.cells[player.position]
             updgraded_buying_state =  simulation.update_state_after_spending(group_idx, board, player, the_property, players)
             if isinstance(updgraded_buying_state, int):
-                if max_attempts < len(q_values):
-                    buying_action_index = np.where(q_values == self.select_next_best_q_value(state, max_attempts))[0][0]
-                    return self.simulate_action(board, state, player, players, buying_action_index,  group_idx, max_attempts+1)
+                if max_attempts < 6:
+                    indices = np.where(q_values == self.select_next_best_q_value(state, max_attempts))[0]
+                    if len(indices) > 0:
+                        buying_action_index = indices[0]
+                        return self.simulate_action(board, state, player, players, buying_action_index,  group_idx, max_attempts+1)
+                    else:
+                        return state
                 return state
             return updgraded_buying_state
     
         elif action_type == 'sell':
             updgraded_state = simulation.update_state_after_selling(group_idx, board, player, players)
             if isinstance(updgraded_state, int):
-                if max_attempts < len(q_values):
-                    selling_action_index = np.where(q_values == self.select_next_best_q_value(state, max_attempts))[0][0]
-                    return self.simulate_action(board, state, player, players, selling_action_index,  group_idx, max_attempts+1)
-                # return state
+                if max_attempts < 6:
+                    indices = np.where(q_values == self.select_next_best_q_value(state, max_attempts))[0]
+                    if len(indices) > 0:
+                        selling_action_index = indices[0]
+                        return self.simulate_action(board, state, player, players, selling_action_index,  group_idx, max_attempts+1)
+                    else:
+                        return state
+                return state
             return updgraded_state
         
         elif action_type == "do_nothing":
@@ -151,8 +154,7 @@ class ApproxQLearningAgent(Player):
 
     def update(self, state, action_index, reward, next_state, episode, action):
         alpha_t = self.get_alpha(state, action, episode)
-        gamma_t = self.get_gamma(episode)
-
+        self.new_alpha = alpha_t
         features = self.extract_features(state, action_index)
         q_value = np.dot(features, self.weights[:, action_index])
 
@@ -163,8 +165,9 @@ class ApproxQLearningAgent(Player):
 
         td_error = target - q_value
         self.weights[:, action_index] += alpha_t * td_error * features
-        self.q_value_log.append(q_value)
+        # self.q_value_log.append(q_value)
 
+    
     # def save_q_values(self):
     #     """Append new Q-values to the existing file."""
     #     if os.path.exists("q_values.pkl"):

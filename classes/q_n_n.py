@@ -8,7 +8,6 @@ class Q_network(nn.Module):
         self.layer1 = nn.Linear(state_size, 128)
         self.layer2= nn.Linear(128, 64)
         self.output_layer = nn.Linear(64, action_size)
-
     def forward(self, x):
         x = torch.relu(self.layer1(x))
         x = torch.relu(self.layer2(x))

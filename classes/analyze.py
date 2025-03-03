@@ -2,8 +2,6 @@
 '''
 
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 from settings import SimulationSettings, GameSettings, LogSettings
 
@@ -76,28 +74,4 @@ class Analyzer:
             print(f"  - {player_name}: {survivals} " +
                   f"({surv_rate * 100:.1f} "
                   f"+- {margin * 100:.1f}%)")
-            
-    def plot_winning_rates(self):
-        # Identify winners for each game
-        winners = self.df[self.df['status'] == 'win']
-        losers = self.df[self.df['status'] == 'lose']
-        draws = self.df[self.df['status'] == 'draw']  # If you log drawn games
-
-        # Calculate winning rate (number of wins / total games played)
-        total_games = self.df['game_number'].nunique()
-        win_rates = winners['player'].value_counts() / total_games
-
-        # Create plot
-        plt.figure(figsize=(12, 6))
-        sns.scatterplot(data=winners, x='game_number', y=winners['player'].map(win_rates),
-                        color='green', label='Winners', alpha=0.6)
-        sns.scatterplot(data=losers, x='game_number', y=losers['player'].map(win_rates),
-                        color='red', label='Losers', alpha=0.3)
-        sns.scatterplot(data=draws, x='game_number', y=draws['player'].map(win_rates),
-                        color='blue', label='Draws', marker='x', alpha=0.8)
-
-        plt.xlabel("Game Number")
-        plt.ylabel("Winning Rate")
-        plt.title("Winning Rate of Players Over Games")
-        plt.legend()
-        plt.show()
+        

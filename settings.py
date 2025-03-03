@@ -12,7 +12,7 @@ class SimulationSettings():
 
     # Number of games to simulate
     
-    n_games = 100
+    n_games = 1500
     # Random seed to start simulation with
     seed = 0
 
@@ -28,11 +28,11 @@ class LogSettings:
     # Might want to turn it off for large simulations
     keep_game_log = True
     game_log_file = "gamelog.txt"
-
+    win_log_file = "final_data_info.txt"
+    plotable_data_log_file = "final_data_info.txt"
     # Log that keeps information about on which turn which player went bunkrupt
     # Base info for all simulation analysis
-    data_log_file = "datalog.txt"
-
+    data_log_file = "datalog(untrained).txt"
 class StandardPlayer:
     ''' Settings for a Standard Player
     '''
@@ -65,7 +65,8 @@ class GameSettings():
     players_list = [
         ("Approx_q_Agent", "Approx_q_l", StandardPlayer),
         ("Fixed Policy Player", "Fixed Policy", StandardPlayer)
-        # ("Fixed Policy Player 2", "Fixed Policy", StandardPlayer)
+        # ("Experimental Player", "Fixed Policy", StandardPlayer),
+        # ("Extra Player", "Fixed Policy", StandardPlayer)
     ]
 
     # Randomly shuffle order of players each game

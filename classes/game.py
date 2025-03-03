@@ -9,7 +9,6 @@ from classes.board import Board
 from classes.dice import Dice
 from classes.log import Log
 # from classes.board_visualization import MonopolyBoard
-import tkinter as tk
 
 def monopoly_game(data_for_simulation):
     ''' Simulation of one game.
@@ -29,7 +28,7 @@ def monopoly_game(data_for_simulation):
 
     # Initialize data log
     datalog = Log(LogSettings.data_log_file)
-
+    plotable_data_log = Log(LogSettings.plotable_data_log_file)
     # Initialize the board (plots, chance, community chest etc)
 
     board = Board(GameSettings)
@@ -72,14 +71,11 @@ def monopoly_game(data_for_simulation):
     for turn_n in range(1, SimulationSettings.n_moves + 1):
         # Start a turn. Log turn's number
         log.add(f"\n== GAME {game_number} Turn {turn_n} ===")
-
         # Log all the players with their current position/money.
         # While we are at it, count alive players
         alive = 0
 
         for player_n, player in enumerate(players):
-            if player.name == "Approx_q_Agent":
-                player.save_model()
             if not player.is_bankrupt:
                 alive += 1
                 # Current player's position, money and net worth, looks like this:
@@ -103,6 +99,9 @@ def monopoly_game(data_for_simulation):
         # End the game
         if alive < 2:
             log.add("Only 1 player remains, game over")
+            for current_player in players:
+                if not current_player.is_bankrupt:
+                    plotable_data_log.add(f"{game_number}\t{current_player.name}\t{"Win"}")
             break
 
         # Players make their moves
@@ -112,12 +111,15 @@ def monopoly_game(data_for_simulation):
             # If player goes bankrupt, log it in the data log file
             if result == "bankrupt":
                 datalog.add(f"{game_number}\t{player.name}\t{turn_n}")
-
+                plotable_data_log.add(f"{game_number}\t{player.name}\t{"Loss"}")
     # Last thing to log in the game log: the final state of the board
     board.log_current_map(log)
-    # Save the logs
+    for player_n, player in enumerate(players):
+        if player.name == "Approx_q_Agent":
+            player.save_model()
     log.save()
     datalog.save()
+    plotable_data_log.save()
             
     # Useless return, but it is here to mark the end of the game
     return None

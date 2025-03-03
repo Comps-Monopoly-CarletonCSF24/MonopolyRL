@@ -9,7 +9,6 @@ class Update(State):
         # Call the parent class constructor to initialize the state
         super().__init__(current_player, players)
         self.old_state = None
-
     def update_after_purchase(self, current_player: Player, players: list, property: Property, property_cost: int):
         """ Updates the state after a player buys a property. """
         # Save the previous state

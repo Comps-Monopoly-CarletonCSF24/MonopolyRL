@@ -6,7 +6,7 @@ from settings import SimulationSettings, LogSettings
 from classes.analyze import Analyzer
 from classes.log import Log
 from classes.game import monopoly_game
-
+from tqdm import tqdm
 
 def run_simulation(config):
     ''' Run the simulation
@@ -20,7 +20,8 @@ def run_simulation(config):
     # Empty the data log (list of bankruptcy turns for each player)
     datalog = Log(LogSettings.data_log_file)
     datalog.reset("game_number\tplayer\tturn")
-
+    plotable_data_log = Log(LogSettings.plotable_data_log_file)
+    plotable_data_log.reset("game_number\tplayer\tstatus")
     # Initiate overall random generator with the seed from config file
     if config.seed is not None:
         random.seed(config.seed)
@@ -35,7 +36,7 @@ def run_simulation(config):
 
     # Simulate each game with multi-processing
     with concurrent.futures.ProcessPoolExecutor(max_workers=config.multi_process) as executor:
-        list(executor.map(monopoly_game, data_for_simulation))  # Removed tqdm
+        list(tqdm(executor.map(monopoly_game, data_for_simulation), total=len(data_for_simulation)))
 
     # Print analysis of the simulation (data is read from datalog file)
     analysis = Analyzer()

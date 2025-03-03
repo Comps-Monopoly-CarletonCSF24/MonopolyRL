@@ -9,6 +9,8 @@ from classes.player_logistics import Player
 from classes.approx_ql import ApproxQLearningAgent
 from classes.rewards import Reward
 import pickle
+import tempfile
+import os
 
 class Fixed_Policy_Player(Player):
     def handle_action(self, board, players, dice, log):
@@ -333,18 +335,23 @@ class Approx_q_agent(Player):
         self.agent = ApproxQLearningAgent(name = name, settings=GameSettings, feature_size=150) 
         self.episode = episode
         pass
-
     def save_model(self, filename="q_learning_model.pkl"):
         data = {
             "weights": self.agent.weights,
-            "epsilon": self.agent.epsilon,
-            "alpha": self.agent.alpha,
-            "gamma": self.agent.gamma,
-            "state_action_counts": self.agent.state_action_counts
+            "epsilon": self.agent.new_epsilon,
+            "alpha": self.agent.new_alpha,
+            "gamma": self.agent.gamma
         }
-        with open(filename, "wb") as f:
-            pickle.dump(data, f)
-        print(f"Model saved to {filename}")
+        
+        # Use a temporary file to avoid corruption in case of crashes
+        dir_name = os.path.dirname(filename)
+        with tempfile.NamedTemporaryFile(mode='wb', dir=dir_name, delete=False) as temp_file:
+            temp_filename = temp_file.name
+            pickle.dump(data, temp_file, protocol=pickle.HIGHEST_PROTOCOL)
+            
+        # Atomically move the temp file to the target location
+        os.replace(temp_filename, filename)
+        print(f"Model saved safely to {filename}")
 
     def handle_action(self, board: Board, players: List[Player], dice: Dice, log: Log):
         for group_idx in range(len(group_cell_indices)):
@@ -368,8 +375,7 @@ class Approx_q_agent(Player):
         action_index_in_small_list, action_index_in_bigger_list = self.agent.select_action(current_state, self.episode)
 
         next_state = self.agent.simulate_action(board, current_state, current_player, players, action_index_in_bigger_list, group_idx)
-        # If the action is not doable, you need to choose a different action and simulate that.
-        # In fact, choose the next best action and simulate that. 
+         
 
         reward = Reward().get_reward(current_player, players)
         actions = self.action_object.actions
@@ -448,7 +454,7 @@ class Approx_q_agent(Player):
                         # Make sure there are available houses/hotel for this improvement
                         if cell.has_houses != 4 and board.available_houses > 0 or \
                             cell.has_houses == 4 and board.available_hotels > 0:
-                            if cell.owner.name == self.name:
+                            if cell.owner and cell.owner.name == self.name:
                                 can_be_improved.append(cell)
             # Sort the list by the cost of house
             can_be_improved.sort(key = lambda x: x.cost_house)
