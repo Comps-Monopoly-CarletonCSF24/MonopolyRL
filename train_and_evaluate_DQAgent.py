@@ -33,8 +33,6 @@ def train_model(config: TrainingSettings, qlambda_agent):
             data_number = i * config.n_games_per_batch + j
             monopoly_game(data_for_simulation[data_number], qlambda_agent = qlambda_agent)
             qlambda_agent.end_game()
-        qlambda_agent.save_nn() 
-        #run_simulation(SimulationSettings)
         print(f"End of batch {i}: Epsilon: {qlambda_agent.epsilon}, Alpha: {qlambda_agent.alpha}\n")
         with open("rewards.txt", "w") as file:
             for game in qlambda_agent.rewards:
@@ -63,5 +61,6 @@ if __name__ == "__main__":
     run_simulation(SimulationSettings)
     print("Training...")
     train_model(TrainingSettings, qlambda_agent)
+    qlambda_agent.save_nn()
     ## print("Evaluating...")
     # run_simulation(SimulationSettings)

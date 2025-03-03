@@ -1,8 +1,8 @@
 ''' Config file for monopoly simulation
 '''
 class TrainingSettings():
-    n_batches = 10
-    n_games_per_batch = 10
+    n_batches = 30
+    n_games_per_batch = 100
 
 class SimulationSettings():
     ''' Simulation settings
@@ -11,10 +11,10 @@ class SimulationSettings():
     # Number of moves to simulate
     # (if there are more than one player alive after then,
     # the game is considered to have no winner)
-    n_moves = 100
+    n_moves = 300
 
     # Number of games to simulate
-    n_games = 100
+    n_games = 1000
 
     # Random seed to start simulation with
     seed = 0

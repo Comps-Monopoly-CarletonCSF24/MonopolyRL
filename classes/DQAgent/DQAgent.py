@@ -14,7 +14,7 @@ from classes.player_logistics import Player
 model_param_path = "./classes/DQAgent/model_parameters.pth"
 
 win_game_reward = 10
-lose_game_reward = -10
+lose_game_reward = 0
 class QNetwork(nn.Module):
     def __init__(self):
         super(QNetwork, self).__init__()
@@ -22,12 +22,11 @@ class QNetwork(nn.Module):
         self.input_layer = nn.Linear(State_Size + Action_Size, 150)  # Input layer to hidden layer
         self.activation = nn.Sigmoid()  # Sigmoid activation for the hidden layer
         self.output_layer = nn.Linear(150, 1)  # Hidden layer to output layer
-
-        # Initialize weights and biases to 0
-        nn.init.xavier_uniform_(self.input_layer.weight)
-        nn.init.constant_(self.input_layer.bias, 0)
-        nn.init.xavier_uniform_(self.output_layer.weight)
-        nn.init.constant_(self.output_layer.bias, 0)
+        # Initialize weights and biases randomly
+        nn.init.uniform_(self.input_layer.weight, -0.5, 0.5)
+        nn.init.uniform_(self.input_layer.bias, -0.5, 0.5)
+        nn.init.uniform_(self.output_layer.weight, -0.5, 0.5)
+        nn.init.uniform_(self.output_layer.bias, -0.5, 0.5)
 
     
     def forward(self, input):
@@ -70,7 +69,7 @@ class QLambdaAgent:
         self.is_training = is_training
         # Parameters from the paper
         self.epsilon = 1 if is_training else 0 # Greedy coeff from paper
-        self.alpha = 0.001 # Learning rate
+        self.alpha = 0.1 # Learning rate
         self.gamma = 0.95      # Discount factor from paper
         self.lambda_param = 0.8  # Lambda parameter from paper
         # Initialize network and optimizer
@@ -100,9 +99,8 @@ class QLambdaAgent:
         self.last_state = get_initial_state()
         q_values_init = self.calculate_all_q_values(self.last_state)
         self.last_action = self.find_action_with_max_value(q_values_init)
-        self.epsilon *= 0.99
-        # self.alpha *= 0.99
-    
+        self.epsilon = max(self.epsilon * 0.995, 0.1)
+        
     def save_nn(self):
         checkpoint = {
             'model_state_dict': self.model.state_dict()
@@ -227,7 +225,7 @@ class QLambdaAgent:
         p = len(players)
         
         # Smoothing factor (can be tuned)
-        c = 3.0
+        c = 2
         
         # Calculate reward using paper's formula
         reward = (v/p * c)/(1 + abs(v/p * c)) + (1/p * m)
