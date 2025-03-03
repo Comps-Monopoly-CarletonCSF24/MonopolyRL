@@ -427,73 +427,6 @@ class BasicQPlayer(Player):
         
         return len(same_color_props) == total_in_color - 1
     
-    def improve_properties(self, board: Board, log: Log):
-        """improve properties by building houses or hotels"""
-        def get_next_property_to_improve():
-            """decide what is the next property to improve
-            -should be eligible for improvement(is monopoly, not mortgaged,
-            has not more houses than other cells in the group)
-            -start with cheapest"""
-            can_be_improved = []
-            for cell in self.owned:
-                #property has to be:
-                #-not maxed out (no hotel)
-                #-not mortgaged
-                #-a part of monopoly, but not railway or utility (so the monopoly_coef is 2)
-                if cell.has_hotel == 0 and not cell.is_mortgaged and cell.monopoly_coef == 2 \
-                    and not (cell.group == "Railroads" or cell.group == "Utilities"):
-                    #look at other cells in this group
-                    #if they have fewer houses, this cell cannot be improved
-                    for other_cell in board.groups[cell.group]:
-                        if other_cell.has_houses < cell.has_houses or other_cell.is_mortgaged:
-                            break
-                    else:
-                        #make sure there are available houses/hotel for this improvement
-                        if cell.has_houses != 4 and board.available_houses > 0 or \
-                            cell.has_houses == 4 and board.available_hotels > 0:
-                            can_be_improved.append(cell)
-            #sort the list by the cost of house
-            can_be_improved.sort(key = lambda x: x.cost_house)
-            #return first(the cheapest) property that can be improved
-            if can_be_improved:
-                return can_be_improved[0]
-            return None
-        
-        while True:
-            cell_to_improve = get_next_property_to_improve()
-            
-            #nothing to improve anymore
-            if cell_to_improve is None:
-                break
-            
-            improvement_cost = cell_to_improve.cost_house
-            
-            #don't do it if you don't have money to spend
-            if self.money - improvement_cost < StandardPlayer.unspendable_cash:
-                break
-            
-            #building a house
-            ordinal = {1: "1st", 2: "2nd", 3: "3rd", 4: "4th"}
-            
-            if cell_to_improve.has_houses != 4:
-                cell_to_improve.has_houses += 1
-                board.available_houses -= 1
-                #paying for the improvement
-                self.money -= cell_to_improve.cost_house
-                log.add(f"{self} built {ordinal[cell_to_improve.has_houses]} " +
-                        f"house on {cell_to_improve} for ${cell_to_improve.cost_house}")        
-
-            #building a hotel
-            elif cell_to_improve.has_houses == 4:
-                cell_to_improve.has_houses = 0
-                cell_to_improve.has_hotel = 1
-                board.available_houses += 4
-                board.available_hotels -= 1
-                #paying for the improvement
-                self.money -= cell_to_improve.cost_house
-                log.add(f"{self} built a hotel on {cell_to_improve}")
-                    
-                    
     def buy_in_group(self, group_idx: int, board: Board, players: List[Player], log: Log):
         cells_in_group = []
         for cell_idx in group_cell_indices[group_idx]:
@@ -613,37 +546,10 @@ class BasicQPlayer(Player):
                     property_to_downgrade.has_houses = 4
                     board.available_hotels += 1
                     board.available_houses -= 4
-                    sell_price = property_to_downgrade.cost_house //2
-                    self.money += sell_price
-                    log.add(f"{self.name} downgraded hotel on {property_to_downgrade} " +
-                           f"for ${sell_price}")
-                    return True
-                
-            elif property_to_downgrade.has_houses > 0:
-                #downgrade houses
-                property_to_downgrade.has_houses -= 1
-                board.available_houses += 1
-                sell_price = property_to_downgrade.cost_house //2
-                self.money += sell_price
-                log.add(f"{self.name} sold house on {property_to_downgrade} " +
-                           f"for ${sell_price}")
-                return True
-            return False
-        
-        #First try to sell buildings if any exist
-        property_to_downgrade = get_next_property_to_downgrade()
-        if property_to_downgrade:
-            return downgrade_property(property_to_downgrade)
-        
-        #if no buildings to sell, try to sell property
-        property_to_sell = get_next_property_to_sell()
-        if property_to_sell:
-            return mortage_property(property_to_sell)
-        property_to_sell = get_next_property_to_sell()
-        if property_to_sell:
-            return downgrade_property(property_to_sell)
-        return False
+                    sell_price = 
     
+
+
     
     def is_group_actionable(self, group_idx: int, board: Board):
         cell_indices_in_group = group_cell_indices[group_idx]
@@ -696,7 +602,73 @@ class BasicQPlayer(Player):
                           if q == max_q]
             return np.random.choice(best_actions)
     
-    
+    def improve_properties(self, board: Board, log: Log):
+        """improve properties by building houses or hotels"""
+        def get_next_property_to_improve():
+            """decide what is the next property to improve
+            -should be eligible for improvement(is monopoly, not mortgaged,
+            has not more houses than other cells in the group)
+            -start with cheapest"""
+            can_be_improved = []
+            for cell in self.owned:
+                #property has to be:
+                #-not maxed out (no hotel)
+                #-not mortgaged
+                #-a part of monopoly, but not railway or utility (so the monopoly_coef is 2)
+                if cell.has_hotel == 0 and not cell.is_mortgaged and cell.monopoly_coef == 2 \
+                    and not (cell.group == "Railroads" or cell.group == "Utilities"):
+                    #look at other cells in this group
+                    #if they have fewer houses, this cell cannot be improved
+                    for other_cell in board.groups[cell.group]:
+                        if other_cell.has_houses < cell.has_houses or other_cell.is_mortgaged:
+                            break
+                    else:
+                        #make sure there are available houses/hotel for this improvement
+                        if cell.has_houses != 4 and board.available_houses > 0 or \
+                            cell.has_houses == 4 and board.available_hotels > 0:
+                            can_be_improved.append(cell)
+            #sort the list by the cost of house
+            can_be_improved.sort(key = lambda x: x.cost_house)
+            #return first(the cheapest) property that can be improved
+            if can_be_improved:
+                return can_be_improved[0]
+            return None
+        
+        while True:
+            cell_to_improve = get_next_property_to_improve()
+            
+            #nothing to improve anymore
+            if cell_to_improve is None:
+                break
+            
+            improvement_cost = cell_to_improve.cost_house
+            
+            #don't do it if you don't have money to spend
+            if self.money - improvement_cost < StandardPlayer.unspendable_cash:
+                break
+            
+            #building a house
+            ordinal = {1: "1st", 2: "2nd", 3: "3rd", 4: "4th"}
+            
+            if cell_to_improve.has_houses != 4:
+                cell_to_improve.has_houses += 1
+                board.available_houses -= 1
+                #paying for the improvement
+                self.money -= cell_to_improve.cost_house
+                log.add(f"{self} built {ordinal[cell_to_improve.has_houses]} " +
+                        f"house on {cell_to_improve} for ${cell_to_improve.cost_house}")        
+
+            #building a hotel
+            elif cell_to_improve.has_houses == 4:
+                cell_to_improve.has_houses = 0
+                cell_to_improve.has_hotel = 1
+                board.available_houses += 4
+                board.available_hotels -= 1
+                #paying for the improvement
+                self.money -= cell_to_improve.cost_house
+                log.add(f"{self} built a hotel on {cell_to_improve}")
+                    
+                    
     def get_player_q_value(self, state, action):
         '''
         gets the qvalues from the qtable
