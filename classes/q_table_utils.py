@@ -1,6 +1,7 @@
 from classes.board import Property
 from classes.action import Action
 import numpy as np
+import os
 
 
 def get_q_value(q_table, state, action, action_obj):
@@ -13,21 +14,103 @@ def get_q_value(q_table, state, action, action_obj):
 def initialize_q_table(filename, actions):
     """Initialize Q-table with all possible states and actions"""
     try:
-        with open(filename, 'w') as f:
-            # Iterate over all possible states
-            for state1 in [0.0, 1.0]:
-                for state2 in [0.0, 1.0]:
-                    for state3 in [0.0, 1.0]:
-                        state = (state1, state2, state3)
-                        # Iterate over all possible actions
+        # Create directory if it doesn't exist
+        directory = os.path.dirname(filename)
+        if directory and not os.path.exists(directory):
+            os.makedirs(directory)
+            
+        # Check if file already exists
+        if os.path.exists(filename):
+            print(f"Q-table already exists at {filename}")
+            return
+            
+        print(f"Initializing Q-table at: {filename}")
+        
+        # Write directly to the file (no need for temp file)
+        with open(filename, 'w', encoding='utf-8') as f:
+            # Write all possible state-action pairs
+            for s1 in [0.0, 1.0]:
+                for s2 in [0.0, 1.0]:
+                    for s3 in [0.0, 1.0]:
+                        state = (s1, s2, s3)
                         for action in actions:
-                            line = f"({state[0]}, {state[1]}, {state[2]}),{action},0.0\n"
+                            line = f"{state[0]:.1f},{state[1]:.1f},{state[2]:.1f},{action},0.0\n"
                             f.write(line)
-                            print(f"Writing to file: {line.strip()}")  # Debug statement
-    except IOError as e:
-        print(f"Error writing to file {filename}: {e}")
-    finally:
-        print(f"Q-table initialization completed in {filename}")
+        
+        print(f"Successfully initialized Q-table at {filename}")
+        
+    except Exception as e:
+        print(f"Error initializing Q-table: {e}")
+        raise
+
+def update_q_table(filename, state, action_idx, reward, next_state, next_available_actions, alpha, gamma, action_obj):
+    """Updates Q-value using Q-learning formula"""
+    try:
+        # Input validation
+        if not isinstance(state, tuple) or len(state) != 3:
+            raise ValueError(f"Invalid state format: {state}")
+            
+        # Get action type
+        _, action_type = action_obj.map_action_index(action_idx)
+        
+        # Read current Q-values
+        current_q_values = {}
+        updated = False
+        
+        with open(filename, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            
+        new_lines = []
+        for line in lines:
+            try:
+                # Parse line
+                parts = line.strip().split(',')
+                if len(parts) != 5:  # Should have 3 state values, action, and q-value
+                    continue
+                    
+                s0, s1, s2, act, q_val = parts
+                current_state = (float(s0), float(s1), float(s2))
+                
+                if current_state == state and act == action_type:
+                    # Calculate new Q-value
+                    old_q = float(q_val)
+                    if not next_available_actions:
+                        next_max_q = 0.0
+                    else:
+                        next_q_values = []
+                        for next_act in next_available_actions:
+                            _, next_action_type = action_obj.map_action_index(next_act)
+                            for l in lines:
+                                ns0, ns1, ns2, nact, nq = l.strip().split(',')
+                                if (float(ns0), float(ns1), float(ns2)) == next_state and nact == next_action_type:
+                                    next_q_values.append(float(nq))
+                                    break
+                        next_max_q = max(next_q_values) if next_q_values else 0.0
+                    
+                    new_q = old_q + alpha * (reward + gamma * next_max_q - old_q)
+                    line = f"{state[0]:.1f},{state[1]:.1f},{state[2]:.1f},{action_type},{new_q:.2f}\n"
+                    updated = True
+                
+                new_lines.append(line)
+                
+            except Exception as e:
+                print(f"Error processing line '{line.strip()}': {e}")
+                new_lines.append(line)
+                continue
+        
+        if not updated:
+            print(f"Warning: No matching state-action pair found for update")
+            return False
+            
+        # Write back to file
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.writelines(new_lines)
+            
+        return True
+        
+    except Exception as e:
+        print(f"Error updating Q-table: {e}")
+        return False
 
 def get_q_value_from_file(filename, state, action_idx, action_obj):
     _, action_type = action_obj.map_action_index(action_idx)
@@ -52,84 +135,65 @@ def get_q_value_from_file(filename, state, action_idx, action_obj):
     return 0.0 #default q-value if not found
 
 def update_q_table(filename, state, action_idx, reward, next_state, next_available_actions, alpha, gamma, action_obj):
-    # Ensure next_state is a tuple of floats
-    if not isinstance(next_state, tuple):
-        raise ValueError("next_state must be a tuple of floats.")
-
-    # Ensure next_available_actions is iterable
-    if isinstance(next_available_actions, (int, np.integer)):
-        next_available_actions = [next_available_actions]
-    if isinstance(reward, tuple):
-        reward = float(reward[0])
-    
-
-    # Ensure next_available_actions is always a list of regular integers
-    next_available_actions = [int(action) for action in next_available_actions]
-    #print(f"Normalized next available actions: {next_available_actions}")
-    
-    # Read current Q-value
-    old_q = get_q_value_from_file(filename, state, action_idx, action_obj)
-    
-    if not isinstance(old_q, float):
-        raise ValueError("old_q must be a float.")
-
-    # Calculate max Q-value for the next state
-    if not next_available_actions:
-        next_max_q = 0.0
-    else:
-        next_q_values = [get_q_value_from_file(filename, next_state, next_action, action_obj) for next_action in next_available_actions]
-        # Ensure all values in next_q_values are floats
-        for q in next_q_values:
-            if not isinstance(q, float):
-                raise ValueError(f"Expected float in next_q_values, got {type(q)}")
-        next_max_q = max(next_q_values) if next_q_values else 0.0
-
-    # Debugging: Print variable types
-    '''print(f"old_q: {old_q}, type: {type(old_q)}")
-    print(f"alpha: {alpha}, type: {type(alpha)}")
-    print(f"reward: {reward}, type: {type(reward)}")
-    print(f"gamma: {gamma}, type: {type(gamma)}")
-    print(f"next_max_q: {next_max_q}, type: {type(next_max_q)}")
-'''
-    # Q-learning update formula
-    new_q = old_q + alpha * (reward + gamma * next_max_q - old_q)
-    #print(f"new Q value: {new_q}. ")
-    # Update the Q-value in the file
+    """Updates Q-value using Q-learning formula"""
     try:
-        with open(filename, "r") as f:
-            lines = f.readlines()
+        # Input validation
+        if not isinstance(state, tuple) or len(state) != 3:
+            raise ValueError(f"Invalid state format: {state}")
+            
+        # Get action type
+        _, action_type = action_obj.map_action_index(action_idx)
         
-        with open(filename, "w") as f:
-            for line in lines:
-                #make sure the line contains a comma before processing 
-                if ',' not in line:
-                    continue #skip lines that do not have the expected format
-                # Parse the line to extract state, action, and Q-value
-                state_action, q = line.strip().rsplit(',', 1)
-
-                #check if the state_action part contains the expected delimiter
-                if '),' not in state_action:
-                    continue #skip lines that do not have the expected format
-                state_str, action_str = state_action.strip('()').rsplit('),', 1)
+        # Read the entire file
+        with open(filename, 'r', encoding='utf-8') as f:
+            header = f.readline()  # Skip header
+            lines = f.readlines()
+            
+        # Find and update the matching line
+        updated = False
+        new_lines = [header]  # Start with header
+        
+        for line in lines:
+            try:
+                state_0, state_1, state_2, act, q_val = line.strip().split(',')
+                current_state = (float(state_0), float(state_1), float(state_2))
                 
-                # Convert the state and action from strings to their respective types
-                parsed_state = tuple(map(float, state_str.split(',')))
-                parsed_action = action_str.strip().strip('"')
-                #print(f"Parsed state:{parsed_state}, State; {state}")
-                _, action_type = action_obj.map_action_index(action_idx)
-                #print(f"Parsed action:{parsed_action}, Action: {action_type}")
-                #print(f"Action type is {action_type}")
-                #check if the parsed state and action match the input
-                print(f"{parsed_state == state and parsed_action == action_type}")
-                if parsed_state == state and parsed_action == action_type:
+                if current_state == state and act == action_type:
+                    # Calculate new Q-value
+                    old_q = float(q_val)
+                    if not next_available_actions:
+                        next_max_q = 0.0
+                    else:
+                        next_q_values = [get_q_value_from_file(filename, next_state, next_action, action_obj)
+                                        for next_action in next_available_actions]
+                        next_max_q = max(next_q_values) if next_q_values else 0.0
+
+                    # Q-learning update formula
+                    new_q = old_q + alpha * (reward + gamma * next_max_q - old_q)
                     new_q_rounded = round(new_q, 2)
-                    new_line = f'({state[0]}, {state[1]}, {state[2]}),{action_type},{new_q_rounded:.2f}\n'
-                    f.write(new_line)
+                    
+                    new_line = f'({state[0]:.1f}, {state[1]:.1f}, {state[2]:.1f}),{action_type},{new_q_rounded:.2f}\n'
+                    new_lines.append(new_line)
+                    updated = True
                     print(f"Updated Q-value in file: {new_line.strip()}")
                 else:
-                    f.write(line)
-    except IOError as e:
-        print(f"Error updating Q-table in {filename}: {e}")
+                    new_lines.append(line)
+            except (ValueError, IndexError) as e:
+                print(f"Error parsing line '{line.strip()}': {e}")
+                new_lines.append(line)
+                continue
+        
+        # Write all lines back to file
+        with open(filename, 'w') as f:
+            f.writelines(new_lines)
+        
+        if not updated:
+            print(f"Warning: No matching state-action pair found for update")
+        return updated
+    
+    except Exception as e:
+        print(f"Error updating Q-table: {e}")
+        return False
 
 def calculate_q_reward(player, board, players):
     """Calculate the reward based on the player's current state."""

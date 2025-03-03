@@ -7,6 +7,7 @@ from settings import GameSettings, StandardPlayer
 from classes.state import get_state, is_property, has_monopoly, has_more_money, State, group_cell_indices
 from classes.player_logistics import Player
 from classes.q_table_utils import get_q_value, initialize_q_table, update_q_table, calculate_q_reward
+import os
 
 class Fixed_Policy_Player(Player):
     def handle_action(self, board, players, dice, log):
@@ -329,14 +330,21 @@ class BasicQPlayer(Player):
     def __init__(self, name, settings, position=0, money=1500):
         super().__init__(name, settings)
         self.qTable = {}
-        self.alpha = 0.1  
+        # Adjust learning parameters
+        self.alpha = 0.1  # Learning rate
         self.gamma = 0.9  # Discount factor
-        self.epsilon = 0.4  # increased
+        self.epsilon = 0.4  # Exploration rate (increased for more exploration)
+        self.epsilon_decay = 0.995  # Add epsilon decay
+        self.epsilon_min = 0.01  # Minimum exploration rate
+        
+        # Tracking variables
         self.previous_state = None
         self.previous_action = None
         self.previous_reward = 0.0
+        self.win_history = []
+        self.survival_history = []  # Add survival tracking
+        self.episode_counter = 0
 
-       
         self.is_willing_to_buy_property = True
         self.action_obj= Action() #create an action object
         self.min_money = 100 #set a lowest amount of money
@@ -660,51 +668,26 @@ class BasicQPlayer(Player):
         return current_state, action
     
     def _choose_action_strategy(self, board, state, available_actions):
-        '''
-        chooses an action from the available actions. Big pereference buying properties
-        '''
         if not available_actions:
             return None
-        # Debug prints to see what's happening
+
+        # Decay epsilon
+        self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
         
-
         current_property = board.cells[self.position]
-        #print(f"Available actions: {available_actions}")
-        #print(f"Current position: {self.position}")
-        #print(f"Current money: {self.money}")
         is_property = isinstance(current_property, Property)
-        #print(f"is_property: {is_property}")
-        #has_monopoly, _, has_more_money = state
+
+        # Strategic action selection
         if is_property and current_property.owner is None:
-            #print(f"just checked no one owns: {current_property}")
             buy_actions = [a for a in available_actions 
-                          if self.action_obj.actions[a % len(self.action_obj.actions)] == 'buy']
-            #print(f"Buy actions available: {buy_actions}")
-            if buy_actions and self.money - current_property.cost_base < self.settings.unspendable_cash:
-                #always buy if it completes a monopoly
-                if (
-                    has_monopoly == 1.0 or has_more_money == 1.0 or 
-                    
-                    self.would_complete_monopoly(current_property) or 
-
-                #always buy railraods or utilities of affordable
-                    current_property.group in ['Railroads', 'Utilities'] and self.money - current_property.cost_base < self.settings.unspendable_cash or
-                #property is relatively cheap to our money
-                current_property.cost_base <= self.money * 0.2 or
-                #buy if we have properties of the same color
-                    (hasattr(current_property, 'color') and 
-                    any(prop.color == current_property.color for prop in self.owned))
-                ):
+                         if self.action_obj.actions[a % len(self.action_obj.actions)] == 'buy']
+            if buy_actions:
+                # Encourage property acquisition with higher probability during exploration
+                if np.random.rand() < 0.8:  # 80% chance to buy during exploration
                     return buy_actions[0]
-                
 
-        # Normal exploration/exploitation for other cases
+        # Epsilon-greedy strategy
         if np.random.rand() < self.epsilon:
-            if np.random.rand() < 0.8:
-                buy_actions = [a for a in available_actions 
-                               if self.action_obj.actions[a % len(self.action_obj.actions)] == 'buy']
-                if buy_actions:
-                    return np.random.choice(buy_actions)
             return np.random.choice(available_actions)
         else:
             q_values = [self.get_player_q_value(state, action) for action in available_actions]
@@ -801,44 +784,93 @@ class BasicQPlayer(Player):
             return False
     
     def make_a_move(self, board, players, dice, log):
-        # Call parent's make_a_move to handle the dice roll
         result = super().make_a_move(board, players, dice, log)
         
         if result == "bankrupt" or result == "move is over":
+            # Track survival (1 if still alive, 0 if bankrupt)
+            self.survival_history.append(0 if result == "bankrupt" else 1)
             return result
-       
+
         # Get state and action
         current_state, chosen_action = self.select_action(board, players)
         
         if chosen_action is None:
             return "continue"
             
-        # Execute action
+        # Execute action and get reward
         property_idx, action_type = self.action_obj.map_action_index(chosen_action)
-        #print(f"called execute_action {property_idx} {action_type}")
         success = self.execute_action(board, players, log, property_idx, action_type)
-        
-        reward = self.calculate_reward(board,players)
-        #else:
-            #log.add(f"Action {action_type} at property {property_idx} failed for player {self.name}")
-            #assign zero reward for unusual actions
-            #reward =- 0
-        
-        #train agent if action was successful
+        reward = self.calculate_reward(board, players)
+
+        # Update Q-values only if action was successful
         if success:
-            #print(f"called train_agent_with_one_action {current_state} {chosen_action}")
-            #print(f"current_state is {current_state}, chosen_action is {chosen_action}")
             self.train_agent_with_one_action(board, players, current_state, chosen_action)
-        else:
-            pass
-        #attempt to improve properties after executing actions
+            
+        # Improve properties after action
         self.improve_properties(board, log)
         
-        next_state, next_available_actions = self.select_action(board, players)
-
-        self.update_player_q_value(current_state, chosen_action, reward, next_state, next_available_actions)
-        
-        return "continue"
+        # Update tracking
+        self.episode_counter += 1
+        if self.episode_counter % 100 == 0:
+            self.plot_training_progress()
+            
+        return result
     
+    def plot_training_progress(self):
+        try:
+            import matplotlib.pyplot as plt
+            import numpy as np
+            
+            plt.figure(figsize=(15, 5))
+            
+            # Plot win rates
+            plt.subplot(1, 3, 1)
+            window_size = 100
+            if len(self.win_history) >= window_size:
+                win_rate = np.convolve(self.win_history, 
+                                     np.ones(window_size)/window_size, 
+                                     mode='valid')
+                plt.plot(win_rate, label='Win Rate')
+                plt.title('Win Rates Over Games')
+                plt.xlabel('Game Number')
+                plt.ylabel('Win Rate')
+                plt.grid(True)
+                plt.legend()
+            
+            # Plot survival rates
+            plt.subplot(1, 3, 2)
+            if len(self.survival_history) >= window_size:
+                survival_rate = np.convolve(self.survival_history,
+                                          np.ones(window_size)/window_size,
+                                          mode='valid')
+                plt.plot(survival_rate, label='Survival Rate')
+                plt.title('Survival Rates Over Games')
+                plt.xlabel('Game Number')
+                plt.ylabel('Survival Rate')
+                plt.grid(True)
+                plt.legend()
+            
+            # Plot epsilon decay
+            plt.subplot(1, 3, 3)
+            plt.plot([self.epsilon], [0], 'ro', label=f'Current ε: {self.epsilon:.3f}')
+            plt.title('Exploration Rate (ε)')
+            plt.xlabel('Training Progress')
+            plt.ylabel('Epsilon Value')
+            plt.grid(True)
+            plt.legend()
+            
+            plt.tight_layout()
+            
+            # Create plots directory if it doesn't exist
+            plots_dir = 'plots'
+            if not os.path.exists(plots_dir):
+                os.makedirs(plots_dir)
+            
+            plt.savefig(os.path.join(plots_dir, 'training_progress.png'))
+            plt.close()
+            
+        except Exception as e:
+            print(f"Error plotting training progress: {e}")
+
 class DQAPlayer(Player):
     pass

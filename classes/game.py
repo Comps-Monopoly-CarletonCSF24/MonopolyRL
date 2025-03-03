@@ -27,6 +27,21 @@ def monopoly_game(data_for_simulation):
 
     # Initialize data log
     datalog = Log(LogSettings.data_log_file)
+    # Initialize Q-table once at the start of the game
+    q_table_filename = "Q table Basic Q player.txt"
+    actions = ['buy','sell','do_nothing']
+
+    # Initialize Q-table if it doesn't exist or is empty
+    try:
+        if not os.path.exists(q_table_filename) or os.path.getsize(q_table_filename) == 0:
+            print(f"Initializing Q-table in {q_table_filename}")
+            initialize_q_table(q_table_filename, actions) #actually create the q-table if not exist
+            #verify initialization
+            if not os.path.exists(q_table_filename) or os.path.getsize(q_table_filename) == 0:
+                raise Exception("Q-table initialization failed")
+    except Exception as e:
+        print(f"Error with Q-table initialization: {e}")
+        raise
 
     # Initialize the board (plots, chance, community chest etc)
     board = Board(GameSettings)
@@ -99,11 +114,6 @@ def monopoly_game(data_for_simulation):
 
         # Players make their moves
         for player in players:
-            if isinstance(player, BasicQPlayer):
-                actions = ['buy', 'sell', 'do_nothing']
-                #check if the Q-table file already exists
-                if not os.path.exists("Q table Basic Q player.txt"):
-                    initialize_q_table("Q table Basic Q player.txt", actions)
             # result will be "bankrupt" if player goes bankrupt
             result = player.make_a_move(board, players, dice, log)
             # If player goes bankrupt, log it in the data log file
