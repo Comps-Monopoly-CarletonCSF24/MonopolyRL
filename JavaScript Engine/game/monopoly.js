@@ -1,4 +1,5 @@
 import { AITest } from "../ai/fixed_policy.js";
+import { QLearning } from "../ai/q_learning_agent.js";
 // Overwrite an array with numbers from one to the array's length in a random order.
 Array.prototype.randomize = function(length) {
 	length = (length || this.length);
@@ -66,7 +67,7 @@ function init_random_cards(){
 	communityChestCards.deck.sort(function() {return Math.random() - 0.5;});
 }
 
-export function setup() {
+export async function setup() {
 	pcount = parseInt(document.getElementById("playernumber").value, 10);
 
 	var playerArray = new Array(pcount);
@@ -86,6 +87,13 @@ export function setup() {
 		} else if (document.getElementById("player" + i + "ai").value === "1") {
 			p.human = false;
 			p.AI = new AITest(p);
+		} else if (document.getElementById("player" + i + "ai").value === "2") {
+			p.human = false;
+			try{
+				p.AI = await new QLearning(p);
+			} catch (error){
+				console.error(error)
+			}
 		}
 	}
 
@@ -104,8 +112,8 @@ export function setup() {
 	play();
 }
 
-export function window_onload() {
-	game = new Game();
+export async function window_onload() {
+	game = await new Game();
 
 	reset_player()
 	init_groups()

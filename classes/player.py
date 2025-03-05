@@ -4,7 +4,7 @@ from classes.dice import Dice
 from classes.log import Log
 from settings import GameSettings
 from classes.DQAgent.DQAgent import QLambdaAgent
-from classes.DQAgent.action import Action, Actions
+from classes.DQAgent.action import Action
 from classes.state import State, group_cell_indices
 from classes.player_logistics import Player
 from classes.approx_ql import ApproxQLearningAgent
@@ -344,9 +344,13 @@ class DQAPlayer(Player):
             if self.is_group_actionable(group_idx, board):
                 state, action = self.select_action(players)
                 if self.agent.is_training:
+                    ## DELETE LATER
+                    self.agent.choices[-1][action.action_index] += 1;
                     self.train_agent_with_one_action(players, state, action)
-                self.action_successsful = self.execute_action(board, players, log, action, group_idx)
-
+                self.action_successful = self.execute_action(board, players, log, action, group_idx)
+        if self.agent.is_training:
+            self.agent.train_neural_network()
+        
     def select_action(self, players: List[Player]):
         current_state = State(self, players)
         current_action = self.agent.choose_action(current_state)
@@ -354,7 +358,7 @@ class DQAPlayer(Player):
     
     def train_agent_with_one_action(self, players: List[Player], current_state, current_action):
         """Moved agent.take_turn to here. The agent takes a turn and performs 
-        all possible actiosn according to the NN.
+        all possible actions according to the NN.
 
         Args:
             board (Board): _description_
@@ -364,9 +368,11 @@ class DQAPlayer(Player):
         """
         self.agent.update_trace(current_state, current_action)
         reward = self.agent.get_reward(self, players)
-        self.agent.train_nn_with_trace(current_state, current_action, reward)
+        # DELETE LATER
+        self.agent.rewards[-1][self.agent.last_action.action_index].append(reward)
+        self.agent.train_with_trace(current_state, current_action, reward)
         q_value = self.agent.q_learning(current_state, current_action, reward)
-        self.agent.train_neural_network(self.agent.last_state, self.agent.last_action, q_value)
+        self.agent.append_training_data(self.agent.last_state, self.agent.last_action, q_value)
         self.agent.last_state = current_state
         if self.action_successful:
             self.agent.last_action = current_action
@@ -617,6 +623,9 @@ class DQAPlayer(Player):
             if cell.monopoly_coef == 2:
                 return True
         return False
+    
+    def agent_brankrupt(self):
+        self.agent.survived_last_game = False
 class Approx_q_agent(Player):
     def __init__(self, name, settings, episode):
         super().__init__(name, settings)

@@ -6,6 +6,7 @@ This project uses code from the following github repositories:
 - The JavaScript (web runtime) Monopoly Eengine is borrowed from intrepidcoder/monopoly.
 - The Q-Lambda Agent (SARSA) code is borrowed, translated, and reformatted from pmpailis/rl-monopoly.
 
+Try playing against our agents at [https://comps-monopoly-carletoncsf24.github.io/MonopolyRL/JavaScript%20Engine/](https://comps-monopoly-carletoncsf24.github.io/MonopolyRL/JavaScript%20Engine/)
 ## How to Use
 
 1. Edit settings.py to set the parameters you want for your simulation.

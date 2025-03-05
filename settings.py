@@ -69,7 +69,7 @@ class GameSettings():
         ("QLambda Player 1", "QLambda", ExperimentPlayer),
         ("Fixed Policy Player 2", "Fixed Policy", StandardPlayer),
         ("Fixed Policy Player 3", "Fixed Policy", StandardPlayer),
-        ("Approx_q_Agent", "Approx_q_l", StandardPlayer)
+        ("Approx_q_Agent", "Approx_ql", StandardPlayer)
     ]
 
     # Randomly shuffle order of players each game

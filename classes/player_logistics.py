@@ -16,7 +16,6 @@ class Player:
     '''
 
     def __init__(self, name, settings):
-
         # Player's name and behavioral settings
         self.name = name
         self.settings = settings
@@ -182,6 +181,9 @@ class Player:
         # If now a double: reset double counter
         else:
             self.had_doubles = 0
+    
+    def agent_brankrupt(self):
+        pass
     
     def handle_action(self, board, players, dice, log):
         pass
@@ -637,8 +639,8 @@ class Player:
         else:
             log.add(f"{self} has to pay ${amount}, max they can raise is ${max_raisable_money}")
             self.is_bankrupt = True
+            self.agent_brankrupt()
             log.add(f"{self} is bankrupt")
-
             # Raise as much cash as possible to give payee
             self.raise_money(amount, board, log)
             log.add(f"{self} gave {payee} all their remaining money (${self.money})")
@@ -695,7 +697,7 @@ class Player:
             # If someone owns 1 (and I own the rest): I want to buy it
             if len(owned_by_others) == 1:
                 self.wants_to_buy.add(owned_by_others[0])
-    
+   
     def handle_rent(self, board, dice, log):
         landed_property = board.cells[self.position]
         # It is mortgaged: no action

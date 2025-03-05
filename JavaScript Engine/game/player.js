@@ -11,7 +11,7 @@ function Player(name, color) {
 	this.chanceJailCard = false;
 	this.bidding = true;
 	this.human = true;
-	// this.AI = null;
+	//this.AI = null;
 
 	this.pay = function (amount, creditor) {
 		if (amount <= this.money) {
