@@ -1,13 +1,15 @@
 ''' Function, that wraps one game of monopoly:
 from setting up boards, players etc to making moves by all players
 '''
-
+import os
 from settings import SimulationSettings, GameSettings, LogSettings
+import matplotlib.pyplot as plt
 
-from classes.player import Fixed_Policy_Player, DQAPlayer, BasicQPlayer, Approx_q_agent
+from classes.player import Fixed_Policy_Player, DQAPlayer, BasicQFixed_Policy_Player, DQAPlayer, BasicQPlayer, ApproxQPlayer, Approx_q_agent
 from classes.board import Board
 from classes.dice import Dice
 from classes.log import Log
+from classes.q_table_utils import initialize_q_table, load_q_table
 
 def monopoly_game(data_for_simulation, qlambda_agent = None):
     ''' Simulation of one game.
@@ -27,6 +29,23 @@ def monopoly_game(data_for_simulation, qlambda_agent = None):
 
     # Initialize data log
     datalog = Log(LogSettings.data_log_file)
+    # Initialize Q-table once at the start of the game
+    q_table_filename = "q_table.pkl"
+    actions = ['buy','sell','do_nothing']
+
+    # Initialize Q-table if it doesn't exist
+    try:
+        if not os.path.exists(q_table_filename):
+            print(f"Initializing Q-table in {q_table_filename}")
+            initialize_q_table(q_table_filename, actions)  # Create the Q-table if it doesn't exist
+        else:
+            print(f"Loading existing Q-table from {q_table_filename}")
+            q_table = load_q_table(q_table_filename)  # Load the existing Q-table
+
+    except Exception as e:
+        print(f"Error with Q-table initialization: {e}")
+        raise
+
 
     # Initialize the board (plots, chance, community chest etc)
     board = Board(GameSettings)
@@ -40,6 +59,7 @@ def monopoly_game(data_for_simulation, qlambda_agent = None):
     dice.shuffle(board.chance.cards)
     dice.shuffle(board.chest.cards)
 
+    players = []
     players = []
     # Set up players with their behavior settings
     for player_name, player_type, player_setting in GameSettings.players_list:
@@ -98,6 +118,7 @@ def monopoly_game(data_for_simulation, qlambda_agent = None):
         if alive < 2:
             log.add("Only 1 player remains, game over")
             break
+
 
         # Players make their moves
         for player in players:
