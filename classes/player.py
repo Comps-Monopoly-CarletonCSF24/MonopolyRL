@@ -368,27 +368,22 @@ class BasicQPlayer(Player):
 
         return state
     
-    def train_agent_with_one_action(self, board: Board, players: List[Player], current_state: State, current_action: Action):
+    def train_agent_with_one_action(self, board: Board, players: List[Player], current_state: State, current_action: Action, reward: float):
         """update q-value based on action results"""
-        #calculate reward for the action taken
-        reward = self.calculate_reward(board, players)
-        
+       
         #get next state and available actions for q-learning update
         next_state = self.get_state(board, players)
         next_available_actions = self.get_available_actions(board)
         
         #update Q-table if we have a previous state-action pair
         if self.previous_state is not None:
-            update_q_table(
-                filename = "q_table.pkl",
+            self.update_player_q_value(
                 state = self.previous_state,
                 action_idx = self.previous_action,
                 reward = reward,
-                next_state = next_state,
-                next_available_actions=next_available_actions,
-                alpha = self.alpha,
-                gamma = self.gamma,
-                action_obj = self.action_obj
+                next_state=next_state,
+                next_available_actions=next_available_actions
+
             )
         
         #store current state/action/reward for next iteration
@@ -713,7 +708,7 @@ class BasicQPlayer(Player):
         
         #call update_q_table
         update_q_table(
-            filename = "Q table Basic Q player.txt",
+            filename = "q_table.pkl",
             state = state,
             action_idx = action_idx,
             reward = reward,
@@ -804,7 +799,7 @@ class BasicQPlayer(Player):
 
         # Update Q-values only if action was successful
         if success:
-            self.train_agent_with_one_action(board, players, current_state, chosen_action)
+            self.train_agent_with_one_action(board, players, current_state, chosen_action, reward)
             
         # Improve properties after action
         self.improve_properties(board, log)

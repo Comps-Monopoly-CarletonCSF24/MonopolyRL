@@ -83,6 +83,7 @@ def update_q_table(filename, state, action_idx, reward, next_state, next_availab
 
     # Get the current Q-value
     old_q = q_table[state].get(action_type, 0.0)
+    print(f"type of old_q is{type(old_q)}, with {old_q}")
 
     # Calculate max Q-value for the next state
     next_max_q = 0.0
@@ -91,10 +92,7 @@ def update_q_table(filename, state, action_idx, reward, next_state, next_availab
         next_max_q = max(next_q_values) if next_q_values else 0.0
     # Ensure all variables are floats
     print(f"reward is {reward}, and its type is {type(reward)}")
-    old_q = float(old_q)
-    reward = float(reward)
-    gamma = float(gamma)
-    next_max_q = float(next_max_q)
+    
     # Q-learning update formula
     new_q = old_q + alpha * (reward + gamma * next_max_q - old_q)
     q_table[state][action_type] = new_q
@@ -119,6 +117,8 @@ def get_q_value_from_pkl(filename, state, action_idx, action_obj):
 
     # Retrieve the Q-value from the Q-table
     if state in q_table and action_type in q_table[state]:
+        print(f"hello")
+        print(f"type is {type(q_table[state][action_type])}, with value {q_table[state][action_type]}")
         return q_table[state][action_type]
     else:
         print(f"State {state} or action {action_type} not found in Q-table, returning default Q-value.")
