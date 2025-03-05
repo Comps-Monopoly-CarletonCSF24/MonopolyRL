@@ -322,10 +322,10 @@ class Fixed_Policy_Player(Player):
                 # Recalculate all monopoly / can build flags
                 board.recalculate_monopoly_coeffs(landed_property)
 
-                    # Recalculate who wants to buy what
-                    # (for all players, it may affect their decisions too)
-                    for player in players:
-                        player.update_lists_of_properties_to_trade(board)
+            # Recalculate who wants to buy what
+            # (for all players, it may affect their decisions too)
+            for player in players:
+                player.update_lists_of_properties_to_trade(board)
 
             else:
                 log.add(f"Player {self.name} landed on a {landed_property}, he refuses to buy it")

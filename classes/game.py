@@ -5,7 +5,7 @@ import os
 from settings import SimulationSettings, GameSettings, LogSettings
 import matplotlib.pyplot as plt
 
-from classes.player import Fixed_Policy_Player, DQAPlayer, BasicQFixed_Policy_Player, DQAPlayer, BasicQPlayer, ApproxQPlayer, Approx_q_agent
+from classes.player import Fixed_Policy_Player, DQAPlayer, BasicQPlayer,Approx_q_agent
 from classes.board import Board
 from classes.dice import Dice
 from classes.log import Log
