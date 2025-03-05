@@ -2,7 +2,8 @@
 '''
 class TrainingSettings():
     n_games = 100
-
+    n_games_per_batch = 100
+    n_batches = 10
 class SimulationSettings():
     ''' Simulation settings
     '''
@@ -13,7 +14,7 @@ class SimulationSettings():
     n_moves = 100
 
     # Number of games to simulate
-    n_games = 1000
+    n_games = 100
 
     # Random seed to start simulation with
     seed = 0
@@ -68,8 +69,7 @@ class GameSettings():
     players_list = [
         ("QLambda Player 1", "QLambda", ExperimentPlayer),
         ("Fixed Policy Player 2", "Fixed Policy", StandardPlayer),
-        ("Fixed Policy Player 3", "Fixed Policy", StandardPlayer),
-        ("Approx_q_Agent", "Approx_q_l", StandardPlayer)
+        ("Fixed Policy Player 3", "Fixed Policy", StandardPlayer)
     ]
 
     # Randomly shuffle order of players each game
