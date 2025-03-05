@@ -5,7 +5,7 @@ from settings import SimulationSettings, GameSettings, LogSettings
 def plot_winning_rates():
     '''Plot win rates for each player over games'''
     df = pd.read_csv(LogSettings.data_log_file, sep='\t')
-    game_numbers = range(0, 1501) 
+    game_numbers = range(0, 1400) 
     players = df['player'].unique()
     wins = {player: [] for player in players}
     draws = []
@@ -30,7 +30,7 @@ def plot_winning_rates():
     win_percentage = {player: cumulative_wins[player] / (pd.Series(range(1, len(wins[player]) + 1))) for player in players}
 
     # Plot cumulative wins
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(12, 10))
     for player, wins in win_percentage.items():
         plt.plot(game_numbers, wins, marker='o', label=f'{player} Win Rate')
 
