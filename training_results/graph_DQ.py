@@ -16,7 +16,6 @@ winner_series = winners.apply(lambda players: (all_players - players).pop() if l
 
 # Create a cumulative win count
 win_counts = winner_series.value_counts().sort_index()
-cumulative_wins = win_counts.cumsum()
 
 # Plot the cumulative wins over game numbers
 plt.figure(figsize=(10, 5))
@@ -26,15 +25,24 @@ agent = [player for player in all_players if "Fixed Policy"  not in player][0]
 fixed_policy_wins = pd.Index([])
 for player in fixed_policy_players:
     fixed_policy_wins = fixed_policy_wins.union(winner_series[winner_series == player].index)
+fixed_policy_wins = fixed_policy_wins.sort_values().tolist()
 
-fixed_policy_average = fixed_policy_wins[::3]
-plt.plot(fixed_policy_average, range(1, len(fixed_policy_average) + 1), marker="o", label="Fixed Policy Average")
- 
+
 agent_wins = winner_series[winner_series == agent].index
-plt.plot(agent_wins, range(1, len(agent_wins) + 1), marker="o", label= "Deep Q-Lambda Agent")
+agent_win = [1 if i in agent_wins else 0 for i in range(1, 1501)]
+cumulative_wins_A = pd.Series(agent_win).cumsum()
+win_rate_A = cumulative_wins_A / range(1, 1501)
+plt.plot(range(1, 1501), win_rate_A, marker="o", label="Deep Q-Lambda Agent")   
+
+fixed_policy_win = [1 if i in fixed_policy_wins else 0 for i in range(1, 1501)]
+cumulative_wins_FP = pd.Series(fixed_policy_win).cumsum()
+cumulative_wins_FP_average = cumulative_wins_FP / 3
+win_rate_FP_average = cumulative_wins_FP_average / range(1, 1501)
+plt.plot(range(1, 1501), win_rate_FP_average, marker="o", label="Fixed Policy Agent Average")
 
 plt.xlabel("Game Number")
-plt.ylabel("Total Wins")
-plt.title("Cumulative Wins While Training the Deep Q-Lambda Agent")
+plt.ylabel("Cumulative Win Rate")
+plt.title("Cumulative Win Rate While Training the Deep Q-Lambda Agent")
 plt.legend()
 plt.show()
+
