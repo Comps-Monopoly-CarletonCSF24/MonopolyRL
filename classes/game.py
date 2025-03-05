@@ -4,7 +4,7 @@ from setting up boards, players etc to making moves by all players
 
 from settings import SimulationSettings, GameSettings, LogSettings
 
-from classes.player import Fixed_Policy_Player, DQAPlayer, BasicQPlayer
+from classes.player import Fixed_Policy_Player, DQAPlayer, BasicQPlayer, Approx_q_agent
 from classes.board import Board
 from classes.dice import Dice
 from classes.log import Log
@@ -49,6 +49,8 @@ def monopoly_game(data_for_simulation, qlambda_agent = None):
             players.append(DQAPlayer(player_name, player_setting, qlambda_agent))
         elif player_type == "BasicQ":
             players.append(BasicQPlayer(player_name, player_setting))
+        elif player_type == "Approx_q_l":
+            players.append(Approx_q_agent(player_name, player_setting, game_number))
             
     if GameSettings.shuffle_players:
         # dice has a thread-safe copy of random.shuffle
@@ -107,7 +109,9 @@ def monopoly_game(data_for_simulation, qlambda_agent = None):
 
     # Last thing to log in the game log: the final state of the board
     board.log_current_map(log)
-            
+    for player_n, player in enumerate(players):
+        if player.name == "Approx_q_Agent":
+            player.save_model()        
     # Save the logs
     log.save()
     datalog.save()

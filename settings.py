@@ -19,7 +19,7 @@ class SimulationSettings():
     seed = 0
 
     # Number of parallel processes to use in the simulation
-    multi_process = 2
+    multi_process = 1
 
 class LogSettings:
     ''' Settings for logging
@@ -45,7 +45,7 @@ class StandardPlayer:
     ignore_property_groups = {}
 
     # Willing to participate in trades
-    participates_in_trades = True
+    participates_in_trades = False
 
     # Only agree to trade if value difference is within these limits
     # (Absolute and relative)
@@ -69,7 +69,7 @@ class GameSettings():
         ("QLambda Player 1", "QLambda", ExperimentPlayer),
         ("Fixed Policy Player 2", "Fixed Policy", StandardPlayer),
         ("Fixed Policy Player 3", "Fixed Policy", StandardPlayer),
-        ("Fixed Policy Player 4", "Fixed Policy", StandardPlayer)
+        ("Approx_q_Agent", "Approx_q_l", StandardPlayer)
     ]
 
     # Randomly shuffle order of players each game
