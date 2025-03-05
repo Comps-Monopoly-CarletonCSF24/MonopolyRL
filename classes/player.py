@@ -8,6 +8,7 @@ from classes.state import get_state, is_property, has_monopoly, has_more_money, 
 from classes.player_logistics import Player
 from classes.q_table_utils import get_q_value, initialize_q_table, update_q_table, calculate_q_reward
 import os
+import matplotlib.pyplot as plt
 
 class Fixed_Policy_Player(Player):
     def handle_action(self, board, players, dice, log):
@@ -379,7 +380,7 @@ class BasicQPlayer(Player):
         #update Q-table if we have a previous state-action pair
         if self.previous_state is not None:
             update_q_table(
-                filename = "Q table Basic Q player.txt",
+                filename = "q_table.pkl",
                 state = self.previous_state,
                 action_idx = self.previous_action,
                 reward = reward,
@@ -546,11 +547,38 @@ class BasicQPlayer(Player):
                     property_to_downgrade.has_houses = 4
                     board.available_hotels += 1
                     board.available_houses -= 4
-                    sell_price = 
-    
+                    sell_price = sell_price = property_to_downgrade.cost_house //2
+                    self.money += sell_price
+                    log.add(f"{self.name} downgraded hotel on {property_to_downgrade} " +
+                           f"for ${sell_price}")
+                    return True
+                
+            elif property_to_downgrade.has_houses > 0:
+                #downgrade houses
+                property_to_downgrade.has_houses -= 1
+                board.available_houses += 1
+                sell_price = property_to_downgrade.cost_house //2
+                self.money += sell_price
+                log.add(f"{self.name} sold house on {property_to_downgrade} " +
+                           f"for ${sell_price}")
+                return True
+            return False
+        
+        #First try to sell buildings if any exist
+        property_to_downgrade = get_next_property_to_downgrade()
+        if property_to_downgrade:
+            return downgrade_property(property_to_downgrade)
+        
+        #if no buildings to sell, try to sell property
+        property_to_sell = get_next_property_to_sell()
+        if property_to_sell:
+            return mortage_property(property_to_sell)
+        property_to_sell = get_next_property_to_sell()
+        if property_to_sell:
+            return downgrade_property(property_to_sell)
+        return False
 
 
-    
     def is_group_actionable(self, group_idx: int, board: Board):
         cell_indices_in_group = group_cell_indices[group_idx]
         for cell_idx in cell_indices_in_group:
@@ -759,8 +787,8 @@ class BasicQPlayer(Player):
         result = super().make_a_move(board, players, dice, log)
         
         if result == "bankrupt" or result == "move is over":
-            # Track survival (1 if still alive, 0 if bankrupt)
-            self.survival_history.append(0 if result == "bankrupt" else 1)
+           
+            
             return result
 
         # Get state and action
@@ -781,68 +809,11 @@ class BasicQPlayer(Player):
         # Improve properties after action
         self.improve_properties(board, log)
         
-        # Update tracking
-        self.episode_counter += 1
-        if self.episode_counter % 100 == 0:
-            self.plot_training_progress()
-            
         return result
     
-    def plot_training_progress(self):
-        try:
-            import matplotlib.pyplot as plt
-            import numpy as np
-            
-            plt.figure(figsize=(15, 5))
-            
-            # Plot win rates
-            plt.subplot(1, 3, 1)
-            window_size = 100
-            if len(self.win_history) >= window_size:
-                win_rate = np.convolve(self.win_history, 
-                                     np.ones(window_size)/window_size, 
-                                     mode='valid')
-                plt.plot(win_rate, label='Win Rate')
-                plt.title('Win Rates Over Games')
-                plt.xlabel('Game Number')
-                plt.ylabel('Win Rate')
-                plt.grid(True)
-                plt.legend()
-            
-            # Plot survival rates
-            plt.subplot(1, 3, 2)
-            if len(self.survival_history) >= window_size:
-                survival_rate = np.convolve(self.survival_history,
-                                          np.ones(window_size)/window_size,
-                                          mode='valid')
-                plt.plot(survival_rate, label='Survival Rate')
-                plt.title('Survival Rates Over Games')
-                plt.xlabel('Game Number')
-                plt.ylabel('Survival Rate')
-                plt.grid(True)
-                plt.legend()
-            
-            # Plot epsilon decay
-            plt.subplot(1, 3, 3)
-            plt.plot([self.epsilon], [0], 'ro', label=f'Current ε: {self.epsilon:.3f}')
-            plt.title('Exploration Rate (ε)')
-            plt.xlabel('Training Progress')
-            plt.ylabel('Epsilon Value')
-            plt.grid(True)
-            plt.legend()
-            
-            plt.tight_layout()
-            
-            # Create plots directory if it doesn't exist
-            plots_dir = 'plots'
-            if not os.path.exists(plots_dir):
-                os.makedirs(plots_dir)
-            
-            plt.savefig(os.path.join(plots_dir, 'training_progress.png'))
-            plt.close()
-            
-        except Exception as e:
-            print(f"Error plotting training progress: {e}")
 
 class DQAPlayer(Player):
+    pass
+
+class ApproxQPlayer(Player):
     pass

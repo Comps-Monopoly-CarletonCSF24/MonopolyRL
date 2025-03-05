@@ -3,12 +3,29 @@ from setting up boards, players etc to making moves by all players
 '''
 import os
 from settings import SimulationSettings, GameSettings, LogSettings
+import matplotlib.pyplot as plt
 
-from classes.player import Fixed_Policy_Player, DQAPlayer, BasicQPlayer
+from classes.player import Fixed_Policy_Player, DQAPlayer, BasicQPlayer, ApproxQPlayer
 from classes.board import Board
 from classes.dice import Dice
 from classes.log import Log
-from classes.q_table_utils import initialize_q_table
+from classes.q_table_utils import initialize_q_table, load_q_table
+'''
+def plot_survival_rates(basic_q_survival, fixed_policy_survival):
+    """Plot the survival rates of both agents."""
+    plt.figure(figsize=(10, 5))
+
+    # Plot survival rates
+    plt.plot(basic_q_survival, label='Basic Q Agent', color='blue')
+    plt.plot(fixed_policy_survival, label='Fixed Policy Agent', color='orange')
+    plt.xlabel('Game Number')
+    plt.ylabel('Survival Rate')
+    plt.title('Survival Rate Comparison')
+    plt.legend()
+
+    # Save the plot to a file
+    plt.savefig('survival_rates.png')
+'''
 def monopoly_game(data_for_simulation):
     ''' Simulation of one game.
     For convenience to set up a multi-thread,
@@ -28,20 +45,22 @@ def monopoly_game(data_for_simulation):
     # Initialize data log
     datalog = Log(LogSettings.data_log_file)
     # Initialize Q-table once at the start of the game
-    q_table_filename = "Q table Basic Q player.txt"
+    q_table_filename = "q_table.pkl"
     actions = ['buy','sell','do_nothing']
 
-    # Initialize Q-table if it doesn't exist or is empty
+    # Initialize Q-table if it doesn't exist
     try:
-        if not os.path.exists(q_table_filename) or os.path.getsize(q_table_filename) == 0:
+        if not os.path.exists(q_table_filename):
             print(f"Initializing Q-table in {q_table_filename}")
-            initialize_q_table(q_table_filename, actions) #actually create the q-table if not exist
-            #verify initialization
-            if not os.path.exists(q_table_filename) or os.path.getsize(q_table_filename) == 0:
-                raise Exception("Q-table initialization failed")
+            initialize_q_table(q_table_filename, actions)  # Create the Q-table if it doesn't exist
+        else:
+            print(f"Loading existing Q-table from {q_table_filename}")
+            q_table = load_q_table(q_table_filename)  # Load the existing Q-table
+
     except Exception as e:
         print(f"Error with Q-table initialization: {e}")
         raise
+
 
     # Initialize the board (plots, chance, community chest etc)
     board = Board(GameSettings)
@@ -64,6 +83,8 @@ def monopoly_game(data_for_simulation):
             players.append(DQAPlayer(player_name, player_setting))
         elif player_type == "BasicQ":
             players.append(BasicQPlayer(player_name, player_setting))
+        else:
+            players.append(ApproxQPlayer(player_name, player_setting))
             
     if GameSettings.shuffle_players:
         # dice has a thread-safe copy of random.shuffle
@@ -78,6 +99,9 @@ def monopoly_game(data_for_simulation):
     else:
         for player in players:
             player.money = GameSettings.starting_money
+
+    basic_q_survival = []
+    fixed_policy_survival = []
 
     # Play for the required number of turns
     for turn_n in range(1, SimulationSettings.n_moves + 1):
@@ -120,6 +144,12 @@ def monopoly_game(data_for_simulation):
             if result == "bankrupt":
                 datalog.add(f"{game_number}\t{player}\t{turn_n}")
 
+        for player in players:
+            if isinstance(player, BasicQPlayer):
+                basic_q_survival.append(1 if not player.is_bankrupt else 0)
+            elif isinstance(player, Fixed_Policy_Player):
+                fixed_policy_survival.append(1 if not player.is_bankrupt else 0)
+
     # Last thing to log in the game log: the final state of the board
     board.log_current_map(log)
 
@@ -130,5 +160,4 @@ def monopoly_game(data_for_simulation):
     # Save the logs
     log.save()
     datalog.save()
-    # Useless return, but it is here to mark the end of the game
-    return None
+

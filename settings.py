@@ -8,17 +8,16 @@ class SimulationSettings():
     # Number of moves to simulate
     # (if there are more than one player alive after then,
     # the game is considered to have no winner)
-    n_moves = 500
-
+    n_moves = 1000
     # Number of games to simulate
     
-    n_games = 100
+    n_games = 1400
 
     # Random seed to start simulation with
     seed = None
 
     # Number of parallel processes to use in the simulation
-    multi_process = 4
+    multi_process = 1
 
 class LogSettings:
     ''' Settings for logging
