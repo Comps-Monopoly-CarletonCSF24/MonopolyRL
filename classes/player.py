@@ -1,3 +1,6 @@
+# implementation of different player classes,
+# including Fixed_Policy_Player, DQAPlayer, and ApproxQPlayer
+
 from typing import List
 from classes.board import Board, Property
 from classes.dice import Dice
@@ -14,8 +17,8 @@ import pickle
 import tempfile
 import os
 
-
 class Fixed_Policy_Player(Player):
+    # Code from the python game engine.
     def handle_action(self, board, players, dice, log):
         # Trade with other players. Keep trading until no trades are possible
         while self.do_a_two_way_trade(players, board, log):
@@ -332,6 +335,7 @@ class Fixed_Policy_Player(Player):
                 # TODO: Bank auctions the property
 
 class DQAPlayer(Player):
+    # A deep Q-Lambda agent player, which uses a neural network to make decisions
     def __init__(self, name, settings, qlambda_agent:QLambdaAgent):
         super().__init__(name, settings)
         self.action = Action("do_nothing")
@@ -340,12 +344,15 @@ class DQAPlayer(Player):
         pass
     
     def handle_action(self, board: Board, players: List[Player], dice: Dice, log: Log):
+        """
+        hadles all non-game-logic actions that the agent makes. Each turn, for each color group,
+        the agent decides whether to buy, sell, or do nothing.
+        """
         for group_idx in range(len(group_cell_indices)):
             if self.is_group_actionable(group_idx, board):
                 state, action = self.select_action(players)
                 if self.agent.is_training:
-                    ## DELETE LATER
-                    self.agent.choices[-1][action.action_index] += 1;
+                    self.agent.choices[-1][action.action_index] += 1;  # For debugging purposes
                     self.train_agent_with_one_action(players, state, action)
                 self.action_successful = self.execute_action(board, players, log, action, group_idx)
         if self.agent.is_training:
@@ -357,19 +364,12 @@ class DQAPlayer(Player):
         return current_state, current_action
     
     def train_agent_with_one_action(self, players: List[Player], current_state, current_action):
-        """Moved agent.take_turn to here. The agent takes a turn and performs 
-        all possible actions according to the NN.
-
-        Args:
-            board (Board): _description_
-            players (_type_): _description_
-            dice (_type_): _description_
-            log (_type_): _description_
+        """
+        After the agent has made an action, append the resulting training data to the current batch
         """
         self.agent.update_trace(current_state, current_action)
         reward = self.agent.get_reward(self, players)
-        # DELETE LATER
-        self.agent.rewards[-1][self.agent.last_action.action_index].append(reward)
+        self.agent.rewards[-1][self.agent.last_action.action_index].append(reward) # For debugging purposes
         self.agent.train_with_trace(current_state, current_action, reward)
         q_value = self.agent.q_learning(current_state, current_action, reward)
         self.agent.append_training_data(self.agent.last_state, self.agent.last_action, q_value)
@@ -377,17 +377,11 @@ class DQAPlayer(Player):
         if self.action_successful:
             self.agent.last_action = current_action
         else:
-            self.agent.last_action = Action("do_nothing")
+            # If the action was not successful, reflect that in the eligibility traces
+            self.agent.last_action = Action("do_nothing") 
 
     def execute_action(self, board: Board, players: List[Player], log: Log, action: Action, group_idx):
-        """Executes the action on the given property for the specified player.
-
-        Args:
-            board (Board): _description_
-            log (Log): _description_
-            action (Action): _description_
-            group_idx (_type_): _description_
-        """
+        """Executes the action on the given property for the specified player."""
     
         if action.action_type == 'buy':
             return self.buy_in_group(group_idx, board, players, log)
@@ -397,6 +391,8 @@ class DQAPlayer(Player):
             return True
 
     def buy_in_group(self, group_idx: int, board: Board, players: List[Player], log: Log):
+        """Performs buying in a color group. This includes buying a property, unmortgaging a property, 
+        and improving a property."""
         cells_in_group = []
         for cell_idx in group_cell_indices[group_idx]:
             cells_in_group.append(board.cells[cell_idx])
@@ -423,9 +419,6 @@ class DQAPlayer(Player):
             return True
 
         def can_buy_property():
-            '''
-            Check if the player can buy a property
-            '''
             property_to_buy = board.cells[self.position]
             if not self.position in group_cell_indices[group_idx]:
                 return False
@@ -438,14 +431,13 @@ class DQAPlayer(Player):
             return True
         
         def buy_property():
-            ''' Player buys the property'''
             property_to_buy = board.cells[self.position]
             property_to_buy.owner = self
             self.owned.append(property_to_buy)
             self.money -= property_to_buy.cost_base
             log.add(f"Player {self.name} bought {property_to_buy} " +
                         f"for ${property_to_buy.cost_base}")
-                            # Recalculate all monopoly / can build flags
+            # Recalculate all monopoly / can build flags
             board.recalculate_monopoly_coeffs(property_to_buy)
 
             # Recalculate who wants to buy what
@@ -610,6 +602,7 @@ class DQAPlayer(Player):
         return False   
 
     def is_group_actionable(self, group_idx: int, board: Board):
+        """checksk if the player can buy or sell in a color group."""
         cell_indices_in_group = group_cell_indices[group_idx]
         for cell_idx in cell_indices_in_group:
             cell = board.cells[cell_idx]

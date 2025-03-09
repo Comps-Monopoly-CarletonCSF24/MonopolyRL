@@ -1,8 +1,6 @@
-''' Player Class
-A basic Player Class that only contains game logistics. 
-It does not involve any decision that the agents make.
-TODO: Clear Jail, WanttoBuy out of this.
-'''
+# A basic Player Class that only contains game logistics. 
+# The handle_actions method, which is deined differently for each agent in player.py, 
+# allows different agents to behave differently
 
 from classes.board import Property, GoToJail, LuxuryTax, IncomeTax
 from classes.board import FreeParking, Chance, CommunityChest

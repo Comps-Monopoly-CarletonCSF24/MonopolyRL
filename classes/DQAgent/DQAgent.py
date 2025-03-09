@@ -14,7 +14,9 @@ from classes.player_logistics import Player
 model_param_path = "./classes/DQAgent/model_parameters.pth"
 
 win_game_reward = 10
-lose_game_reward = 0
+# to prevent the agent from doing nothing all the time, give no penalty for losing
+lose_game_reward = 0 
+
 class QNetwork(nn.Module):
     def __init__(self):
         super(QNetwork, self).__init__()
@@ -91,6 +93,7 @@ class QLambdaAgent:
         self.choices = []
     
     def end_game(self):
+        """train the neural network with endgame reward, reset the agent, and decay epsilon"""
         endgame_reward = win_game_reward if self.survived_last_game else lose_game_reward
         self.train_with_trace(self.last_state, self.last_action, endgame_reward)
         self.train_neural_network()
@@ -99,6 +102,7 @@ class QLambdaAgent:
         self.last_state = get_initial_state()
         q_values_init = self.calculate_all_q_values(self.last_state)
         self.last_action = self.find_action_with_max_value(q_values_init)
+        # epoislon decay
         self.epsilon = max(self.epsilon * 0.995, 0.1)
         
     def save_nn(self):
@@ -108,6 +112,7 @@ class QLambdaAgent:
         torch.save(checkpoint, model_param_path)
         
     def q_learning(self, state, action, reward):
+        """Return the updated q-value with the current step taken"""
         last_q_value = self.model(create_nn_input(self.last_state, self.last_action))
         current_q_value = self.model(create_nn_input(state, action))
         q_value = self.alpha * (reward + self.gamma * current_q_value - last_q_value)
@@ -115,12 +120,12 @@ class QLambdaAgent:
             
     def choose_action_helper(self, q_values: List[int]):
         if random.random() < self.epsilon:  # exploration rate\
-            ## DELETE LATER
             if self.is_training:
-                self.choices[-1][3] += 1
+                self.choices[-1][3] += 1 # for debugging purposes
             return Action(random.choice(Actions))
         else:
             return self.find_action_with_max_value(q_values)
+        
     def choose_action(self, state):
         q_values_state = self.calculate_all_q_values(state)
         return self.choose_action_helper(q_values_state)
@@ -132,11 +137,7 @@ class QLambdaAgent:
         return Action(Actions[random.choice(max_q_indices)])
     
     def calculate_all_q_values(self, state: State):
-        """For all possible actions (0-2), generate a list of predicted q-values with the NN
-
-        Args:
-            state (State): the current state
-        """
+        """For all possible actions (0-2), generate a list of predicted q-values with the NN"""
         q_values = []
         for action_index in range(Total_Actions):
             action = Action(Actions[action_index])
@@ -145,16 +146,9 @@ class QLambdaAgent:
         return q_values
     
     def update_trace(self, state, action):
-        """go through traces and update each one:
+        """go through traces and update each one: 
         if the current state already exists: update value to 1
         then, update all traces with the decay function.
-    
-        Args:
-            state (_type_): _description_
-            action (_type_): _description_
-            
-        Returns:
-            bool: whether the trace was found
         """
         state_action_exists = False
         trace_index_to_pop = None
@@ -179,6 +173,7 @@ class QLambdaAgent:
         self.training_batch.append_datapoint(input_state, input_action, target_q_value)
     
     def train_neural_network(self):
+        """Train the neural network with the training data from the current turn"""
         if not self.training_batch.input:
             return
         input = torch.stack(self.training_batch.input)
@@ -193,6 +188,7 @@ class QLambdaAgent:
         self.training_batch.clear()
         
     def train_with_trace(self, state, action, reward):
+        """append training data for all traces"""
         for trace in self.traces: 
             if trace.is_similar_to_state(state) and trace.is_similar_to_action(action):
                 continue
@@ -211,7 +207,6 @@ class QLambdaAgent:
                 self.append_training_data(trace.state, trace.action, target_q_value)
 
     def get_reward(self, player: Player, players):
-        """Implement reward function from paper"""
         # Calculate total assets value (v)
         # calculated using cost_base, may need to consider houses
         player_assets = player.net_worth() - player.money
@@ -224,7 +219,7 @@ class QLambdaAgent:
         # Number of players
         p = len(players)
         
-        # Smoothing factor (can be tuned)
+        # The smoothing factor that determines the importance of the property value
         c = 2
         
         # Calculate reward using paper's formula

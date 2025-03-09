@@ -10,6 +10,10 @@ Try playing against our agents at [https://comps-monopoly-carletoncsf24.github.i
 
 ## Prerequisites
 
+install the following pacakages:
+
+torch, onnx, tqdm, pandas, matplotlib [Add More]
+
 ## Training the Deep Q-Lambda Agent
 
 To run the training session to train the QLambdaAgent:

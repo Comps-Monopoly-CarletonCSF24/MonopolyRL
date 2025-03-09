@@ -1,7 +1,5 @@
 # Dake Peng '25, Last Modified: 3/8/2025
-# Trains a QLambdaAgent on the Monopoly game environment based on settings.py
-# The agent is trained for a number of batches, each batch consisting of a number of games
-
+# Initializes and trains a Q-Lambda Agent on the Monopoly game environment based on settings.py
 import random
 from tqdm import tqdm
 from settings import TrainingSettings, LogSettings
@@ -13,8 +11,9 @@ from classes.state import get_test_state
 from classes.DQAgent.action import Actions
 
 def train_model(config: TrainingSettings, qlambda_agent):
-    ''' Run the simulation
-    In: Simulation parameters (number of games, seed etc)
+    '''
+    Trains a QLambdaAgent on the Monopoly game environment based on settings.py
+    The agent is trained for a number of batches, each batch consisting of a number of games
     '''
 
     # Empty the game log file (list of all player actions)
@@ -30,6 +29,7 @@ def train_model(config: TrainingSettings, qlambda_agent):
         for j in range(config.n_games_per_batch * config.n_batches)]
     for i in tqdm(range(config.n_batches)):
         for j in tqdm(range(config.n_games_per_batch)):
+            # Debugging statements 
             pre_game_tests.append(test_before_each_game(qlambda_agent, 0))
             qlambda_agent.rewards.append([[],[],[]])
             qlambda_agent.choices.append([0,0,0,0])
@@ -50,6 +50,7 @@ def train_model(config: TrainingSettings, qlambda_agent):
         # with open("q_values.txt", "w") as file:
         #     for i in range(len(pre_game_tests)):
         #         print(f"Game {i+1}: {pre_game_tests[i]}", file = file)
+
 def test_before_each_game(qlambda_agent, test_position):  
     test_state = get_test_state(test_position) 
     q_values = qlambda_agent.calculate_all_q_values(test_state)
