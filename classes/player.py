@@ -353,7 +353,7 @@ class DQAPlayer(Player):
                 state, action = self.select_action(players)
                 if self.agent.is_training:
                     self.agent.choices[-1][action.action_index] += 1;  # For debugging purposes
-                    self.train_agent_with_one_action(players, state, action)
+                    self.append_training_data(players, state, action)
                 self.action_successful = self.execute_action(board, players, log, action, group_idx)
         if self.agent.is_training:
             self.agent.train_neural_network()
@@ -363,14 +363,14 @@ class DQAPlayer(Player):
         current_action = self.agent.choose_action(current_state)
         return current_state, current_action
     
-    def train_agent_with_one_action(self, players: List[Player], current_state, current_action):
+    def append_training_data(self, players: List[Player], current_state, current_action):
         """
         After the agent has made an action, append the resulting training data to the current batch
         """
         self.agent.update_trace(current_state, current_action)
         reward = self.agent.get_reward(self, players)
         self.agent.rewards[-1][self.agent.last_action.action_index].append(reward) # For debugging purposes
-        self.agent.train_with_trace(current_state, current_action, reward)
+        self.agent.append_trace_to_training_data(current_state, current_action, reward)
         q_value = self.agent.q_learning(current_state, current_action, reward)
         self.agent.append_training_data(self.agent.last_state, self.agent.last_action, q_value)
         self.agent.last_state = current_state

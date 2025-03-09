@@ -95,7 +95,7 @@ class QLambdaAgent:
     def end_game(self):
         """train the neural network with endgame reward, reset the agent, and decay epsilon"""
         endgame_reward = win_game_reward if self.survived_last_game else lose_game_reward
-        self.train_with_trace(self.last_state, self.last_action, endgame_reward)
+        self.append_trace_to_training_data(self.last_state, self.last_action, endgame_reward)
         self.train_neural_network()
         self.survived_last_game = True
         self.traces = []
@@ -187,7 +187,7 @@ class QLambdaAgent:
         self.optimizer.step()  # Update weights
         self.training_batch.clear()
         
-    def train_with_trace(self, state, action, reward):
+    def append_trace_to_training_data(self, state, action, reward):
         """append training data for all traces"""
         for trace in self.traces: 
             if trace.is_similar_to_state(state) and trace.is_similar_to_action(action):

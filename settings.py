@@ -71,7 +71,8 @@ class GameSettings():
     players_list = [
         ("QLambda Player 1", "QLambda", ExperimentPlayer),
         ("Fixed Policy Player 2", "Fixed Policy", StandardPlayer),
-        ("Fixed Policy Player 3", "Fixed Policy", StandardPlayer)
+        ("Fixed Policy Player 3", "Fixed Policy", StandardPlayer),
+        ("Fixed Policy Player 4", "Fixed Policy", StandardPlayer)
     ]
 
     # Randomly shuffle order of players each game

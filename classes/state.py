@@ -67,14 +67,7 @@ def get_test_state(position):
     return state_test
 
 def get_area(current_player: "Player", players: list["Player"]) -> np.ndarray:
-    """ returns the area vector describing property owning percentage for each color
-    Args:
-        board (Board): _description_
-
-    Returns:
-        np.ndarray: each index (according to the assigned group indices) represents 
-        the percentage of property points earned in each color group
-    """
+    """ returns the area vector describing property owning percentage for each color"""
     self_property_points = get_property_points_by_group(current_player)
     others_property_points = np.zeros(Num_Groups)
     for player in players:
@@ -85,9 +78,6 @@ def get_area(current_player: "Player", players: list["Player"]) -> np.ndarray:
 
 def get_property_points_by_group(player:"Player") -> np.ndarray:
     """Gets the number of property of each group that a player has
-
-    Args:
-        player (Player): /
 
     Returns:
         np.ndarray: each index (according to the assigned group indices) represents 
