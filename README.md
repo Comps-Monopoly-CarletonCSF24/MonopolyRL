@@ -7,6 +7,18 @@ This project uses code from the following github repositories:
 - The Q-Lambda Agent (SARSA) code is borrowed, translated, and reformatted from pmpailis/rl-monopoly.
 
 Try playing against our agents at [https://comps-monopoly-carletoncsf24.github.io/MonopolyRL/JavaScript%20Engine/](https://comps-monopoly-carletoncsf24.github.io/MonopolyRL/JavaScript%20Engine/)
+
+## Prerequisites
+
+## Training the Deep Q-Lambda Agent
+
+To run the training session to train the QLambdaAgent:
+1. in classes/DQAgent : delete model_parameters.pth. This will create a new .pth file with random weights.
+2. in settings.py: set players_list to 1 QLambdaAgent (Experiment Player) and 3 FixedPolicyPlayers (Standard Players)
+3. in settings.py: confirm participates_in_trades = True under StandardPlayer
+4. in settings.py: confirm n_games_per_batch and n_batches
+5. then run train_and_evaluate_DQAgent.py
+
 ## How to Use
 
 1. Edit settings.py to set the parameters you want for your simulation.

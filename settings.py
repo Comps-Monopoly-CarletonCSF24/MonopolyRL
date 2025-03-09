@@ -48,7 +48,6 @@ class StandardPlayer:
 
     # Willing to participate in trades
     participates_in_trades = False
-    participates_in_trades = False
 
     # Only agree to trade if value difference is within these limits
     # (Absolute and relative)
@@ -58,7 +57,8 @@ class StandardPlayer:
 class ExperimentPlayer(StandardPlayer):
     ''' Changed settings for the Experiment Player
     '''
-    
+    unspendable_cash = 0
+        
 class GameSettings():
     ''' Setting for the game (rules + player list)
     '''
