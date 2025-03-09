@@ -1,7 +1,7 @@
 import torch
-from classes.DQAgent.DQAgent import QNetwork
-from classes.state import State_Size
-from classes.DQAgent.action import Action_Size
+from DQAgent import QNetwork
+from state import State_Size
+from action import Action_Size
 
 def main():
     pytorch_model = QNetwork()
