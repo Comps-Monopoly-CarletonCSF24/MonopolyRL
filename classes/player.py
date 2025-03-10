@@ -649,7 +649,6 @@ class Approx_q_agent(Player):
         for group_idx in range(len(group_cell_indices)):
             action = self.take_one_action(board,players, group_idx)
             self.execute_action(board, log, action, group_idx)
-        # self.agent.save_q_values()
         
     def take_one_action(self, board: Board, players: List[Player], group_idx):
         """Moved agent.take_turn to here. The agent takes a turn and performs 

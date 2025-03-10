@@ -3,7 +3,6 @@ import random
 
 from classes.player_logistics import Player
 from classes.act import ActionHandler
-from classes.board import Property
 from classes.state import State
 import classes.simulate_actions as simulation
 import pickle
@@ -19,7 +18,6 @@ class ApproxQLearningAgent(Player):
         self.action_handler = ActionHandler()
         self.total_actions = self.action_handler.total_actions
         self.name = name
-        # self.q_value_log = []
         self.decay_rate = decay_rate 
         self.epsilon_min = 0.1
         self.new_epsilon = epsilon
@@ -30,7 +28,6 @@ class ApproxQLearningAgent(Player):
     def load_model(self, filename="q_learning_model.pkl"):
         if os.path.exists(filename):
             try:
-                # Open in binary read mode and use a with statement for safety
                 with open(filename, "rb") as f:
                     data = pickle.load(f)
                 
@@ -91,13 +88,6 @@ class ApproxQLearningAgent(Player):
         return action_index_in_smaller_list, action_index_in_bigger_list
 
     def select_next_best_q_value(self, state, current_index):
-        """
-        Args:
-            state (np.ndarray): Current state vector.
-            excluded_action_index (int): Action index to exclude.
-        Returns:
-            int: Next best action index.
-        """
         q_values = np.sort(self.get_q_values(state))
 
         return q_values[current_index]
@@ -118,7 +108,6 @@ class ApproxQLearningAgent(Player):
         Returns:
             np.ndarray: Next state vector after a valid action.
         """
-        # return state
 
         _, action_type = self.action_handler.map_action_index(action_index)
         q_values = self.get_q_values(state)
@@ -157,8 +146,6 @@ class ApproxQLearningAgent(Player):
         self.new_alpha = alpha_t
         features = self.extract_features(state, action_index)
         q_value = np.dot(features, self.weights[:, action_index])
-
-        # Compute the target
         next_q_values = self.get_q_values(next_state)
         max_next_q_value = np.max(next_q_values)
         target = reward + self.gamma * max_next_q_value
