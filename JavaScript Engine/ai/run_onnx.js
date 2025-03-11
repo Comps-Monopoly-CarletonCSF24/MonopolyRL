@@ -1,6 +1,7 @@
 import { State } from "./state.js";
 import { Actions, Total_Actions, Action} from "./action.js"
 
+// runs the model
 export async function runModel(inputArray) {
     const inputTensor = new ort.Tensor('float32', new Float32Array(inputArray), [24]);
     const feeds = { "state_action_input": inputTensor };
@@ -11,10 +12,12 @@ export async function runModel(inputArray) {
     return output;
 }
 
+// creates state and action input 
 function createModelInput(state, action){
     return [...state.state, action.action_index/Total_Actions];
 }
 
+// Similar to chooseAction from Python code, but with no exploration only exploitation since model is already trained
 export async function chooseAction() {
     let state = new State();
     let action_q_values = [];
