@@ -1,12 +1,13 @@
 # MonopolyRL
-Computer Science comps project at Carleton College (Fall and Winter 24') by Albert Jing, Dake Peng, Paul Claudel Izabayo, and Xiaoying Qu
+Computer Science comps (senior thesis) project at Carleton College (Fall 24' and Winter 25') by Albert Jing, Dake Peng, Paul Claudel Izabayo, and Xiaoying Qu
 
-This project uses code from the following github repositories:
-- The Python Monopoly engine, as well as the Fixed policy logistics, are borrowed from gamescomputersplay/monopoly.
-- The JavaScript (web runtime) Monopoly Eengine is borrowed from intrepidcoder/monopoly.
-- The Q-Lambda Agent (SARSA) code is borrowed, translated, and reformatted from pmpailis/rl-monopoly.
+This project uses code from the following resources:
+- The Python Monopoly engine was borrowed from [gamescomputersplay/monopoly](https://github.com/gamescomputersplay/monopoly).
+- The JavaScript (web runtime) Monopoly Eengine is borrowed from [intrepidcoder/monopoly](https://github.com/intrepidcoder/monopoly).
+- The Deep Q-Lambda Agent code references [pmpailis/rl-monopoly](https://github.com/pmpailis/rl-monopoly)
+- The construction of the state-actions spaces, the reward function, and the update process of the Deep Q-Lambda Agent references *Bailis, P., Fachantidis, A., & Vlahavas, I. (2014). Learning to play monopoly: A reinforcement learning approach. In Proceedings of the 50th Anniversary Convention of The Society for the Study of Artificial Intelligence and Simulation of Behaviour. AISB.*
 
-Try playing against our agents at [https://comps-monopoly-carletoncsf24.github.io/MonopolyRL/JavaScript%20Engine/](https://comps-monopoly-carletoncsf24.github.io/MonopolyRL/JavaScript%20Engine/)
+Try playing against our Deep Q-Lambda Agent at [https://comps-monopoly-carletoncsf24.github.io/MonopolyRL/JavaScript%20Engine/](https://comps-monopoly-carletoncsf24.github.io/MonopolyRL/JavaScript%20Engine/)
 
 ## Prerequisites
 
@@ -21,19 +22,13 @@ To run the training session to train the QLambdaAgent:
 2. in settings.py: set players_list to 1 QLambdaAgent (Experiment Player) and 3 FixedPolicyPlayers (Standard Players)
 3. in settings.py: confirm participates_in_trades = True under StandardPlayer
 4. in settings.py: confirm n_games_per_batch and n_batches
-5. then run train_and_evaluate_DQAgent.py
+5. run train_and_evaluate_DQAgent.py
 
-## How to Use
+## Implemented Rules (from gamescomputersplay/monopoly)
 
-1. Edit settings.py to set the parameters you want for your simulation.
-2. Run monopoly_simulator.py.
-3. Marvel at the results.
+The rules in this simulation are based on Hasbro's official manual for playing Monopoly, with the potential for tweaking parameters here and there to see how they affect the game's results. Some of the more complex rules are still a "Work In Progress";
 
-## Implemented Rules
-
-The rules in this simulation are based on Hasbro's official manual for playing Monopoly, with the potential for tweaking parameters here and there to see how they affect the game's results. Some of the more complex rules are still a "Work In Progress"; see the TODO section for details.
-
-## Player Behavior
+## Fixed Policy Player Behavior (from gamescomputersplay/monopoly)
 
 Players in the simulation follow the most common-sense logic to play, which is:
 - Buy whatever you land on.
