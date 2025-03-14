@@ -24,6 +24,10 @@ To run the training session to train the QLambdaAgent:
 4. in settings.py: confirm n_games_per_batch and n_batches
 5. run train_and_evaluate_DQAgent.py
 
+Train_and_evaluateDQAgent.py will then train the model through multiple batches, and logs the agent's learning progression for game data. For each iteration it calls monopoly_game in game.py which in turn runs the game. 
+
+DQAgent.py is the neural network implementation (150 nodes with one hidden layer, backpropagating using SGD implemented by PyTorch), concatenates a state and action pair into a tensor to be taken as input for the neural network. The NN outputs a single q value, after looking through q values for all actions in a given state and choosing the highest or exploring a random action, and then subsequently giving that q value. Maintains a trace list managed by lambda decay parameter, and updates the trace values after every action. Uses trace values to update q values and saves it in a training batch that is used to train the neural network after every round (dice roll). Player.py's DQAgent class integrates specific game logic for the neural network, and manages the buy, sell, or do nothing actions in addition to the default player_logistics game functions. It also calls the train neural network function every time a player takes a turn. 
+
 ## Implemented Rules (from gamescomputersplay/monopoly)
 
 The rules in this simulation are based on Hasbro's official manual for playing Monopoly, with the potential for tweaking parameters here and there to see how they affect the game's results. Some of the more complex rules are still a "Work In Progress";
