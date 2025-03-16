@@ -4,7 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Senior Thesis: [Your Thesis Title]</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Senior Thesis on Reinforcement Learning in Monopoly using Q-learning variants. Explore our methods, results, and play against our Deep Q-Lambda agent.">
+    <meta name="keywords" content="Reinforcement Learning, Q-learning, Monopoly, Deep Q-Lambda, AI, Carleton College">
+    <meta name="author" content="Albert Jing, Dake Peng, Paul Claudel Izabayo, Xiaoying Qu">
+    <title>Reinforcement Learning in Monopoly Through Three Q-learning Variants</title>
     <style>
         /* General Styles */
         body {
@@ -79,7 +84,9 @@
         section p {
             font-size: 18px;
         }
-
+        section ul {
+            font-size: 18px;
+        }
         section img {
             max-width: 100%;
             height: auto;
@@ -115,10 +122,10 @@
         <div class="container">
             <ul>
                 <li><a href="#introduction">Introduction</a></li>
-                <li><a href="#methodology">Methodology</a></li>
+                <li><a href="#links">Links</a></li>
+                <li><a href="#methods">Methods</a></li>
                 <li><a href="#results">Results</a></li>
-                <li><a href="#conclusion">Conclusion</a></li>
-                <li><a href="#downloads">Downloads</a></li>
+                <li><a href="#credits">Credits</a></li>
             </ul>
         </div>
     </nav>
@@ -126,50 +133,104 @@
     <section id="introduction">
         <div class="container">
             <h2>Introduction</h2>
-            <p>Monopoly is a complex game with many random variables and complicated decision processes. </p>
+            <p>Monopoly is a complex game with many random variables and complicated decision processes. Its complex dynamics, involving property acquisition, resource management, and player interaction, make it an ideal testbed for artificial intelligence (AI) techniques. In addition to the traditional fixed-policy strategy, there is also a rise in exploring reinforcement learning algorithms in games like this --- among which Q-learning is a simple and adaptive example.</p>
+
+            <p>This project builds and compares three types of Q-learning agents for monopoly: the basic Q-table approach, approximate Q-learning, and deep Q-lambda learning. The basic Q-learning approch is simple to code and quick to train, but it may not be able to capture the complex dynamics of the game; the deep Q-lambda agent considers complex situations in the game and long-term rewards, but takes exceptionally long to train; the approximate Q-learning agent lies in-between, considering the complex dynamics but not long-term rewards, and trains in a moderate amount of time. With these variants we aim to explore the balance between efficiency, simplicity of code, and the ability to adapt to the large state-action space and the need for long-term strategic planning.</p>
+
+            <p>Our agents were trained using <a href = "https://github.com/gamescomputersplay/monopoly">gamescomputersplay/monopoly</a>, a monopoly game simulator available on github. Our agents played fixed-policy players under simple and complex game conditions. The agents use a reward function that balances its property (land, houses) and money. Each agent was able to stablize and perform better than a random action agent. For demonstration purposes, the deep Q-lambda agent was exported using <a href = "https://github.com/onnx/onnx">Open Neural Network Exchange</a> and incorporated into <a href = "https://github.com/intrepidcoder/monopoly">intrepidcoder/monopoly<a>, a runtime JavaScript-based monoply game board that allows you to play with our agent.</p>
         </div>
     </section>
 
-    <section id="abstract">
+    
+    <section id="links">
         <div class="container">
-            <h2>Abstract</h2>
-            <p>Write a concise summary of your thesis. Include the main objectives, methods, results, and conclusions.</p>
+            <h2>See Our Work</h2>
+            <ul>
+                <li><a href="https://github.com/Comps-Monopoly-CarletonCSF24/MonopolyRL">Visit Our Github Repository</a></li>
+                <li><a href="https://comps-monopoly-carletoncsf24.github.io/MonopolyRL/JavaScript%20Engine/">Play Against Our Deep Q-Lambda Agent</a></li>
+            </ul>
         </div>
     </section>
 
-    <section id="methodology">
+    <section id="methods">
         <div class="container">
-            <h2>Methodology</h2>
+            <h2>Methods</h2>
             <h3>Q Learning Training Cycle</h3>
             <h3>Fixed Policy Agent</h3>
             <h3>Basic Q Learning</h3>
             <h3>Approximate Q Learning</h3>
-            <h3>Basic Q Learning</h3>
+            <h3>Deep Q-Lambda Learning</h3>
+        </div>
+    </section>
+
+    <section id="implementation">
+        <div class="container">
+            <h2>Implementation</h2>
         </div>
     </section>
 
     <section id="results">
         <div class="container">
             <h2>Results</h2>
-            <p>Present your findings. Use tables, graphs, or visualizations to make the data easier to understand.</p>
-            <img src="https://via.placeholder.com/800x400.png?text=Results+Graph" alt="Results Graph">
+            <h3>Overall Results: Stablization and Survival Rate 
+            <table border="1" cellpadding="10" cellspacing="0">
+                <thead>
+                  <tr>
+                    <th>Algorithm</th>
+                    <th>Training Condition</th>
+                    <th># Games to Stabilize</th>
+                    <th>Survival Rate Against Fixed Policy Agent (Under the training condition)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Basic Q</td>
+                    <td>2 players<br>No Trading<br>Long games</td>
+                    <td>~180</td>
+                    <td>
+                      Random: 17.5%<br>
+                      <b>BasicQ Agent: 54.8%</b><br>
+                      Fixed Policy Agent: 66%
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Approximate Q</td>
+                    <td>2 Players<br>No Trading<br>Long Games</td>
+                    <td>~750</td>
+                    <td>
+                      Random: 17.5%<br>
+                      <b>ApproxQ Agent: 65%</b><br>
+                      Fixed Policy Agent: 66%
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Deep Q-Lambda</td>
+                    <td>4 Players<br>With Trading<br>Short Games</td>
+                    <td>~700</td>
+                    <td>
+                      Random: 20%<br>
+                      <b>DQL Agent: 40%</b><br>
+                      Fixed Policy Agent: 60%
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            
+            <h3>Training Cycle: Deep Q-Lambda Learning</h3>
+            <img src="./training_results/DQ.png" alt="Training results graph for Deep Q-Lambda Learning">
         </div>
     </section>
 
-    <section id="conclusion">
+    <section id="credits">
         <div class="container">
-            <h2>Conclusion</h2>
-            <p>Summarize your findings and discuss their implications. Mention any future work or potential improvements.</p>
-        </div>
-    </section>
-
-    <section id="downloads">
-        <div class="container">
-            <h2>Downloads</h2>
-            <p>Provide links to download your thesis, datasets, or other relevant files.</p>
+            <h2>Credits</h2>
             <ul>
-                <li><a href="#" download>Download Thesis (PDF)</a></li>
-                <li><a href="#" download>Download Dataset</a></li>
+                <li>The Python Monopoly engine was borrowed from gamescomputersplay/monopoly.</li>
+                <li>The JavaScript (web runtime) Monopoly Eengine is borrowed from intrepidcoder/monopoly.</li>
+                <li>The Deep Q-Lambda Agent code references pmpailis/rl-monopoly</li>
+                <li>The construction of the state-actions spaces, the reward function, and the update process of the Deep Q-Lambda Agent references the paper <i>Learning to play monopoly: A reinforcement learning approach.</i> by Bailis, P., Fachantidis, A., & Vlahavas, I. (2014)</li>
+                <li>We would like to thank Dave Musicant, our project advisor, for his help and advice.</li>
+                <li>We would like to thank the Computer Science department at Carleton College for making this experience possible.</li>
             </ul>
         </div>
     </section>
