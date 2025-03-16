@@ -155,24 +155,50 @@
     <section id="methods">
         <div class="container">
             <h2>Methods</h2>
-            <h3>Q Learning Training Cycle</h3>
+            <h3>Q-learning Basics</h3>
+            <p>Q-learning is a specific type of reinforcement learning (RL). In the reinforcement learning process, the agent observes a set of <b>states</b> that describe the environment, then takes an <b>action</b> to affect the environment. Finally, it receives <b>rewards</b> of how well that action improved the situation.</p>
+            <image src= "./presentation/Reinforcement Learning basic.png" alt-text = "reinforcement larning">
+            <p>Q-learning relies on the idea of <b>Q values</b>, the Q value: <i>Q(i, j) = q</i> represents that the agent's best estimate of the reward for taking action <i>j</i> at state <i>i</i> is <i>q</i>.</p>
+            <p>Each turn, the agent decides what action to take based on the <b>epsilon-greedy</b> exploration policy. Essentially, it rolls a dice and checks if it is greater than <b>epsilon</b>, the exploration rate. If not, it <b>explores</b> the environment by taking a random action. Otherwise, it <b>exploits</b> its current knowledge of the environment by taking the action wiht the highest <b>Q value</b> at the current state.
+            <p>After the action is taken, the agent calculates a <b>Temporal Difference</b> based on the reward after that action. This value represents how off the previous estmted Q value was and is used to update the <b>Q values</b>.</p>
+            <p>The Q-learning agent plays a large number of games with fixed-policy players. In this <b>training</b> process, the <b>Q values</b> are constantly updated to become more and more precise, making the agent play better and better.
+            <image src= "./presentation/q-learning cycle.png" alt-text = "Q-learning cycle">
+            
+            
             <h3>Fixed Policy Agent</h3>
             <h3>Basic Q Learning</h3>
-            <h3>Approximate Q Learning</h3>
-            <h3>Deep Q-Lambda Learning</h3>
+            <h3>Approximate Q-learning</h3>
+            <h3>Deep Q-lambda Learning</h3>
+            
+
         </div>
     </section>
 
     <section id="implementation">
         <div class="container">
             <h2>Implementation</h2>
+            <h3>State Space: Approx Q and Deep Q</h3>
+            The Approximate Q-earning agent and the Deep Q-lambda agent use a very complicated state space, borrowed from Bailis et al. (2014). Each state is a 23-dimensional vector containing:
+            <ul>
+                <li><b>10 dimensions representing the property status of the Q-learning agent.</b> Each color on the board (including rail and facilities) takes 1 dimension. The property status is projected to a fraction of a multiple of 1/17, in which 12/17 represents owning the land, and the rest represents owning houses.</li>
+                <li><b>10 dimensions representing the property status of all other players combined.</b> In the same fashion as described above.</li>
+                <li><b>1 dimension representing the position of the agent on the board</b>, which is a multiple of 1/40</li>
+                <li><b>2 dimensions representing the general finance situation of the agent.</b> Onedimension is the fraction representing the ratio of the total number of property owned by the agent versus the total number of property owned by other players. The other dimension is a sigmoid function applied to the current amount of money the agent has.</li>
+            </ul>
+            <h3>Action Space</h3>
+            The action space also refrerences Bailis et al. (2014). Each turn, the agent decides to take one of the following actions for each color group:
+            <ul>
+                <li><b>Buy</b>: If there are properties or houses to unmortgage, un mortegage one of them. Else, if you can buy a property in the current color group, then buy one. Otherwise, if you can build in the color group, build one house.</li>
+                <li><b>Sell</b>: If there are houses to sell in the color group, sell one. Otherwise, mortgate one piece of land in the color group if possible.</li>
+                <li><b>Do Nothing</b></li>
+            </ul>
         </div>
     </section>
 
     <section id="results">
         <div class="container">
             <h2>Results</h2>
-            <h3>Overall Results: Stablization and Survival Rate 
+            <h3>Overall Results: Stablization and Survival Rate</h3>
             <table border="1" cellpadding="10" cellspacing="0">
                 <thead>
                   <tr>
@@ -225,9 +251,9 @@
         <div class="container">
             <h2>Credits</h2>
             <ul>
-                <li>The Python Monopoly engine was borrowed from gamescomputersplay/monopoly.</li>
-                <li>The JavaScript (web runtime) Monopoly Eengine is borrowed from intrepidcoder/monopoly.</li>
-                <li>The Deep Q-Lambda Agent code references pmpailis/rl-monopoly</li>
+                <li>The Python Monopoly engine was borrowed from gamescomputersplay/monopoly, available on GitHub.</li>
+                <li>The JavaScript (web runtime) Monopoly Eengine is borrowed from intrepidcoder/monopoly, available on GitHub.</li>
+                <li>The Deep Q-Lambda Agent code references pmpailis/rl-monopoly, available on GitHub</li>
                 <li>The construction of the state-actions spaces, the reward function, and the update process of the Deep Q-Lambda Agent references the paper <i>Learning to play monopoly: A reinforcement learning approach.</i> by Bailis, P., Fachantidis, A., & Vlahavas, I. (2014)</li>
                 <li>We would like to thank Dave Musicant, our project advisor, for his help and advice.</li>
                 <li>We would like to thank the Computer Science department at Carleton College for making this experience possible.</li>
