@@ -164,31 +164,13 @@
             <p>The Q-learning agent plays a large number of games with fixed-policy players. In this <b>training</b> process, the <b>Q values</b> are constantly updated to become more and more precise, making the agent play better and better.
             <image src= "./presentation/q-learning cycle.png" alt-text = "Q-learning cycle">
             
-            
-            <h3>Fixed Policy Agent</h3>
-            <h3>Basic Q Learning</h3>
-            <h3>Approximate Q-learning</h3>
-            <p> Approximate Q-Learning is a version of Q-Learning designed to handle large or continuous state spaces where storing every possible state-action pair isn’t practical. In basic Q-Learning, you keep a table that records the Q-value for each state-action pair, which works well for small problems but quickly becomes unmanageable as the state space grows. Approximate Q-Learning solves this by using a function to estimate Q-values instead of storing them directly. The Q-value for a state-action pair is calculated using a linear approximation function with a set of weights. As the agent learns, it updates these weights based on the difference between predicted and actual Q-values. This approach allows the agent to generalize across similar states, making it more efficient and scalable for complex environments.</p>
-
-            <div style="display: flex; align-items: center; margin-bottom: 20px;">
-                <img src="temporal_diff_error.png" alt="Temporal Difference Error" style="width: 700px; height: auto; margin-right: 20px;">
-                <div>
-                    <h3>Temporal Difference Error</h3>
-                    <p>The temporal difference error represents the difference between the predicted Q-value and the actual reward plus the discounted future value. The discount factor allows to decide if we prioritize current or future rewards during the learning.</p>
-                </div>
-            </div>
-            
-            <div style="display: flex; align-items: center;">
-                <img src="weights.png" alt="Updating Weights" style="width: 1500px; height: auto; margin-right: 20px;">
-                <div>
-                    <h3>Updating Weights</h3>
-                    <p>The model updates its weights using the temporal difference error to minimize future prediction errors and improve the Q-value approximation over time. The learning rate allows the model to decide how much of the newly learned information is taken into account and features are functions of the state s and action a. They translate complex state-action information into a more manageable set of values that the model can work with.</p>
-                </div>
-            </div>
-            
-            <h3>Deep Q-lambda Learning</h3>
-            
-
+            <p> We implemented three different agents, all based on q learning with varying degrees of complexity (more about this below): </p>
+            <ul>
+                <li>Fixed Policy Agent: the highest performing agent with a complex and comprehensive policy, we didn't implement the functions here but trained our agents on this fixed policy agent</li>
+                <li>Basic Q Learning Agent: one with a simplified state space and the most basic q learning agent we implemented</li>
+                <li>Approximate Q Learning Agent: a more advanced agent with a more complex state space</li>
+                <li>Deep Q-Lambda Learning: A neural network implementation of q lambda algorithm</li>
+            </ul>
         </div>
     </section>
 
@@ -213,6 +195,29 @@
         </div>
     </section>
 
+    <section id="approximate-q-learning">
+        <div class="container">
+            <h2>Approximate Q-Learning Agent</h2>
+        <p> Approximate Q-Learning is a version of Q-Learning designed to handle large or continuous state spaces where storing every possible state-action pair isn’t practical. In basic Q-Learning, you keep a table that records the Q-value for each state-action pair, which works well for small problems but quickly becomes unmanageable as the state space grows. Approximate Q-Learning solves this by using a function to estimate Q-values instead of storing them directly. The Q-value for a state-action pair is calculated using a linear approximation function with a set of weights. As the agent learns, it updates these weights based on the difference between predicted and actual Q-values. This approach allows the agent to generalize across similar states, making it more efficient and scalable for complex environments.</p>
+    
+        <div style="display: flex; align-items: center; margin-bottom: 20px;">
+            <img src="temporal_diff_error.png" alt="Temporal Difference Error" style="width: 700px; height: auto; margin-right: 20px;">
+            <div>
+                <h3>Temporal Difference Error</h3>
+                <p>The temporal difference error represents the difference between the predicted Q-value and the actual reward plus the discounted future value. The discount factor allows to decide if we prioritize current or future rewards during the learning.</p>
+            </div>
+        </div>
+        
+        <div style="display: flex; align-items: center;">
+            <img src="weights.png" alt="Updating Weights" style="width: 1500px; height: auto; margin-right: 20px;">
+            <div>
+                <h3>Updating Weights</h3>
+                <p>The model updates its weights using the temporal difference error to minimize future prediction errors and improve the Q-value approximation over time. The learning rate allows the model to decide how much of the newly learned information is taken into account and features are functions of the state s and action a. They translate complex state-action information into a more manageable set of values that the model can work with.</p>
+            </div>
+        </div>
+    </div>
+    </section>
+
     <section id="deep-q-lambda">
         <div class="container">
             <h2>Deep Q-Lambda Learning Agent</h2>
@@ -230,8 +235,8 @@
             <h3>Q Lambda Algorithm</h3>
             <p>Algorithm + Eligibility Tracing</p>
             <ul>
-                <li>Maintains a **trace list** of past state and action pairs, with an associated trace value.</li>
-                <li>Applies **λ-trace decay** to prioritize more recent actions while still updating past ones. λ is set between 0-1 so that it gives prioritization to more recent state and action pairs, but does not give full impact on just the most recent state and action. </li>
+                <li>Maintains a trace list of past state and action pairs, with an associated trace value.</li>
+                <li>Applies λ-trace decay to prioritize more recent actions while still updating past ones. λ is set between 0-1 so that it gives prioritization to more recent state and action pairs, but does not give full impact on just the most recent state and action. </li>
                 <li>Uses the Temporal Difference (TD) update rule to refine Q-values efficiently, and multiplies by trace value for each state and action in trace list to assign updated q values.</li>
             </ul>
             <h3>Training Process</h3>
@@ -245,7 +250,7 @@
             
             <h3>Integration with Monopoly Gameplay</h3>
             <p>The agent is embedded in the Monopoly game engine, where it interacts with the board and other players.
-                The Deep Q-Lambda agent is integrated into the Monopoly game through the <code>DQAgentPlayer</code> class, 
+                The Deep Q-Lambda agent is integrated into the Monopoly game through the DQAgentPlayer class, 
                 which handles the game logic for the agent. This class extends the player logistic functions and manages the agent's actions and trains the neural network 
                 after each turn with updated q values, so the agent learns from its experiences. It executes strategic decisions based on each color group and action chosen, and learns from 
             play against fixed policy player.</p>
@@ -260,7 +265,6 @@
             </p>
         </div>
     </section>
-    
 
     <section id="results">
         <div class="container">
@@ -311,8 +315,6 @@
             
             <h3>Training Cycle: Deep Q-Lambda Learning</h3>
             <img src="./training_results/DQ.png" alt="Training results graph for Deep Q-Lambda Learning">
-            <h3>Training Cycle: Approximate Q-Learning</h3>
-            <img src="./training_results/approx.png" alt="Training results graph for approximate Q-Learning" style="width: 800px; height: 500px;">
         </div>
     </section>
 
