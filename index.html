@@ -177,6 +177,30 @@
     <section id="implementation">
         <div class="container">
             <h2>Implementation</h2>
+            <h3>Basic Q-Learning Agent</h3>
+            <p>The Basic Q-Learning agent uses a simplified state and action space to make the learning process more manageable:</p>
+            
+            <div style="display: flex; justify-content: center; margin: 20px 0;">
+                <img src="basic_q_diagram.png" alt="Basic Q-Learning State-Action Diagram" style="width: 80%; max-width: 800px; height: auto;">
+            </div>
+            <p>The diagram above illustrates how the Basic Q-Learning agent processes states and actions to update its Q-values. The state space consists of three binary features, while the action space includes three possible actions for each property.</p>
+
+            <h3>State Space: Basic Q</h3>
+            <p>The state is represented by three binary features:</p>
+            <ul>
+                <li><b>Has Monopoly:</b> Whether the player has a monopoly on the current property's color group</li>
+                <li><b>Is Property:</b> Whether the current position is a property</li>
+                <li><b>Has More Money:</b> Whether the player has more money than other players (in 2-player games, more than the opponent; in 3+ player games, more than at least 2 other players)</li>
+            </ul>
+
+            <h3>Action Space: Basic Q</h3>
+            <p>For each property (28 total properties), the agent can take one of three actions:</p>
+            <ul>
+                <li><b>Buy:</b> Purchase the property if possible</li>
+                <li><b>Sell:</b> Sell or mortgage the property</li>
+                <li><b>Do Nothing:</b> Take no action</li>
+            </ul>
+            <p>This creates a total action space of 84 possible actions (28 properties × 3 actions). The agent can only execute actions when it lands on the corresponding property and has sufficient funds for purchases.</p>
             <h3>State Space: Approx Q and Deep Q</h3>
             The Approximate Q-earning agent and the Deep Q-lambda agent use a very complicated state space, borrowed from Bailis et al. (2014). Each state is a 23-dimensional vector containing:
             <ul>
@@ -192,13 +216,77 @@
                 <li><b>Sell</b>: If there are houses to sell in the color group, sell one. Otherwise, mortgate one piece of land in the color group if possible.</li>
                 <li><b>Do Nothing</b></li>
             </ul>
+
+            <h3>Q-Table Management and Training Process</h3>
+            <p>The Basic Q-Learning agent maintains its learning through a Q-table structure and follows a systematic training process:</p>
+
+            <h4>Q-Table Structure</h4>
+            <ul>
+                <li><b>Storage Format:</b> The Q-table is stored as a nested dictionary where:
+                    <ul>
+                        <li>The outer key is a tuple of state values (has_monopoly, is_property, has_more_money)</li>
+                        <li>The inner key is the action type ('buy', 'sell', 'do_nothing')</li>
+                        <li>The value is the Q-value for that state-action pair</li>
+                    </ul>
+                </li>
+                <li><b>Initialization:</b> Q-values are initialized to 0.0, except for 'buy' actions which start at 100.0 to encourage initial exploration of buying properties</li>
+                <li><b>Persistence:</b> The Q-table is saved to disk using pickle serialization, allowing the agent to maintain its learning across different training sessions</li>
+            </ul>
+
+            <h4>Training Process</h4>
+            <ul>
+                <li><b>Reward Calculation:</b> The agent receives rewards based on multiple factors:
+                    <ul>
+                        <li>Base reward from current money (0.0001 × money)</li>
+                        <li>Property ownership (+5 per property)</li>
+                        <li>Monopoly bonuses (+100 for complete color sets)</li>
+                        <li>Strategic positioning relative to opponents</li>
+                        <li>House development bonuses (+20 per house)</li>
+                    </ul>
+                </li>
+                <li><b>Q-Value Updates:</b> After each action, the Q-value is updated using the formula:
+                    <pre>Q(s,a) = Q(s,a) + α[R + γ * max(Q(s',a')) - Q(s,a)]</pre>
+                    where:
+                    <ul>
+                        <li>α (alpha) is the learning rate</li>
+                        <li>R is the immediate reward</li>
+                        <li>γ (gamma) is the discount factor</li>
+                        <li>max(Q(s',a')) is the maximum Q-value for the next state</li>
+                    </ul>
+                </li>
+                <li><b>Stability Monitoring:</b> The training process monitors Q-value stability:
+                    <ul>
+                        <li>Small changes (<0.01) indicate convergence</li>
+                        <li>Large changes (>100) trigger warnings for potential instability</li>
+                        <li>Progress is logged to track learning over time</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h4>Action Selection</h4>
+            <ul>
+                <li><b>Exploration vs Exploitation:</b> Uses ε-greedy strategy:
+                    <ul>
+                        <li>With probability ε: Random action (exploration)</li>
+                        <li>With probability (1-ε): Best Q-value action (exploitation)</li>
+                        <li>ε decreases over time to favor exploitation as learning progresses</li>
+                    </ul>
+                </li>
+                <li><b>Action Validation:</b> Before executing an action, the agent checks:
+                    <ul>
+                        <li>If the action is legal in the current game state</li>
+                        <li>If the player has sufficient funds for purchases</li>
+                        <li>If the property is available for the chosen action</li>
+                    </ul>
+                </li>
+            </ul>
         </div>
     </section>
 
     <section id="approximate-q-learning">
         <div class="container">
             <h2>Approximate Q-Learning Agent</h2>
-        <p> Approximate Q-Learning is a version of Q-Learning designed to handle large or continuous state spaces where storing every possible state-action pair isn’t practical. In basic Q-Learning, you keep a table that records the Q-value for each state-action pair, which works well for small problems but quickly becomes unmanageable as the state space grows. Approximate Q-Learning solves this by using a function to estimate Q-values instead of storing them directly. The Q-value for a state-action pair is calculated using a linear approximation function with a set of weights. As the agent learns, it updates these weights based on the difference between predicted and actual Q-values. This approach allows the agent to generalize across similar states, making it more efficient and scalable for complex environments.</p>
+        <p> Approximate Q-Learning is a version of Q-Learning designed to handle large or continuous state spaces where storing every possible state-action pair isn't practical. In basic Q-Learning, you keep a table that records the Q-value for each state-action pair, which works well for small problems but quickly becomes unmanageable as the state space grows. Approximate Q-Learning solves this by using a function to estimate Q-values instead of storing them directly. The Q-value for a state-action pair is calculated using a linear approximation function with a set of weights. As the agent learns, it updates these weights based on the difference between predicted and actual Q-values. This approach allows the agent to generalize across similar states, making it more efficient and scalable for complex environments.</p>
     
         <div style="display: flex; align-items: center; margin-bottom: 20px;">
             <img src="temporal_diff_error.png" alt="Temporal Difference Error" style="width: 700px; height: auto; margin-right: 20px;">

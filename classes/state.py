@@ -173,16 +173,3 @@ def get_state(area: np.ndarray, position: int, finance: np.ndarray) -> np.ndarra
     # Combine all into a 1x23 array
     state = np.concatenate((flattened_area, [position], finance))
     return state
-    """converts the 3 vectors/integers into a new one-dimensional vector
-
-    Returns:
-        state(np.ndarray): a 1 * 23 vector representing the state
-    """
-    #convert boolean to float values (True = 1.0, False = 0.0)
-    state = np.array([
-        float(has_monopoly),
-        float(is_property),
-        float(has_more_money)
-    ], dtype = np.float64)
-
-    return state

@@ -1,11 +1,11 @@
 # implementation of different player classes,
-# including Fixed_Policy_Player, DQAPlayer, and ApproxQPlayer
+# including Fixed_Policy_Player, BasicQPlayer, DQAPlayer, and ApproxQPlayer
 
 from typing import List
 from classes.board import Board, Property
 from classes.dice import Dice
 from classes.log import Log
-from settings import GameSettings
+from settings import GameSettings, StandardPlayer
 from classes.DQAgent.DQAgent import QLambdaAgent
 from classes.DQAgent.action import Action
 from classes.state import State, group_cell_indices
@@ -13,6 +13,9 @@ from classes.player_logistics import Player
 from classes.approx_ql import ApproxQLearningAgent
 from classes.rewards import Reward
 from classes.act import ActionHandler 
+from classes.q_table_utils import get_q_value, update_q_table, calculate_q_reward
+from classes.basic_q_state import is_property, has_monopoly, has_more_money, get_state
+import numpy as np
 import pickle
 import tempfile
 import os
@@ -989,7 +992,7 @@ class BasicQPlayer(Player):
             return False
         color = property.color
         same_color_props = sum(1 for prop in self.owned if hasattr(prop, 'color') and prop.color == color)
-        total_in_color = sum(1 for prop in board.properties if hasattr(prop, 'color') and prop.color == color)
+        total_in_color = sum(1 for prop in Board.properties if hasattr(prop, 'color') and prop.color == color)
         
         return len(same_color_props) == total_in_color - 1
     
