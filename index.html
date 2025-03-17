@@ -213,6 +213,55 @@
         </div>
     </section>
 
+    <section id="deep-q-lambda">
+        <div class="container">
+            <h2>Deep Q-Lambda Learning Agent</h2>
+            <p>The Deep Q-Lambda Learning Agent is the most complex of the three q learning variants we decided on implementing:
+                 a reinforcement learning-based AI designed to play Monopoly strategically. It extends traditional Q-learning by incorporating eligibility traces (λ-traces) to improve learning efficiency. The agent uses a neural network to approximate Q-values, while also allowing it to handle the game's complex decision-making process (through our integration of the game logic).</p>
+            
+            <h3>Neural Network Architecture</h3>
+            <p>The Deep Q-Lambda agent relies on a feedforward neural network with a single hidden layer of 150 neurons. The structure includes:</p>
+            <ul>
+                <li><b>Input Layer:</b> Takes a 23-dimensional state representation and an action index (as explained above) concatenated into a tensor.</li>
+                <li><b>Hidden Layer:</b> We used one hidden layer which contains 150 neurons with sigmoid activation.</li>
+                <li><b>Output Layer:</b> Produces a single Q-value representing the expected reward for that state and action pair.</li>
+                <li><b>Output Layer:</b> Produces a single Q-value representing the expected reward for that state and action pair.</li>
+            </ul>
+            <h3>Q Lambda Algorithm</h3>
+            <p>Algorithm + Eligibility Tracing</p>
+            <ul>
+                <li>Maintains a **trace list** of past state and action pairs, with an associated trace value.</li>
+                <li>Applies **λ-trace decay** to prioritize more recent actions while still updating past ones. λ is set between 0-1 so that it gives prioritization to more recent state and action pairs, but does not give full impact on just the most recent state and action. </li>
+                <li>Uses the Temporal Difference (TD) update rule to refine Q-values efficiently, and multiplies by trace value for each state and action in trace list to assign updated q values.</li>
+            </ul>
+            <h3>Training Process</h3>
+            <p>The agent trains through a multi-step process:</p>
+            <ul>
+                <li><b>State Representation:</b> This seeks to provide a general representation of the game state by encoding property ownership, financial status, and board position, and looking at this in regards to other opponents compared to yourself.</li>
+                <li><b>Action Selection:</b> Uses an ε-greedy policy to balance exploration and exploitation. With probability ε it chooses to explore (choose a random action), and with 1-ε probability it exploits (chooses the action with the highest q value).  chooses the best action. ε is decayed through iterations of playing. </li>
+                <li><b>Reward Calculation:</b> Determines rewards based on net worth, property holdings, and money balance. We used the reward equation in the paper. </li>
+                <li><b>Model Saving:</b> Trained weights are saved, and used in conversion to ONNX model for Javascript end.</li>
+            </ul>
+            
+            <h3>Integration with Monopoly Gameplay</h3>
+            <p>The agent is embedded in the Monopoly game engine, where it interacts with the board and other players.
+                The Deep Q-Lambda agent is integrated into the Monopoly game through the <code>DQAgentPlayer</code> class, 
+                which handles the game logic for the agent. This class extends the player logistic functions and manages the agent's actions and trains the neural network 
+                after each turn with updated q values, so the agent learns from its experiences. It executes strategic decisions based on each color group and action chosen, and learns from 
+            play against fixed policy player.</p>
+            
+            <p>Through this method, the Deep Q-Lambda agent demonstrates an ability to adapt to complex game scenarios and optimize long-term strategies.
+                Our results show it performing better against the fixed policy agent due to its more complex state space representation and the architecture of a neural network 
+                to predict q values. We also decided to train it to play in a four person game and not two person like approximate and basic q learning, so that it would 
+                simulate a real monopoly game and be more complex. Our deep q lambda model performs two times better than random action in terms of survival rate, but still falls short compared to the fixed policy agent
+                due to the fixed policy agent's nuanced and comprehensive fixed policy. For extensions, we can consider making the state space as well as action space more complex to get better
+                representation and more accurate input for the neural network, and also try adding better game logic for the action making to be more sophisticated, such as proposing trade as compared
+                to only accepting or rejecting already proposed trades by fixed policy agent. 
+            </p>
+        </div>
+    </section>
+    
+
     <section id="results">
         <div class="container">
             <h2>Results</h2>
