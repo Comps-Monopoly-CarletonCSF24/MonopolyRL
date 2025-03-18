@@ -174,10 +174,9 @@
         </div>
     </section>
 
-    <section id="implementation">
+    <section id="basic-q-learning">
         <div class="container">
-            <h2>Implementation</h2>
-            <h3>Basic Q-Learning Agent</h3>
+            <h2>Basic Q-Learning Agent</h2>
             <p>The Basic Q-Learning agent uses a simplified state and action space to make the learning process more manageable:</p>
             
             <div style="display: flex; justify-content: center; margin: 20px 0;">
@@ -201,21 +200,6 @@
                 <li><b>Do Nothing:</b> Take no action</li>
             </ul>
             <p>This creates a total action space of 84 possible actions (28 properties × 3 actions). The agent can only execute actions when it lands on the corresponding property and has sufficient funds for purchases.</p>
-            <h3>State Space: Approx Q and Deep Q</h3>
-            The Approximate Q-earning agent and the Deep Q-lambda agent use a very complicated state space, borrowed from Bailis et al. (2014). Each state is a 23-dimensional vector containing:
-            <ul>
-                <li><b>10 dimensions representing the property status of the Q-learning agent.</b> Each color on the board (including rail and facilities) takes 1 dimension. The property status is projected to a fraction of a multiple of 1/17, in which 12/17 represents owning the land, and the rest represents owning houses.</li>
-                <li><b>10 dimensions representing the property status of all other players combined.</b> In the same fashion as described above.</li>
-                <li><b>1 dimension representing the position of the agent on the board</b>, which is a multiple of 1/40</li>
-                <li><b>2 dimensions representing the general finance situation of the agent.</b> Onedimension is the fraction representing the ratio of the total number of property owned by the agent versus the total number of property owned by other players. The other dimension is a sigmoid function applied to the current amount of money the agent has.</li>
-            </ul>
-            <h3>Action Space</h3>
-            The action space also refrerences Bailis et al. (2014). Each turn, the agent decides to take one of the following actions for each color group:
-            <ul>
-                <li><b>Buy</b>: If there are properties or houses to unmortgage, un mortegage one of them. Else, if you can buy a property in the current color group, then buy one. Otherwise, if you can build in the color group, build one house.</li>
-                <li><b>Sell</b>: If there are houses to sell in the color group, sell one. Otherwise, mortgate one piece of land in the color group if possible.</li>
-                <li><b>Do Nothing</b></li>
-            </ul>
 
             <h3>Q-Table Management and Training Process</h3>
             <p>The Basic Q-Learning agent maintains its learning through a Q-table structure and follows a systematic training process:</p>
